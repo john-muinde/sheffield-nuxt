@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect specific paths to backend
+    RewriteRule ^(public|storage|api|pixel-tracker|create-symlink)(/.*)?$ backend/$1$2 [L]
+
+    # Redirect everything else to frontend/dist
+    RewriteRule ^(.*)$ frontend/dist/$1 [L]
+</IfModule>
