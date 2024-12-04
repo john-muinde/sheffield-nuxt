@@ -2,5 +2,7 @@ export function assets(path) {
   if (!path) return null;
 
   const { API_URL } = useAxios();
-  return `${API_URL}/${path}`;
+  // sanitize the path
+  path = path.replace(/^\/+/, "").replace(" ", "%20");
+  return `${API_URL}/storage/${path}`;
 }

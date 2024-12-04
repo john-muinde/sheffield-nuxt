@@ -201,11 +201,11 @@ const getVideoPoster = (video) => {
         const videoId = getYoutubeId(video.video_url);
         return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
     }
-    return '/api/placeholder/320/180';
+    return '/placeholder_image.webp';
 };
 
 const handleImageError = (event) => {
-    event.target.src = '/api/placeholder/320/180';
+    event.target.src = '/placeholder_image.webp';
 };
 
 const generateThumbnail = async (video) => {

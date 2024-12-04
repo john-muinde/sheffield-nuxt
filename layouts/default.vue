@@ -4,10 +4,7 @@
     <Navbar v-if="!isHomePage" />
 
     <!-- Menu components -->
-    <KitchenMenu v-if="isKitchenPage" />
-    <LaundryMenu v-if="isLaundryPage" />
-    <ColdRoomMenu v-if="isColdRoomPage" />
-    <PromotionalMenu v-if="isPromotionalPage" />
+    <TopMenu v-if="pageSegment != null" :segment="pageSegment" />
 
     <!-- Main content slot -->
     <slot />
@@ -17,9 +14,14 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
+
+const route = useRoute();
+
+const pageSegment = computed(() => {
+  return APP_SEGMENTS.find((item) => item.slug === route.params.segment);
+});
 
 const { API_URL } = useAxios();
 
@@ -198,17 +200,8 @@ useHead({
   ],
 });
 
-const route = useRoute();
-
 // Page type computeds
 const isHomePage = computed(() => route.path === "/");
-const isKitchenPage = computed(() =>
-  route.path.includes("/commercial-kitchen")
-);
-const isLaundryPage = computed(() => route.path.includes("/laundry"));
-const isColdRoomPage = computed(() => route.path.includes("/cold-storage"));
-const isPromotionalPage = computed(() => route.path.includes("/promotional"));
-
 // Pixel tracking similar to Laravel implementation
 onMounted(() => {
   const trackPixel = async () => {
@@ -228,9 +221,9 @@ onMounted(() => {
 
   // Smartlook initialization
   if (typeof window !== "undefined") {
-    (window as any).smartlook ||
+    window.smartlook ||
       (function (d) {
-        const o: any = ((window as any).smartlook = function () {
+        const o = (window.smartlook = function () {
           o.api.push(arguments);
         });
         const h = d.getElementsByTagName("head")[0];
@@ -242,13 +235,9 @@ onMounted(() => {
         c.src = "https://web-sdk.smartlook.com/recorder.js";
         h.appendChild(c);
       })(document);
-    (window as any).smartlook(
-      "init",
-      "1877a41e49ec51b8bb404184dd7fa59f985f3925",
-      {
-        region: "eu",
-      }
-    );
+    window.smartlook("init", "1877a41e49ec51b8bb404184dd7fa59f985f3925", {
+      region: "eu",
+    });
   }
 
   // Pixel tracking
@@ -256,7 +245,7 @@ onMounted(() => {
 });
 
 // Utility function for generating random string
-function generateRandomString(length: number): string {
+function generateRandomString(length) {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";

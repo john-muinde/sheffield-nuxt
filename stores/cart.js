@@ -14,6 +14,8 @@ export const useCartStore = defineStore("cart-store", {
         product.quantity = 1;
         this.stateCartItems.push(product);
       }
+
+      console.log(Object.keys(this.stateCartItems));
     },
 
     removeFromCart(index) {

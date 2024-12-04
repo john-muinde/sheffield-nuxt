@@ -17,9 +17,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     // These will be accessible as process.env.API_URL and process.env.BASE_URL
-    API_URL: process.env.API_URL || "http://127.0.0.1:8000",
+    API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     public: {
-      API_URL: process.env.API_URL || "http://127.0.0.1:8000",
+      API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     }
   },
   nitro: {
@@ -34,5 +34,10 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {},
     },
+  },
+  routeRules: {
+    // Try a more specific route first
+    '/kitchen': { redirect: { to: '/commercial-kitchen', statusCode: 301 } },
+    '/kitchen/**': { redirect: { to: '/commercial-kitchen/**', statusCode: 301 } }
   },
 })

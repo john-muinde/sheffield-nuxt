@@ -28,7 +28,9 @@
                   item.id,
                   item.name,
                   item.model_number,
-                  item.categories_json[0]?.parent_name_with_slashes
+                  item.categories_json
+                    ? item.categories_json[0]?.parent_name_with_slashes
+                    : ''
                 )
               "
             >
@@ -92,8 +94,6 @@
 
 <script setup>
 import { computed, ref } from "vue";
-
-const { API_URL } = useAxios();
 
 const store = useCartStore();
 const cartItems = computed(() => store.cartItems);

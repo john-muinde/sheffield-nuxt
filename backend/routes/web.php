@@ -24,11 +24,4 @@ Route::get('/create-symlink', function () {
     return view('create_symlink');
 });
 
-
-Route::get('/admin/{any?}', function () {
-    return view('admin/app');
-})->where('any', '.*');
-
 Route::get('/pixel-tracker', [App\Http\Controllers\VisitorsController::class, 'pixelTracking'])->name('pixel-tracker');
-
-Route::get('/{any}', [App\Http\Controllers\AppController::class, 'frontend'])->where('any', '^(?!admin).*');

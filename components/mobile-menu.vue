@@ -432,7 +432,7 @@ const fetchMainLaundrySolutions = () => fetchData('/api/get-solutions/247', main
 const fetchMainColdRoomSolutions = () => fetchData('/api/get-solutions/301', mainColdRoomSolutions);
 const fetchMainPromotionalSolutions = () => fetchData('/api/get-solutions/370', mainPromotionalSolutions);
 
-const getSolutionKitchenLink = (id, name) => generateLink('/kitchen/solutions', id, name);
+const getSolutionKitchenLink = (id, name) => generateLink('/commercial-kitchen/solutions', id, name);
 const getSolutionLaundryLink = (id, name) => generateLink('/laundry/solutions', id, name);
 const getSolutionColdRoomLink = (id, name) => generateLink('/cold-storage/solutions', id, name);
 const getSolutionPromotionalLink = (id, name) => generateLink('/promotional-solutions', id, name);
@@ -442,7 +442,7 @@ const fetchMainLaundryCategories = () => fetchData('/api/get-main-categories/247
 const fetchMainColdRoomCategories = () => fetchData('/api/get-main-categories/301', mainColdRoomCategories);
 const fetchMainPromotionalCategories = () => fetchData('/api/get-main-categories/370', mainPromotionalCategories);
 
-const getKitchenCategoryLink = (id, name) => generateLink('/kitchen', id, name);
+const getKitchenCategoryLink = (id, name) => generateLink('/commercial-kitchen', id, name);
 const getLaundryCategoryLink = (id, name) => generateLink('/laundry', id, name);
 const getColdRoomCategoryLink = (id, name) => generateLink('/cold-storage', id, name);
 const getPromotionalCategoryLink = (id, name) => generateLink('/promotional-solutions', id, name);
