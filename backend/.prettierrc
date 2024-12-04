@@ -1,0 +1,24 @@
+{
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "vueIndentScriptAndStyle": true,
+  "htmlWhitespaceSensitivity": "strict",
+  "pluginSearchDirs": ["."],
+  "overrides": [
+    {
+      "files": "*.vue",
+      "options": {
+        "singleAttributePerLine": false,
+        "htmlWhitespaceSensitivity": "strict",
+        "printWidth": 100,
+        "semi": true,
+        "singleQuote": true,
+        "vueIndentScriptAndStyle": true
+      }
+    }
+  ]
+}

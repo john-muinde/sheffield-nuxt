@@ -1,4 +1,3 @@
-// nuxt.config.js
 export default defineNuxtConfig({
   modules: [
     ['@pinia/nuxt', { disableVuex: true, autoImports: ['defineStore', 'acceptHMRUpdate'] }],
@@ -19,10 +18,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // These will be accessible as process.env.API_URL and process.env.BASE_URL
     API_URL: process.env.API_URL || "http://127.0.0.1:8000",
-    BASE_URL: process.env.BASE_URL || "http://localhost:3000",
     public: {
       API_URL: process.env.API_URL || "http://127.0.0.1:8000",
-      BASE_URL: process.env.BASE_URL || "http://localhost:3000"
     }
   },
   nitro: {

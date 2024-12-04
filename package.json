@@ -8,7 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "predeploy": "nuxt generate",
+    "predeploy": "nuxt generate --dotenv .env.production",
     "deploy": "git add . && git commit -m",
     "postdeploy": "git push origin master"
   },
