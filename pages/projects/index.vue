@@ -240,7 +240,7 @@ onMounted(async () => {
 });
 </script>
 
-<style>
+<style lang="scss">
 .entry-container {
   column-count: 3;
   column-gap: 20px 20px;
@@ -285,8 +285,13 @@ onMounted(async () => {
   }
 }
 
-.entry-item:nth-child(n) {
-  animation-delay: calc(var(--delay-increment) * (n - 1));
+$delay-increment: 0.1s;
+
+@for $i from 1 through 10 {
+  // Adjust the range as needed
+  .entry-item:nth-child(#{$i}) {
+    animation-delay: calc(#{$delay-increment} * (#{$i} - 1));
+  }
 }
 
 .entry-item:hover {
