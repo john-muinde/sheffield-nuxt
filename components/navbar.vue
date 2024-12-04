@@ -4,10 +4,13 @@
       <div class="header-top header-top-color">
         <div class="container">
           <div class="header-left">
-            <a href="tel:+254713777111"><i class="icon-phone"></i>+254 713 777 111</a>
+            <a href="tel:+254713777111"
+              ><i class="icon-phone"></i>+254 713 777 111</a
+            >
 
-            <a class="ml-5" href="mailto:info@sheffieldafrica.com"><i class="icon-envelope"></i>
-              info@sheffieldafrica.com</a>
+            <a class="ml-5" href="mailto:info@sheffieldafrica.com"
+              ><i class="icon-envelope"></i> info@sheffieldafrica.com</a
+            >
           </div>
           <!-- End .header-left -->
 
@@ -31,7 +34,10 @@
                   <li :class="{ 'active-li': isKitchenPage }">
                     <NuxtLink to="/commercial-kitchen">
                       <span class="top-icon">
-                        <img class="top-menu-icon" src="/assets/images/menu-icons/top-menu/kitchen.png" />
+                        <img
+                          class="top-menu-icon"
+                          src="/assets/images/menu-icons/top-menu/kitchen.png"
+                        />
                       </span>
                       KITCHEN
                     </NuxtLink>
@@ -39,7 +45,10 @@
                   <li :class="{ 'active-li': isLaundryPage }">
                     <NuxtLink to="/laundry">
                       <span class="top-icon">
-                        <img class="top-menu-icon" src="/assets/images/menu-icons/top-menu/laundry.png" />
+                        <img
+                          class="top-menu-icon"
+                          src="/assets/images/menu-icons/top-menu/laundry.png"
+                        />
                       </span>
                       LAUNDRY
                     </NuxtLink>
@@ -48,7 +57,10 @@
                   <li :class="{ 'active-li': isColdRoomPage }">
                     <NuxtLink to="/cold-storage">
                       <span class="top-icon">
-                        <img class="top-menu-icon" src="/assets/images/menu-icons/top-menu/cold-room.png" />
+                        <img
+                          class="top-menu-icon"
+                          src="/assets/images/menu-icons/top-menu/cold-room.png"
+                        />
                       </span>
                       COLD STORAGE
                     </NuxtLink>
@@ -57,7 +69,10 @@
                   <li :class="{ 'active-li': isConsultancyDesignPage }">
                     <NuxtLink to="/consultancy-and-Design">
                       <span class="top-icon">
-                        <img class="top-menu-icon" src="/assets/images/menu-icons/consultancy-design.png" />
+                        <img
+                          class="top-menu-icon"
+                          src="/assets/images/menu-icons/consultancy-design.png"
+                        />
                       </span>
                       Consultancy
                     </NuxtLink>
@@ -181,7 +196,12 @@
           <div class="row">
             <div class="col-auto col-lg-3 col-xl-3">
               <NuxtLink to="/" class="logo">
-                <img src="/assets/images/logo.png" alt="Sheffield Logo" width="190" height="auto" />
+                <img
+                  src="/assets/images/logo.png"
+                  alt="Sheffield Logo"
+                  width="190"
+                  height="auto"
+                />
               </NuxtLink>
             </div>
             <!-- End .col-xl-3 col-xxl-2 -->
@@ -189,26 +209,54 @@
             <div class="col col-lg-9 col-xl-9 header-middle-right">
               <div class="row">
                 <div class="col-lg-8 d-none d-lg-block">
-                  <div class="header-search header-search-extended header-search-visible header-search-no-radius">
-                    <a href="#" class="search-toggle" role="button"><i class="icon-search"></i></a>
+                  <div
+                    class="header-search header-search-extended header-search-visible header-search-no-radius"
+                  >
+                    <a href="#" class="search-toggle" role="button"
+                      ><i class="icon-search"></i
+                    ></a>
                     <form action="#" method="get">
-                      <div class="header-search-wrapper search-wrapper-wide searchListMainDiv">
+                      <div
+                        class="header-search-wrapper search-wrapper-wide searchListMainDiv"
+                      >
                         <!-- End .select-custom -->
                         <label for="q" class="sr-only">Search</label>
-                        <input id="q" v-model="query" type="search" class="form-control" name="q"
-                          placeholder="Search product ..." autocomplete="off" required @input="search" />
+                        <input
+                          id="q"
+                          v-model="query"
+                          type="search"
+                          class="form-control"
+                          name="q"
+                          placeholder="Search product ..."
+                          autocomplete="off"
+                          required
+                          @input="search"
+                        />
 
-                        <ul v-if="showResults" ref="resultsList" class="" @click.self="hideResults">
+                        <ul
+                          v-if="showResults"
+                          ref="resultsList"
+                          class=""
+                          @click.self="hideResults"
+                        >
                           <li v-for="result in results" :key="result.id">
-                            <NuxtLink :to="getProductLink(
-                              result.id,
-                              result.name,
-                              result.model_number,
-                              result.categories_json[0]?.parent_name_with_slashes
-                            )
-                              ">
-                              <img style="display: inline; height: 28px" :src="'/storage/' + result.main_image_path"
-                                class="rounded profile-img" alt="" />
+                            <NuxtLink
+                              :to="
+                                getProductLink(
+                                  result.id,
+                                  result.name,
+                                  result.model_number,
+                                  result.categories_json[0]
+                                    ?.parent_name_with_slashes
+                                )
+                              "
+                            >
+                              <img
+                                style="display: inline; height: 28px"
+                                :src="assets(result.main_image_path)"
+                                class="rounded profile-img"
+                                alt=""
+                              />
                               {{ result.name }}
                             </NuxtLink>
                           </li>
@@ -225,12 +273,22 @@
                 </div>
                 <!-- End .col-xxl-4-5col -->
 
-                <div class="col-lg-4 d-flex justify-content-end align-items-center">
+                <div
+                  class="col-lg-4 d-flex justify-content-end align-items-center"
+                >
                   <div class="header-dropdown-link">
                     <div class="dropdown compare-dropdown">
-                      <NuxtLink to="/my-account" class="dropdown-toggle" role="button" data-toggle="dropdown"
-                        aria-haspopup="true" aria-expanded="false" data-display="static" title="Compare Products"
-                        aria-label="Compare Products">
+                      <NuxtLink
+                        to="/my-account"
+                        class="dropdown-toggle"
+                        role="button"
+                        data-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        data-display="static"
+                        title="Compare Products"
+                        aria-label="Compare Products"
+                      >
                         <i class="icon-user"></i>
                         <span class="compare-txt">Account</span>
                       </NuxtLink>
@@ -241,9 +299,7 @@
                             <NuxtLink to="/login" class="btn-remove">
                               <i class="icon-arrow-right"></i>
                             </NuxtLink>
-                            <NuxtLink to="/login">
-                              LOG IN
-                            </NuxtLink>
+                            <NuxtLink to="/login"> LOG IN </NuxtLink>
                           </li>
 
                           <li v-if="!user?.name" class="compare-product">
@@ -252,16 +308,19 @@
                             </NuxtLink>
 
                             <h4 class="compare-product-title">
-                              <NuxtLink to="/register">
-                                REGISTER
-                              </NuxtLink>
+                              <NuxtLink to="/register"> REGISTER </NuxtLink>
                             </h4>
                           </li>
                         </ul>
 
                         <div class="compare-actions">
-                          <a href="javascript:void(0)" class="btn btn-outline-primary-2"
-                            @click="logout"><span>Logout</span><i class="icon-long-arrow-right"></i></a>
+                          <a
+                            href="javascript:void(0)"
+                            class="btn btn-outline-primary-2"
+                            @click="logout"
+                            ><span>Logout</span
+                            ><i class="icon-long-arrow-right"></i
+                          ></a>
                         </div>
                       </div>
                       <!-- End .dropdown-menu -->
@@ -300,8 +359,14 @@
 
       <form action="#" method="get" class="mobile-search">
         <label for="mobile-search" class="sr-only">Search</label>
-        <input id="mobile-search" type="search" class="form-control" name="mobile-search" placeholder="Search in..."
-          required />
+        <input
+          id="mobile-search"
+          type="search"
+          class="form-control"
+          name="mobile-search"
+          placeholder="Search in..."
+          required
+        />
         <button class="btn btn-primary" type="submit">
           <i class="icon-search"></i>
         </button>
@@ -310,22 +375,62 @@
       <!-- End .mobile-nav -->
 
       <div class="social-icons">
-        <a href="https://www.facebook.com/SheffieldAfricaFacilitySolutions" class="social-icon" target="_blank"
-          title="Facebook"><i class="icon-facebook-f"></i></a>
-        <a href="https://twitter.com/sheffield_afric/" class="social-icon" target="_blank" title="Twitter"><i
-            class="icon-twitter"></i></a>
-        <a href="https://www.instagram.com/sheffieldafrica/" class="social-icon" target="_blank" title="Instagram"><i
-            class="icon-instagram"></i></a>
-        <a href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew" class="social-icon" target="_blank"
-          title="Youtube"><i class="icon-youtube"></i></a>
-        <a href="https://www.facebook.com/SheffieldAfricaFacilitySolutions" class="social-icon" target="_blank"
-          title="Facebook"><i class="icon-facebook-f"></i></a>
-        <a href="https://twitter.com/sheffield_afric/" class="social-icon" target="_blank" title="Twitter"><i
-            class="icon-twitter"></i></a>
-        <a href="https://www.instagram.com/sheffieldafrica/" class="social-icon" target="_blank" title="Instagram"><i
-            class="icon-instagram"></i></a>
-        <a href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew" class="social-icon" target="_blank"
-          title="Youtube"><i class="icon-youtube"></i></a>
+        <a
+          href="https://www.facebook.com/SheffieldAfricaFacilitySolutions"
+          class="social-icon"
+          target="_blank"
+          title="Facebook"
+          ><i class="icon-facebook-f"></i
+        ></a>
+        <a
+          href="https://twitter.com/sheffield_afric/"
+          class="social-icon"
+          target="_blank"
+          title="Twitter"
+          ><i class="icon-twitter"></i
+        ></a>
+        <a
+          href="https://www.instagram.com/sheffieldafrica/"
+          class="social-icon"
+          target="_blank"
+          title="Instagram"
+          ><i class="icon-instagram"></i
+        ></a>
+        <a
+          href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew"
+          class="social-icon"
+          target="_blank"
+          title="Youtube"
+          ><i class="icon-youtube"></i
+        ></a>
+        <a
+          href="https://www.facebook.com/SheffieldAfricaFacilitySolutions"
+          class="social-icon"
+          target="_blank"
+          title="Facebook"
+          ><i class="icon-facebook-f"></i
+        ></a>
+        <a
+          href="https://twitter.com/sheffield_afric/"
+          class="social-icon"
+          target="_blank"
+          title="Twitter"
+          ><i class="icon-twitter"></i
+        ></a>
+        <a
+          href="https://www.instagram.com/sheffieldafrica/"
+          class="social-icon"
+          target="_blank"
+          title="Instagram"
+          ><i class="icon-instagram"></i
+        ></a>
+        <a
+          href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew"
+          class="social-icon"
+          target="_blank"
+          title="Youtube"
+          ><i class="icon-youtube"></i
+        ></a>
       </div>
       <!-- End .social-icons -->
     </div>
@@ -335,9 +440,8 @@
 </template>
 
 <script setup>
-
-import { computed, reactive, ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, reactive, ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 
 const { api } = useAxios();
 
@@ -347,19 +451,19 @@ const route = useRoute();
 const store = useAuthStore();
 
 const isKitchenPage = computed(() => {
-  return route.path.includes('/commercial-kitchen');
+  return route.path.includes("/commercial-kitchen");
 });
 
 const isLaundryPage = computed(() => {
-  return route.path.includes('/laundry');
+  return route.path.includes("/laundry");
 });
 
 const isColdRoomPage = computed(() => {
-  return route.path.includes('/cold-storage');
+  return route.path.includes("/cold-storage");
 });
 
 const isConsultancyDesignPage = computed(() => {
-  return route.path.includes('/consultancy-and-Design');
+  return route.path.includes("/consultancy-and-Design");
 });
 
 const user = computed(() => store.user);
@@ -369,7 +473,7 @@ const categories = reactive([]);
 
 const fetchCategories = () => {
   api
-    .get('/api/get-sidebar-categories')
+    .get("/api/get-sidebar-categories")
     .then((response) => {
       categories.splice(
         0,
@@ -379,7 +483,7 @@ const fetchCategories = () => {
             id: category.id,
             name: `${category.name}`,
             columns: 3,
-            slug: category.name.toLowerCase().replace(/\s+/g, '-'),
+            slug: category.name.toLowerCase().replace(/\s+/g, "-"),
             subcategories: [
               {
                 id: 1, // You can assign any unique ID for the subcategory
@@ -388,17 +492,17 @@ const fetchCategories = () => {
                   return {
                     id: child.id,
                     name: child.name,
-                    slug: child.name.toLowerCase().replace(/\s+/g, '-'),
+                    slug: child.name.toLowerCase().replace(/\s+/g, "-"),
                   };
                 }),
               },
             ],
           };
-        }),
+        })
       );
     })
     .catch((error) => {
-      console.error('Failed to fetch categories:', error);
+      console.error("Failed to fetch categories:", error);
     });
 };
 
@@ -407,33 +511,36 @@ onMounted(() => {
 });
 
 const getProductLink = (id, name, model_number, main_second_parent_cat) => {
-  const firstPart = main_second_parent_cat?.split('/')[0];
+  const firstPart = main_second_parent_cat?.split("/")[0];
   // Replace spaces with dashes
-  let transformedName = name.replace(/ /g, '-').replace(/\//g, '-');
+  let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
   // Remove consecutive dashes
-  transformedName = transformedName.replace(/-+/g, '-');
+  transformedName = transformedName.replace(/-+/g, "-");
   // Remove leading and trailing dashes
-  transformedName = transformedName.replace(/^-+|-+$/g, '');
+  transformedName = transformedName.replace(/^-+|-+$/g, "");
   // Convert to lowercase
   transformedName = transformedName.toLowerCase();
 
-  let transformedModelNumber = model_number.toLowerCase().replace(/ /g, '-').replace(/\//g, '-');
+  let transformedModelNumber = model_number
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/\//g, "-");
   // Remove consecutive dashes
-  transformedModelNumber = transformedModelNumber.replace(/-+/g, '-');
+  transformedModelNumber = transformedModelNumber.replace(/-+/g, "-");
   // Remove leading and trailing dashes
-  transformedModelNumber = transformedModelNumber.replace(/^-+|-+$/g, '');
+  transformedModelNumber = transformedModelNumber.replace(/^-+|-+$/g, "");
 
   return `/${firstPart}/product/${id}/${transformedName}-${transformedModelNumber}`;
 };
 
-const query = ref('');
+const query = ref("");
 const results = ref([]);
 const showResults = ref(false);
 
 const search = async () => {
   if (query.value.length >= 3) {
     try {
-      const response = await api.get('/api/product_search' + `/${query.value}`);
+      const response = await api.get("/api/product_search" + `/${query.value}`);
       results.value = response.data.data;
       //
       showResults.value = true;
@@ -449,13 +556,13 @@ const search = async () => {
 
 const hideResults = (event) => {
   // Check if the click is outside the ul
-  if (!event.target.closest('#resultsList')) {
+  if (!event.target.closest("#resultsList")) {
     showResults.value = false;
   }
 };
 
 onMounted(() => {
-  document.addEventListener('click', hideResults);
+  document.addEventListener("click", hideResults);
 });
 </script>
 
@@ -558,11 +665,13 @@ onMounted(() => {
   width: 30px;
   height: 25px;
   padding-right: 10px;
-  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(288deg) brightness(102%) contrast(102%);
+  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(288deg)
+    brightness(102%) contrast(102%);
 }
 
 .active-li .top-menu-icon {
-  filter: invert(14%) sepia(97%) saturate(3017%) hue-rotate(342deg) brightness(102%) contrast(87%);
+  filter: invert(14%) sepia(97%) saturate(3017%) hue-rotate(342deg)
+    brightness(102%) contrast(87%);
 }
 
 @media only screen and (max-width: 768px) {

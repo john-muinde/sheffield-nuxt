@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Generator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        margin: 0;
+      }
+      .container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      input,
+      button {
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+      }
+      button {
+        background-color: #007bff;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .password {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Password Generator</h1>
+      <input type="text" id="name" placeholder="Enter your name" />
+      <input
+        type="number"
+        id="length"
+        placeholder="Enter desired password length"
+        min="8"
+        max="20"
+      />
+      <button onclick="generatePassword()">Generate Password</button>
+      <div class="password" id="password"></div>
+    </div>
+
+    <script>
+      function generatePassword() {
+        const name = document.getElementById("name").value;
+        const length = parseInt(document.getElementById("length").value);
+        const specialChars = "!@#$%^&*()_+[]{}|;:,.<>?";
+        const numbers = "0123456789";
+        const allChars =
+          specialChars +
+          numbers +
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        if (name.length === 0 || isNaN(length) || length < 8 || length > 20) {
+          alert(
+            "Please enter a valid name and password length between 8 and 20."
+          );
+          return;
+        }
+
+        let password = name;
+        while (password.length < length) {
+          const randomChar = allChars.charAt(
+            Math.floor(Math.random() * allChars.length)
+          );
+          password += randomChar;
+        }
+
+        // Shuffle the password to ensure randomness
+        password = password
+          .split("")
+          .sort(() => 0.5 - Math.random())
+          .join("");
+
+        document.getElementById("password").innerText = password;
+      }
+    </script>
+  </body>
+</html>
