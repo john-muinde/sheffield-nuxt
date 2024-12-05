@@ -16,9 +16,9 @@
                 <div class="container">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item">
-                            <router-link to="/">
+                            <NuxtLink to="/">
                                 HOME
-                            </router-link>
+                            </NuxtLink>
                         </li>
                         <li class="breadcrumb-item active" aria-current="page">
                             COOKIE POLICY

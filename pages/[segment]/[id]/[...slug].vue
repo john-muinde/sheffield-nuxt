@@ -4,13 +4,13 @@
       <div class="container d-flex align-items-center">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
-            <router-link to="/"> HOME </router-link>
+            <NuxtLink to="/"> HOME </NuxtLink>
           </li>
 
           <li class="breadcrumb-item">
-            <router-link :to="`/${pageSegment.slug}`">
+            <NuxtLink :to="`/${pageSegment.slug}`">
               {{ pageSegment.name.toUpperCase() }}
-            </router-link>
+            </NuxtLink>
           </li>
 
           <li class="breadcrumb-item active" aria-current="page">
@@ -68,7 +68,7 @@
                   <div class="product product-7 text-center">
                     <figure class="product-media">
                       <!-- <span class="product-label label-new">New</span>  -->
-                      <router-link
+                      <NuxtLink
                         :to="
                           getProductLink(
                             product.id,
@@ -86,7 +86,7 @@
                           loading="lazy"
                           class="w-full h-auto object-cover product-image"
                         />
-                      </router-link>
+                      </NuxtLink>
                       <div class="product-action-vertical">
                         <!-- <a
                                        href="#"
@@ -113,7 +113,7 @@
                     <!-- End .product-media -->
                     <div class="product-body">
                       <div class="product-cat">
-                        <router-link
+                        <NuxtLink
                           :to="
                             getProductLink(
                               product.id,
@@ -124,11 +124,11 @@
                           "
                         >
                           {{ product.product_brand.name }}
-                        </router-link>
+                        </NuxtLink>
                       </div>
                       <!-- End .product-cat -->
                       <h3 class="product-title">
-                        <router-link
+                        <NuxtLink
                           :to="
                             getProductLink(
                               product.id,
@@ -139,7 +139,7 @@
                           "
                         >
                           {{ product.name }}
-                        </router-link>
+                        </NuxtLink>
                       </h3>
                       <div class="ratings-container"></div>
                     </div>
@@ -155,7 +155,7 @@
             <nav aria-label="Page navigation">
               <ul class="pagination justify-content-center">
                 <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <router-link
+                  <NuxtLink
                     class="page-link page-link-prev"
                     :to="
                       getCategoryLink(
@@ -173,7 +173,7 @@
                       ><i class="icon-long-arrow-left"></i
                     ></span>
                     Prev
-                  </router-link>
+                  </NuxtLink>
                 </li>
                 <li
                   v-for="page in generatePageLinks"
@@ -182,7 +182,7 @@
                   :class="{ active: page === currentPage }"
                 >
                   <template v-if="isInteger(page)">
-                    <router-link
+                    <NuxtLink
                       class="page-link"
                       :to="
                         getCategoryLink(
@@ -194,7 +194,7 @@
                       @click="goToThisPage(page)"
                     >
                       {{ page }}
-                    </router-link>
+                    </NuxtLink>
                   </template>
                 </li>
                 <li class="page-item-total">of {{ totalPages }}</li>
@@ -204,7 +204,7 @@
                     disabled: currentPage === totalPages,
                   }"
                 >
-                  <router-link
+                  <NuxtLink
                     class="page-link page-link-next"
                     :to="
                       getCategoryLink(
@@ -220,7 +220,7 @@
                     <span aria-hidden="true"
                       ><i class="icon-long-arrow-right"></i
                     ></span>
-                  </router-link>
+                  </NuxtLink>
                 </li>
               </ul>
             </nav>

@@ -123,7 +123,7 @@
                 >
                   <article class="entry entry-grid">
                     <figure class="entry-media">
-                      <!-- <router-link
+                      <!-- <NuxtLink
                                               :to="
                                                   getEventLink(
                                                       event.id,
@@ -137,13 +137,13 @@
                         alt="image desc"
                         @click="showSingle(event.main_image_path)"
                       />
-                      <!--  </router-link> -->
+                      <!--  </NuxtLink> -->
                     </figure>
                     <!-- End .entry-media -->
 
                     <div class="entry-body pt-1">
                       <h2 class="entry-title">
-                        <!-- <router-link
+                        <!-- <NuxtLink
                                                   :to="
                                                       getEventLink(
                                                           event.id,
@@ -152,7 +152,7 @@
                                                   "
                                                   > -->
                         {{ event.name }}
-                        <!-- </router-link
+                        <!-- </NuxtLink
                                               > -->
                       </h2>
                       <!-- End .entry-title -->
@@ -176,7 +176,7 @@
                           Register
                         </a>
 
-                        <!-- <router-link
+                        <!-- <NuxtLink
                                                   :to="
                                                       getEventLink(
                                                           event.id,
@@ -186,7 +186,7 @@
                                                   class="btn btn-outline-primary"
                                                   ><span>View More</span
                                                   ><i class="icon-long-arrow-right"></i
-                                              ></router-link> -->
+                                              ></NuxtLink> -->
                       </div>
                       <!-- End .entry-content -->
                     </div>

@@ -7,13 +7,13 @@
             <div class="col-lg-10 offset-lg-1 gallery-main-page-section">
               <h2 class="about-us-title">Gallery</h2>
               <!-- End .title -->
-              <router-link
+              <NuxtLink
                 to="/media"
                 class="btn btn-primary btn-round btn-shadow float-right"
               >
                 <i class="icon-long-arrow-left"></i
                 ><span>Back to Media Center</span>
-              </router-link>
+              </NuxtLink>
               <p class="lead about-us-lead text-primary mb-3">
                 Journey Through the Lens: Our Story in Pictures
               </p>
@@ -49,7 +49,7 @@
                 >
                   <article class="entry entry-mask">
                     <figure class="entry-media entry-gallery">
-                      <router-link :to="getBlogLink(product.id, product.name)">
+                      <NuxtLink :to="getBlogLink(product.id, product.name)">
                         <NuxtImg
                           :src="assets(product.main_image_path)"
                           :alt="product.name"
@@ -59,7 +59,7 @@
                           loading="lazy"
                           class="w-full h-auto object-cover"
                         />
-                      </router-link>
+                      </NuxtLink>
                     </figure>
 
                     <div class="entry-body">
@@ -69,11 +69,11 @@
                       </div>
                       <!-- End .entry-meta -->
                       <h2 class="entry-title">
-                        <router-link
+                        <NuxtLink
                           :to="getBlogLink(product.id, product.name)"
                         >
                           {{ product.name }}
-                        </router-link>
+                        </NuxtLink>
                       </h2>
                       <!-- End .entry-title -->
                       <div class="entry-cats mt-1">

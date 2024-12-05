@@ -7,13 +7,13 @@
             <div class="col-lg-10 offset-lg-1 in-the-news-section">
               <h2 class="about-us-title">In the News</h2>
               <!-- End .title -->
-              <router-link
+              <NuxtLink
                 to="/media"
                 class="btn btn-primary btn-round btn-shadow float-right"
               >
                 <i class="icon-long-arrow-left"></i
                 ><span>Back to Media Center</span>
-              </router-link>
+              </NuxtLink>
               <p class="lead about-us-lead text-primary mb-3">
                 Media Spotlight: Sheffield Making Waves in the News
               </p>
@@ -86,7 +86,7 @@
                           disabled: currentPage === 1,
                         }"
                       >
-                        <router-link
+                        <NuxtLink
                           class="page-link page-link-prev"
                           :to="getBlogPageLink(currentPage - 1)"
                           aria-label="Previous"
@@ -98,7 +98,7 @@
                             ><i class="icon-long-arrow-left"></i
                           ></span>
                           Prev
-                        </router-link>
+                        </NuxtLink>
                       </li>
                       <li
                         v-for="page in generatePageLinks"
@@ -109,13 +109,13 @@
                         }"
                       >
                         <template v-if="isInteger(page)">
-                          <router-link
+                          <NuxtLink
                             class="page-link"
                             :to="getBlogPageLink(page)"
                             @click="goToThisPage(page)"
                           >
                             {{ page }}
-                          </router-link>
+                          </NuxtLink>
                         </template>
                       </li>
                       <li class="page-item-total">of {{ totalPages }}</li>
@@ -125,7 +125,7 @@
                           disabled: currentPage === totalPages,
                         }"
                       >
-                        <router-link
+                        <NuxtLink
                           class="page-link page-link-next"
                           :to="getBlogPageLink(currentPage + 1)"
                           aria-label="Next"
@@ -135,7 +135,7 @@
                           <span aria-hidden="true"
                             ><i class="icon-long-arrow-right"></i
                           ></span>
-                        </router-link>
+                        </NuxtLink>
                       </li>
                     </ul>
                   </nav>

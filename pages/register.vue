@@ -21,9 +21,9 @@
                             <ul class="nav nav-pills nav-fill" role="tablist">
                                 <li class="nav-item">
                                     <!-- <a class="nav-link" id="signin-tab-2" data-toggle="tab" href="#signin-2" role="tab" aria-controls="signin-2" aria-selected="false">Sign In</a> -->
-                                    <router-link class="nav-link" to="/login">
+                                    <NuxtLink class="nav-link" to="/login">
                                         Log in
-                                    </router-link>
+                                    </NuxtLink>
                                 </li>
                                 <li class="nav-item">
                                     <a id="register-tab-2" class="nav-link active" data-toggle="tab" href="#register-2"

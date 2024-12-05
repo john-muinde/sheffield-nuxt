@@ -15,10 +15,10 @@
                                         Explore our videos
                                     </p>
                                 </div>
-                                <router-link to="/media" class="btn btn-primary btn-round btn-shadow">
+                                <NuxtLink to="/media" class="btn btn-primary btn-round btn-shadow">
                                     <i class="icon-long-arrow-left"></i>
                                     <span>Back to Media Center</span>
-                                </router-link>
+                                </NuxtLink>
                             </div>
 
                             <!-- Filters Section -->

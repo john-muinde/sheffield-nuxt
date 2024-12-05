@@ -37,7 +37,7 @@
                 },
                 {
                     "question": "Can I return or exchange an item I have purchased?",
-                    "answer": "We accept the return of equipment as stipulated in our return policy clause as per our terms and conditions. Follow this link to our <router-link to='/terms-and-conditions'>terms of conditions</router-link> outlining the process for return of equipment."
+                    "answer": "We accept the return of equipment as stipulated in our return policy clause as per our terms and conditions. Follow this link to our <NuxtLink to='/terms-and-conditions'>terms of conditions</NuxtLink> outlining the process for return of equipment."
                 }
             ]
         },
@@ -103,11 +103,11 @@
                 },
                 {
                     "question": "How much does a laundromat cost?",
-                    "answer": "The initial outlay to open a laundromat will depend on the area chosen, the equipment & the characteristics of the Laundromat. Additional factors to consider are the monthly rent of the premises in case of rental, costs of water, electricity, and internet. For an exact quote, feel free to <router-link to='/contact-us'>contact us</router-link>. Sheffield offers a turnkey formula to supply, deliver, and install machines to start up your laundromat."
+                    "answer": "The initial outlay to open a laundromat will depend on the area chosen, the equipment & the characteristics of the Laundromat. Additional factors to consider are the monthly rent of the premises in case of rental, costs of water, electricity, and internet. For an exact quote, feel free to <NuxtLink to='/contact-us'>contact us</NuxtLink>. Sheffield offers a turnkey formula to supply, deliver, and install machines to start up your laundromat."
                 },
                 {
                     "question": "How long before I get Return On Investment in the laundry business?",
-                    "answer": "The return on investment generally comes after 2-3 years, but this is just indicative. Our Laundry experts will be able to give you more detailed advice about this subject: <router-link to='/contact-us'>contact us</router-link> for more details."
+                    "answer": "The return on investment generally comes after 2-3 years, but this is just indicative. Our Laundry experts will be able to give you more detailed advice about this subject: <NuxtLink to='/contact-us'>contact us</NuxtLink> for more details."
                 }
             ]
         },
@@ -149,7 +149,7 @@
             "faqs": [
                 {
                     "question": "Does your Equipment Come with a Warranty?",
-                    "answer": "Yes. Our Warranty terms are outlined in our <router-link to='terms-and-conditions'>Terms and Conditions</router-link> linked herein."
+                    "answer": "Yes. Our Warranty terms are outlined in our <NuxtLink to='terms-and-conditions'>Terms and Conditions</NuxtLink> linked herein."
                 },
                 {
                     "question": "How often should I service my equipment after purchase and installation?",

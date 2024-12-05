@@ -7,13 +7,13 @@
             <div class="col-lg-10 offset-lg-1">
               <h2 class="about-us-title">Blogs</h2>
               <!-- End .title -->
-              <router-link
+              <NuxtLink
                 to="/media"
                 class="btn btn-primary btn-round btn-shadow float-right"
               >
                 <i class="icon-long-arrow-left"></i
                 ><span>Back to Media Center</span>
-              </router-link>
+              </NuxtLink>
               <p class="lead about-us-lead text-primary mb-3">
                 In-Depth Insights
               </p>
@@ -44,7 +44,7 @@
                 >
                   <article class="entry entry-grid">
                     <figure class="entry-media entry-gallery">
-                      <router-link :to="getBlogLink(post.id, post.name)">
+                      <NuxtLink :to="getBlogLink(post.id, post.name)">
                         <NuxtImg
                           :src="assets(post.main_image_path)"
                           :alt="product.name"
@@ -54,18 +54,18 @@
                           loading="lazy"
                           class="w-full h-auto object-cover"
                         />
-                      </router-link>
+                      </NuxtLink>
                     </figure>
                     <!-- End .entry-media -->
 
                     <div class="entry-body">
                       <h2 class="entry-title">
-                        <router-link
+                        <NuxtLink
                           class="text-primary"
                           :to="getBlogLink(post.id, post.name)"
                         >
                           {{ getBlogParagraph(post.name) }}
-                        </router-link>
+                        </NuxtLink>
                       </h2>
                       <!-- End .entry-title -->
 
@@ -73,13 +73,13 @@
                         <div class="mb-2">
                           {{ getFirstParagraph(post.excerpt) }}
                         </div>
-                        <router-link
+                        <NuxtLink
                           class="btn btn-primary"
                           :to="getBlogLink(post.id, post.name)"
                         >
                           Read More
                           <i class="icon-long-arrow-right"></i>
-                        </router-link>
+                        </NuxtLink>
                       </div>
                     </div>
                     <!-- End .entry-body -->
@@ -98,7 +98,7 @@
                           disabled: currentPage === 1,
                         }"
                       >
-                        <router-link
+                        <NuxtLink
                           class="page-link page-link-prev"
                           :to="getBlogPageLink(currentPage - 1)"
                           aria-label="Previous"
@@ -110,7 +110,7 @@
                             ><i class="icon-long-arrow-left"></i
                           ></span>
                           Prev
-                        </router-link>
+                        </NuxtLink>
                       </li>
                       <li
                         v-for="page in generatePageLinks"
@@ -121,13 +121,13 @@
                         }"
                       >
                         <template v-if="isInteger(page)">
-                          <router-link
+                          <NuxtLink
                             class="page-link"
                             :to="getBlogPageLink(page)"
                             @click="goToThisPage(page)"
                           >
                             {{ page }}
-                          </router-link>
+                          </NuxtLink>
                         </template>
                       </li>
                       <li class="page-item-total">of {{ totalPages }}</li>
@@ -137,7 +137,7 @@
                           disabled: currentPage === totalPages,
                         }"
                       >
-                        <router-link
+                        <NuxtLink
                           class="page-link page-link-next"
                           :to="getBlogPageLink(currentPage + 1)"
                           aria-label="Next"
@@ -147,7 +147,7 @@
                           <span aria-hidden="true"
                             ><i class="icon-long-arrow-right"></i
                           ></span>
-                        </router-link>
+                        </NuxtLink>
                       </li>
                     </ul>
                   </nav>

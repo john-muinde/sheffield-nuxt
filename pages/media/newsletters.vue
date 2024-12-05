@@ -9,10 +9,10 @@
                                 Newsletters
                             </h2>
 
-                            <router-link to="/media" class="btn btn-primary btn-round btn-shadow float-right">
+                            <NuxtLink to="/media" class="btn btn-primary btn-round btn-shadow float-right">
                                 <i class="icon-long-arrow-left"></i>
                                 <span>Back to Media Center</span>
-                            </router-link>
+                            </NuxtLink>
 
                             <p class="lead about-us-lead text-primary mb-1">
                                 Explore Our Newsletters

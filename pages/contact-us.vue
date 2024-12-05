@@ -1146,8 +1146,8 @@
                                                     type="checkbox" style="margin-right: 10px" />
                                                 <span style="margin-left: 10px">
                                                     Please read and agree to our
-                                                    <router-link to="/terms-and-conditions">Terms and
-                                                        Conditions</router-link>
+                                                    <NuxtLink to="/terms-and-conditions">Terms and
+                                                        Conditions</NuxtLink>
                                                 </span>
                                             </label>
                                         </div>

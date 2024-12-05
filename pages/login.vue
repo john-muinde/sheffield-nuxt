@@ -12,9 +12,9 @@
                                         role="tab" aria-controls="signin-2" aria-selected="false">Log In</a>
                                 </li>
                                 <li class="nav-item">
-                                    <router-link class="nav-link" to="/register">
+                                    <NuxtLink class="nav-link" to="/register">
                                         Register
-                                    </router-link>
+                                    </NuxtLink>
                                 </li>
                             </ul>
                             <div class="tab-content">

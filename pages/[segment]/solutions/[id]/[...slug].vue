@@ -4,13 +4,13 @@
       <div class="container d-flex align-items-center">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
-            <router-link to="/"> HOME </router-link>
+            <NuxtLink to="/"> HOME </NuxtLink>
           </li>
 
           <li class="breadcrumb-item">
-            <router-link :to="`/${pageSegment.slug}`">
+            <NuxtLink :to="`/${pageSegment.slug}`">
               {{ pageSegment.name.toUpperCase() }}
-            </router-link>
+            </NuxtLink>
           </li>
 
           <li class="breadcrumb-item active" aria-current="page">
@@ -71,7 +71,7 @@
                   <div class="product product-7 text-center">
                     <figure class="product-media">
                       <!-- <span class="product-label label-new">New</span>  -->
-                      <router-link
+                      <NuxtLink
                         :to="
                           getProductLink(
                             product.id,
@@ -88,7 +88,7 @@
                           loading="lazy"
                           class="w-full h-auto object-cover product-image"
                         />
-                      </router-link>
+                      </NuxtLink>
                       <div class="product-action-vertical"></div>
                       <!-- End .product-action-vertical -->
                       <div class="product-action" :disabled="!product">
@@ -105,7 +105,7 @@
                     <!-- End .product-media -->
                     <div class="product-body">
                       <div class="product-cat">
-                        <router-link
+                        <NuxtLink
                           :to="
                             getProductLink(
                               product.id,
@@ -115,11 +115,11 @@
                           "
                         >
                           {{ product.product_brand.name }}
-                        </router-link>
+                        </NuxtLink>
                       </div>
                       <!-- End .product-cat -->
                       <h3 class="product-title">
-                        <router-link
+                        <NuxtLink
                           :to="
                             getProductLink(
                               product.id,
@@ -129,7 +129,7 @@
                           "
                         >
                           {{ product.name }}
-                        </router-link>
+                        </NuxtLink>
                       </h3>
                       <div class="ratings-container"></div>
                     </div>

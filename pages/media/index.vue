@@ -29,7 +29,7 @@
                         <div class="col-md-10 offset-lg-1 justify-content-center media-center-section">
                             <div class="row about-team-container about-team-container1 justify-content-center">
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/blogs">
+                                    <NuxtLink to="/media/blogs">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_blogs.jpg" />
@@ -40,11 +40,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
 
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/in-the-news">
+                                    <NuxtLink to="/media/in-the-news">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_in_the_news.jpg" />
@@ -55,11 +55,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
 
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/videos">
+                                    <NuxtLink to="/media/videos">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_video.jpg" />
@@ -70,11 +70,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
 
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/newsletters">
+                                    <NuxtLink to="/media/newsletters">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_newsletters.jpg" />
@@ -85,11 +85,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
 
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/brochures-and-catalogs">
+                                    <NuxtLink to="/media/brochures-and-catalogs">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_documents.jpg" />
@@ -100,11 +100,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
 
                                 <div class="col-md-4 mt-2 mb-2">
-                                    <router-link to="/media/gallery">
+                                    <NuxtLink to="/media/gallery">
                                         <div class="about-team">
                                             <div class="about-team-white">
                                                 <img src="/assets/images/media/media_gallery.jpg" />
@@ -115,7 +115,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </router-link>
+                                    </NuxtLink>
                                 </div>
                             </div>
                         </div>
