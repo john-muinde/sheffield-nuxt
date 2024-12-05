@@ -53,7 +53,6 @@
                         <NuxtImg
                           :src="assets(product.main_image_path)"
                           :alt="product.name"
-                          preset="cover"
                           format="webp"
                           quality="80"
                           loading="lazy"
@@ -69,9 +68,7 @@
                       </div>
                       <!-- End .entry-meta -->
                       <h2 class="entry-title">
-                        <NuxtLink
-                          :to="getBlogLink(product.id, product.name)"
-                        >
+                        <NuxtLink :to="getBlogLink(product.id, product.name)">
                           {{ product.name }}
                         </NuxtLink>
                       </h2>

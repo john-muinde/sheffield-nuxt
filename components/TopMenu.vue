@@ -318,6 +318,7 @@ watch(segment, () => {
 
   .mobile-categories .btn {
     font-weight: 600;
+    display: none;
   }
 
   .mobile-menu li a {
@@ -336,16 +337,4 @@ watch(segment, () => {
     font-size: 1rem;
   }
 }
-
-/* @media only screen and (max-width: 768px) {
-    .categories {
-        display: none;
-    }
-
-    .mobile-categories {
-        display: block;
-        max-height: 100vh;
-        overflow-y: auto;
-    }
-} */
 </style>

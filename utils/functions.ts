@@ -3,25 +3,20 @@ import { ref, computed } from "vue";
 import { APP_SEGMENTS } from "./api";
 import axios from "axios";
 
-export function getProductLink(id: number, name: string, model_number: string, main_second_parent_cat: string) {
-  const firstPart = main_second_parent_cat?.split("/")[0];
-  // Replace spaces with dashes
-  let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedName = transformedName.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedName = transformedName.replace(/^-+|-+$/g, "");
-  // Convert to lowercase
-  transformedName = transformedName.toLowerCase();
+export function getProductLink(product: any = {}): string {
+  if (!product) return `/${APP_SEGMENTS[0].slug}`;
 
-  let transformedModelNumber = model_number
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedModelNumber = transformedModelNumber.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedModelNumber = transformedModelNumber.replace(/^-+|-+$/g, "");
+  const { id, name, model_number, categories_json: categories } = product;
+
+  const firstPart = APP_SEGMENTS.find((item) =>
+    [item.slug, ...(item.slugs || [])].includes(
+      categories?.[0]?.parent_name_with_slashes?.split("/")[0]
+    )
+  )?.slug;
+
+  // Replace spaces with dashes
+  const transformedName = transformName(name);
+  const transformedModelNumber = transformName(model_number);
 
   return firstPart
     ? `/${firstPart}/product/${id}/${transformedName}-${transformedModelNumber}`
@@ -50,18 +45,28 @@ export function addToCart(product: any) {
   }
 }
 
-export const getCategoryLink = (id: number, name: string, page?: string): string => {
+export const getCategoryLink = (
+  id: number,
+  name: string,
+  page?: string
+): string => {
   const route = useRoute();
 
-  const segment = APP_SEGMENTS.find((item) => item.slug === route.params.segment);
+  const segment = APP_SEGMENTS.find(
+    (item) => item.slug === route.params.segment
+  );
 
   const transformedName = transformName(name);
 
   if (page) {
-    return segment ? `/${segment.slug}/${id}/${transformedName}/page/${page}` : `/product/${id}/${transformedName}/page/${page}`;
+    return segment
+      ? `/${segment.slug}/${id}/${transformedName}/page/${page}`
+      : `/product/${id}/${transformedName}/page/${page}`;
   }
 
-  return segment ? `/${segment.slug}/${id}/${transformedName}` : `/product/${id}/${transformedName}`;
+  return segment
+    ? `/${segment.slug}/${id}/${transformedName}`
+    : `/product/${id}/${transformedName}`;
 };
 
 const transformName = (name: string): string => {
@@ -109,22 +114,22 @@ export async function generateSolutionRoutes() {
   console.log(`Total Segments to Process: ${APP_SEGMENTS.length}`);
 
   for (const [index, segment] of APP_SEGMENTS.entries()) {
-    console.log(`\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name}`);
+    console.log(
+      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name
+      }`
+    );
 
     try {
       console.log(`Fetching solutions for segment: ${segment.id}`);
-      const response = await axios.get(
-        `/api/get-solutions/${segment.id}`,
-        {
-          baseURL: url,
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          withCredentials: true,
-          withXSRFToken: true,
-        }
-      );
+      const response = await axios.get(`/api/get-solutions/${segment.id}`, {
+        baseURL: url,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        withCredentials: true,
+        withXSRFToken: true,
+      });
 
       const data = response.data.data;
       console.log(`Received ${data.length} solutions for ${segment.name}`);
@@ -161,7 +166,10 @@ export async function generateCategoryRoutes() {
   console.log(`Total Segments to Process: ${APP_SEGMENTS.length}`);
 
   for (const [index, segment] of APP_SEGMENTS.entries()) {
-    console.log(`\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name}`);
+    console.log(
+      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name
+      }`
+    );
 
     try {
       console.log(`Fetching categories for segment: ${segment.id}`);

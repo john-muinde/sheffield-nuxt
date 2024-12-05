@@ -47,8 +47,7 @@
                       <NuxtLink :to="getBlogLink(post.id, post.name)">
                         <NuxtImg
                           :src="assets(post.main_image_path)"
-                          :alt="product.name"
-                          preset="cover"
+                          :alt="post.name"
                           format="webp"
                           quality="80"
                           loading="lazy"

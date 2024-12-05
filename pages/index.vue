@@ -40,16 +40,7 @@
                   </div>
 
                   <li v-for="result in results" v-else :key="result.id">
-                    <NuxtLink
-                      :to="
-                        getProductLink(
-                          result.id,
-                          result.name,
-                          result.model_number,
-                          result.categories_json[0].parent_name_with_slashes
-                        )
-                      "
-                    >
+                    <NuxtLink :to="getProductLink(result)">
                       <img
                         style="display: inline"
                         width="28"
@@ -120,16 +111,7 @@
                 />
                 <ul v-if="showResults" class="">
                   <li v-for="result in results" :key="result.id">
-                    <NuxtLink
-                      :to="
-                        getProductLink(
-                          result.id,
-                          result.name,
-                          result.model_number,
-                          result.categories_json[0].parent_name_with_slashes
-                        )
-                      "
-                    >
+                    <NuxtLink :to="getProductLink(result)">
                       <img
                         style="display: inline"
                         width="28"
@@ -474,7 +456,8 @@ const search = async () => {
     showResults.value = true;
     searchLoading.value = true;
     try {
-      const response = await api.get("/api/product_search" + `/${query.value}`);
+      const response = await api.get(`/api/product_search/${query.value}`);
+      console.log(response.data);
       results.value = response.data;
       showResults.value = true;
     } catch (error) {

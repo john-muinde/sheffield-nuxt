@@ -22,7 +22,21 @@
     <!-- End .page-header -->
     <div class="page-content">
       <div class="container">
-        <div class="row">
+        <LoadingData v-if="loading && !solutionCategories.length" />
+        <NoSolutionData
+          v-if="
+            (!solutionCategories.length &&
+              !solutionCategoriesList.length &&
+              loading == false) ||
+            !pageSegment?.active
+          "
+        />
+        <div
+          v-show="
+            (!loading && pageSegment?.active) || solutionCategories.length
+          "
+          class="row"
+        >
           <div class="col-lg-10">
             <!-- End .toolbox -->
             <div class="products mb-3">
@@ -71,15 +85,7 @@
                   <div class="product product-7 text-center">
                     <figure class="product-media">
                       <!-- <span class="product-label label-new">New</span>  -->
-                      <NuxtLink
-                        :to="
-                          getProductLink(
-                            product.id,
-                            product.name,
-                            product.model_number
-                          )
-                        "
-                      >
+                      <NuxtLink :to="getProductLink(product)">
                         <NuxtImg
                           :src="assets(product.main_image_path)"
                           :alt="product.name"
@@ -105,29 +111,13 @@
                     <!-- End .product-media -->
                     <div class="product-body">
                       <div class="product-cat">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number
-                            )
-                          "
-                        >
+                        <NuxtLink :to="getProductLink(product)">
                           {{ product.product_brand?.name }}
                         </NuxtLink>
                       </div>
                       <!-- End .product-cat -->
                       <h3 class="product-title">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number
-                            )
-                          "
-                        >
+                        <NuxtLink :to="getProductLink(product)">
                           {{ product.name }}
                         </NuxtLink>
                       </h3>
@@ -251,7 +241,7 @@ const slug = Array.isArray(route.params.slug)
 const category = slug[0];
 const page = slug[2];
 
-const { api } = useAxios();
+const { api, loading } = useAxios();
 
 const title = ref(
   `${capitalizeMainWords(segment)} - ${capitalizeMainWords(category)}`
@@ -291,10 +281,7 @@ const fetchSolutionCategories = async () => {
     });
     solutionCategories.value = response.data.data;
     solutionCategoriesList.value = response.data.data.product_categories_json;
-
-    //
-
-    //useMeta({ title: solutionCategories.value.name + " | Cold Storage Solution" });
+    console.log(solutionCategoriesList.value);
   } catch (error) {
     console.error(error);
   }
@@ -332,11 +319,6 @@ function handleCheckboxChange(categoryId) {
   }
 }
 
-// Determine the total number of pages
-const totalPages = computed(() => {
-  return Math.ceil(totalProducts.value / perPage.value);
-});
-
 // Displayed products based on the current page
 const displayedProducts = ref([]);
 
@@ -349,46 +331,9 @@ const updateDisplayedProducts = () => {
   );
 };
 
-const isInteger = (value) => {
-  return Number.isInteger(value);
-};
-
-// Generate the page links
-const generatePageLinks = computed(() => {
-  const pageLinks = [];
-  const maxVisiblePages = 5; // Maximum number of visible page links
-
-  // Add previous link
-  if (currentPage.value > 1) {
-    pageLinks.push("Prev");
-  }
-
-  // Add current page and surrounding pages
-  let startPage = Math.max(
-    1,
-    currentPage.value - Math.floor(maxVisiblePages / 2)
-  );
-  let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages.value);
-
-  if (endPage - startPage < maxVisiblePages - 1) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
-
-  for (let page = startPage; page <= endPage; page++) {
-    pageLinks.push(page);
-  }
-
-  // Add next link
-  if (currentPage.value < totalPages.value) {
-    pageLinks.push("Next");
-  }
-
-  return pageLinks;
-});
-
 // Initial fetch of products
 onMounted(() => {
-  //fetchProducts();
+  loading.value = true;
   fetchSolutionCategories();
   fetchSolutionCategoryProducts();
 });
@@ -397,8 +342,6 @@ onMounted(() => {
 watch(products, updateDisplayedProducts);
 
 watchEffect(() => {
-  const params = route.params; // Access the route parameters
-  const query = route.query; // Access the query parameters
 
   if (id !== "" && solution_id.value !== id) {
     currentPage.value = 1;

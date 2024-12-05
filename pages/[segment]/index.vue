@@ -2,7 +2,8 @@
   <div class="page-wrapper">
     <main class="main">
       <div class="container" style="margin-top: 1px">
-        <div class="row cat-banner-row">
+        <LoadingData v-if="loading" />
+        <div v-else class="row cat-banner-row">
           <div class="col-xl-2 col-xxl-2 slide-from-right">
             <div class="cat-banner row no-gutters">
               <div class="col-sm-12 col-xl-12 col-xxl-12">
@@ -63,7 +64,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from "vue";
 
-const { api } = useAxios();
+const { api, loading } = useAxios();
 const pageSegment = ref(null);
 
 const route = useRoute();
@@ -103,7 +104,7 @@ const getSolutionLink = (id, name) => {
 };
 
 onMounted(async () => {
-  //fetchShowrooms();
+  loading.value = true;
   fetchMainSolutions();
   await nextTick();
 });

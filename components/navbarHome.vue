@@ -29,16 +29,7 @@
                 />
                 <ul v-if="showResults" class="">
                   <li v-for="result in results" :key="result.id">
-                    <NuxtLink
-                      :to="
-                        getProductLink(
-                          result.id,
-                          result.name,
-                          result.model_number,
-                          result.categories_json[0].parent_name_with_slashes
-                        )
-                      "
-                    >
+                    <NuxtLink :to="getProductLink(result)">
                       <img
                         style="display: inline"
                         width="28"
@@ -123,16 +114,7 @@
                 />
                 <ul v-if="showResults" class="">
                   <li v-for="result in results" :key="result.id">
-                    <NuxtLink
-                      :to="
-                        getProductLink(
-                          result.id,
-                          result.name,
-                          result.model_number,
-                          result.categories_json[0].parent_name_with_slashes
-                        )
-                      "
-                    >
+                    <NuxtLink :to="getProductLink(result)">
                       <img
                         style="display: inline"
                         width="28"

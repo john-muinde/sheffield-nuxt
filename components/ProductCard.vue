@@ -7,7 +7,7 @@
     <!-- Product Image with loading skeleton -->
     <div class="product-image-container">
       <NuxtLink
-        :to="getProductLink(product.id, product.name, product.model_number)"
+        :to="getProductLink(product)"
         class="d-flex justify-content-center align-items-center mt-2"
       >
         <div v-if="!imageLoaded" class="image-skeleton"></div>

@@ -22,18 +22,7 @@
             :key="item.id"
             class="flex items-center justify-between bg-white shadow-sm border border-gray-100 p-4 rounded-lg hover:shadow-md transition-all duration-300"
           >
-            <NuxtLink
-              :to="
-                getProductLink(
-                  item.id,
-                  item.name,
-                  item.model_number,
-                  item.categories_json
-                    ? item.categories_json[0]?.parent_name_with_slashes
-                    : ''
-                )
-              "
-            >
+            <NuxtLink :to="getProductLink(item)">
               <div class="flex items-center space-x-4">
                 <img
                   :src="assets(item.main_image_path)"

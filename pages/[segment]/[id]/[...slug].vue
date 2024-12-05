@@ -20,7 +20,14 @@
       </div>
     </nav>
     <!-- End .page-header -->
-    <div class="page-content">
+    <LoadingData v-if="loading && !products.length" />
+    <NoSolutionData
+      v-if="(!products.length || !pageSegment?.active) && loading == false"
+    />
+    <div
+      v-show="(!loading && pageSegment?.active) || products.length"
+      class="page-content"
+    >
       <div class="container">
         <div class="row">
           <div class="col-lg-10">
@@ -57,38 +64,31 @@
               </div>
               <!-- End .toolbox-right -->
             </div>
-            <!-- End .toolbox -->
-            <div class="products mb-3 products-section">
-              <div class="row">
-                <div
-                  v-for="product in displayedProducts"
-                  :key="product.id"
-                  class="col-6 col-md-3 col-lg-2 col-xl-2"
-                >
-                  <div class="product product-7 text-center">
-                    <figure class="product-media">
-                      <!-- <span class="product-label label-new">New</span>  -->
-                      <NuxtLink
-                        :to="
-                          getProductLink(
-                            product.id,
-                            product.name,
-                            product.model_number,
-                            the_category.name
-                          )
-                        "
-                      >
-                        <NuxtImg
-                          :src="assets(product.main_image_path)"
-                          :alt="product.name"
-                          format="webp"
-                          quality="80"
-                          loading="lazy"
-                          class="w-full h-auto object-cover product-image"
-                        />
-                      </NuxtLink>
-                      <div class="product-action-vertical">
-                        <!-- <a
+            <div class="main-content">
+              <!-- End .toolbox -->
+              <LoadingData v-if="loading && products.length" />
+              <div v-if="!loading" class="products mb-3 products-section">
+                <div class="row">
+                  <div
+                    v-for="product in displayedProducts"
+                    :key="product.id"
+                    class="col-6 col-md-3 col-lg-2 col-xl-2"
+                  >
+                    <div class="product product-7 text-center">
+                      <figure class="product-media">
+                        <!-- <span class="product-label label-new">New</span>  -->
+                        <NuxtLink :to="getProductLink(product)">
+                          <NuxtImg
+                            :src="assets(product.main_image_path)"
+                            :alt="product.name"
+                            format="webp"
+                            quality="80"
+                            loading="lazy"
+                            class="w-full h-auto object-cover product-image"
+                          />
+                        </NuxtLink>
+                        <div class="product-action-vertical">
+                          <!-- <a
                                        href="#"
                                        class="btn-product-icon btn-wishlist btn-expandable" ><span>add to wishlist</span></a
                                        > <a
@@ -97,133 +97,119 @@
                                        href="#"
                                        class="btn-product-icon btn-compare" title="Compare" ><span>Compare</span></a
                                        > -->
+                        </div>
+                        <!-- End .product-action-vertical -->
+                        <div class="product-action">
+                          <button
+                            type="button"
+                            class="btn-product btn-cart"
+                            @click="addToCart(product)"
+                          >
+                            <span>Add to Cart</span>
+                          </button>
+                        </div>
+                        <!-- End .product-action -->
+                      </figure>
+                      <!-- End .product-media -->
+                      <div class="product-body">
+                        <div class="product-cat">
+                          <NuxtLink :to="getProductLink(product)">
+                            {{ product.product_brand?.name }}
+                          </NuxtLink>
+                        </div>
+                        <!-- End .product-cat -->
+                        <h3 class="product-title">
+                          <NuxtLink :to="getProductLink(product)">
+                            {{ product.name }}
+                          </NuxtLink>
+                        </h3>
+                        <div class="ratings-container"></div>
                       </div>
-                      <!-- End .product-action-vertical -->
-                      <div class="product-action">
-                        <button
-                          type="button"
-                          class="btn-product btn-cart"
-                          @click="addToCart(product)"
-                        >
-                          <span>Add to Cart</span>
-                        </button>
-                      </div>
-                      <!-- End .product-action -->
-                    </figure>
-                    <!-- End .product-media -->
-                    <div class="product-body">
-                      <div class="product-cat">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number,
-                              the_category.name
-                            )
-                          "
-                        >
-                          {{ product.product_brand.name }}
-                        </NuxtLink>
-                      </div>
-                      <!-- End .product-cat -->
-                      <h3 class="product-title">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number,
-                              the_category.name
-                            )
-                          "
-                        >
-                          {{ product.name }}
-                        </NuxtLink>
-                      </h3>
-                      <div class="ratings-container"></div>
+                      <!-- End .product-body -->
                     </div>
-                    <!-- End .product-body -->
+                    <!-- End .product -->
                   </div>
-                  <!-- End .product -->
                 </div>
+                <!-- End .row -->
               </div>
-              <!-- End .row -->
-            </div>
-            <!-- End .products -->
+              <!-- End .products -->
 
-            <nav aria-label="Page navigation">
-              <ul class="pagination justify-content-center">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <NuxtLink
-                    class="page-link page-link-prev"
-                    :to="
-                      getCategoryLink(
-                        the_category.id,
-                        the_category.name,
-                        currentPage - 1
-                      )
-                    "
-                    aria-label="Previous"
-                    tabindex="-1"
-                    aria-disabled="true"
-                    @click="goToPreviousPage"
+              <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                  <li
+                    class="page-item"
+                    :class="{ disabled: currentPage === 1 }"
                   >
-                    <span aria-hidden="true"
-                      ><i class="icon-long-arrow-left"></i
-                    ></span>
-                    Prev
-                  </NuxtLink>
-                </li>
-                <li
-                  v-for="page in generatePageLinks"
-                  :key="page"
-                  class="page-item"
-                  :class="{ active: page === currentPage }"
-                >
-                  <template v-if="isInteger(page)">
                     <NuxtLink
-                      class="page-link"
+                      class="page-link page-link-prev"
                       :to="
                         getCategoryLink(
                           the_category.id,
                           the_category.name,
-                          page
+                          currentPage - 1
                         )
                       "
-                      @click="goToThisPage(page)"
+                      aria-label="Previous"
+                      tabindex="-1"
+                      aria-disabled="true"
+                      @click="goToPreviousPage"
                     >
-                      {{ page }}
+                      <span aria-hidden="true"
+                        ><i class="icon-long-arrow-left"></i
+                      ></span>
+                      Prev
                     </NuxtLink>
-                  </template>
-                </li>
-                <li class="page-item-total">of {{ totalPages }}</li>
-                <li
-                  class="page-item"
-                  :class="{
-                    disabled: currentPage === totalPages,
-                  }"
-                >
-                  <NuxtLink
-                    class="page-link page-link-next"
-                    :to="
-                      getCategoryLink(
-                        the_category.id,
-                        the_category.name,
-                        currentPage + 1
-                      )
-                    "
-                    aria-label="Next"
-                    @click="goToNextPage"
+                  </li>
+                  <li
+                    v-for="page in generatePageLinks"
+                    :key="page"
+                    class="page-item"
+                    :class="{ active: page === currentPage }"
                   >
-                    Next
-                    <span aria-hidden="true"
-                      ><i class="icon-long-arrow-right"></i
-                    ></span>
-                  </NuxtLink>
-                </li>
-              </ul>
-            </nav>
+                    <template v-if="isInteger(page)">
+                      <NuxtLink
+                        class="page-link"
+                        :to="
+                          getCategoryLink(
+                            the_category.id,
+                            the_category.name,
+                            page
+                          )
+                        "
+                        @click="goToThisPage(page)"
+                      >
+                        {{ page }}
+                      </NuxtLink>
+                    </template>
+                  </li>
+                  <li class="page-item-total">of {{ totalPages }}</li>
+                  <li
+                    class="page-item"
+                    :class="{
+                      disabled: currentPage === totalPages,
+                    }"
+                  >
+                    <NuxtLink
+                      class="page-link page-link-next"
+                      :to="
+                        getCategoryLink(
+                          the_category.id,
+                          the_category.name,
+                          currentPage + 1
+                        )
+                      "
+                      aria-label="Next"
+                      @click="goToNextPage"
+                    >
+                      Next
+                      <span aria-hidden="true"
+                        ><i class="icon-long-arrow-right"></i
+                      ></span>
+                    </NuxtLink>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
           <!-- End .col-lg-9 -->
           <aside class="col-lg-2 order-lg-first">
@@ -393,7 +379,7 @@ const slug = Array.isArray(route.params.slug)
 const category = slug[0];
 const page = slug[2];
 
-const { api } = useAxios();
+const { api, loading } = useAxios();
 
 const title = ref(
   `${capitalizeMainWords(segment)} - ${capitalizeMainWords(category)}`

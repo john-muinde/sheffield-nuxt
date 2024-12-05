@@ -4,7 +4,10 @@
     <Navbar v-if="!isHomePage" />
 
     <!-- Menu components -->
-    <TopMenu v-if="pageSegment != null" :segment="pageSegment" />
+    <TopMenu
+      v-if="pageSegment != null && !$route.path.includes('product')"
+      :segment="pageSegment"
+    />
 
     <!-- Main content slot -->
     <slot />
@@ -206,7 +209,9 @@ const isHomePage = computed(() => route.path === "/");
 onMounted(() => {
   const trackPixel = async () => {
     let trackingId = localStorage.getItem("pixel-tracker");
-    localStorage.setItem("promotionActive", "true");
+    if (!localStorage.getItem("promotionActive")) {
+      localStorage.setItem("promotionActive", "true");
+    }
 
     if (!trackingId) {
       trackingId = generateRandomString(30);

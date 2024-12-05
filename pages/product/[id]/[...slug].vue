@@ -1,223 +1,253 @@
+<!-- eslint-disable no-console -->
 <template>
   <main class="main">
     <nav aria-label="breadcrumb" class="breadcrumb-nav border-0 mb-0">
       <div class="container d-flex align-items-center">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
-            <NuxtLink to="/"> HOME </NuxtLink>
+            <router-link to="/"> HOME </router-link>
+          </li>
+
+          <li
+            v-if="
+              product.categories_json &&
+              product.categories_json.length > 0 &&
+              product.categories_json[0].parent_name_with_slashes
+            "
+            class="breadcrumb-item"
+          >
+            <router-link
+              :to="
+                getCategoryMainLinkTop(
+                  product.categories_json[0].parent_name_with_slashes
+                )
+              "
+            >
+              {{
+                getCategoryMainLinkTopName(
+                  product.categories_json[0].parent_name_with_slashes
+                )
+              }}
+            </router-link>
           </li>
 
           <li class="breadcrumb-item">
-            <NuxtLink :to="`/${pageSegment.slug}`">
-              {{ pageSegment.name.toUpperCase() }}
-            </NuxtLink>
+            <router-link
+              v-for="category in product.categories_json"
+              :key="category.id"
+              :to="
+                getCategoryLink(
+                  category.id,
+                  category.name,
+                  1,
+                  product.categories_json[0].parent_name_with_slashes
+                )
+              "
+            >
+              {{ category.name }}
+            </router-link>
           </li>
 
           <li class="breadcrumb-item active" aria-current="page">
-            {{ solutionCategories.name }}
+            {{ product.name }}
           </li>
         </ol>
       </div>
     </nav>
-    <!-- End .page-header -->
-    <div class="page-content">
+    <div class="page-content mt-0">
       <div class="container">
-        <div class="row">
-          <div class="col-lg-10">
-            <!-- End .toolbox -->
-            <div class="products mb-3">
-              <div class="row">
-                <div class="col-lg-12 col-md-12 mt-1">
-                  <div id="accordion-1" class="accordion" style="width: 100%">
-                    <div class="card">
-                      <div id="heading-2" class="card-header">
-                        <h2 class="card-title">
-                          <a
-                            class="collapsed"
-                            role="button"
-                            data-toggle="collapse"
-                            href="#collapse-2"
-                            aria-expanded="false"
-                            aria-controls="collapse-2"
-                          >
-                            {{ solutionCategories.name }}
-                            - SOLUTION
-                          </a>
-                        </h2>
-                      </div>
-                      <!-- End .card-header -->
-                      <div
-                        id="collapse-2"
-                        class="collapse"
-                        aria-labelledby="heading-2"
-                        data-parent="#accordion-1"
-                        style=""
-                      >
-                        <div class="card-body">
-                          <span v-html="solutionCategories.description"></span>
-                        </div>
-                        <!-- End .card-body -->
-                      </div>
-                      <!-- End .collapse -->
-                    </div>
-                  </div>
+        <LoadingData v-if="loading" />
+        <div v-else class="product-details-top">
+          <div class="row">
+            <div class="col-md-5">
+              <div class="product-gallery">
+                <figure class="product-main-image">
+                  <NuxtImg
+                    id="product-zoom"
+                    :src="assets(mainImage)"
+                    :alt="product.name"
+                    style="
+                      display: grid;
+                      max-width: 100%;
+                      max-height: 350px;
+                      min-height: 350px;
+                      height: auto;
+                      margin-left: auto;
+                      margin-right: auto;
+                      width: auto;
+                    "
+                    @click="showMultiple"
+                  />
+
+                  <a
+                    id="btn-product-gallery"
+                    href="#"
+                    class="btn-product-gallery"
+                    @click="showMultiple"
+                  >
+                    <i class="icon-arrows"></i>
+                  </a>
+                </figure>
+                <!-- End .product-main-image -->
+
+                <div>
+                  <!-- all props & events -->
+                  <vue-easy-lightbox
+                    esc-disabled
+                    :visible="visible"
+                    :imgs="imgs"
+                    :index="indexRef"
+                    @hide="handleHide"
+                  />
                 </div>
 
                 <div
-                  v-for="product in solutionCategoryProducts"
-                  :key="product.id"
-                  class="col-6 col-md-2 col-lg-2 col-xl-2 image-container"
+                  id="product-zoom-gallery"
+                  class="product-image-gallery max-col-6"
                 >
-                  <div class="product product-7 text-center">
-                    <figure class="product-media">
-                      <!-- <span class="product-label label-new">New</span>  -->
-                      <NuxtLink
-                        :to="
-                          getProductLink(
-                            product.id,
-                            product.name,
-                            product.model_number
-                          )
-                        "
-                      >
-                        <NuxtImg
-                          :src="assets(product.main_image_path)"
-                          :alt="product.name"
-                          format="webp"
-                          quality="80"
-                          loading="lazy"
-                          class="w-full h-auto object-cover product-image"
-                        />
-                      </NuxtLink>
-                      <div class="product-action-vertical"></div>
-                      <!-- End .product-action-vertical -->
-                      <div class="product-action" :disabled="!product">
-                        <button
-                          type="button"
-                          class="btn-product btn-cart"
-                          @click="addToCart(product)"
-                        >
-                          <span>Add to Cart</span>
-                        </button>
-                      </div>
-                      <!-- End .product-action -->
-                    </figure>
-                    <!-- End .product-media -->
-                    <div class="product-body">
-                      <div class="product-cat">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number
-                            )
-                          "
-                        >
-                          {{ product.product_brand.name }}
-                        </NuxtLink>
-                      </div>
-                      <!-- End .product-cat -->
-                      <h3 class="product-title">
-                        <NuxtLink
-                          :to="
-                            getProductLink(
-                              product.id,
-                              product.name,
-                              product.model_number
-                            )
-                          "
-                        >
-                          {{ product.name }}
-                        </NuxtLink>
-                      </h3>
-                      <div class="ratings-container"></div>
-                    </div>
-                    <!-- End .product-body -->
-                  </div>
-                  <!-- End .product -->
-                </div>
-
-                <!-- End .col-sm-6 col-lg-4 col-xl-3 -->
-              </div>
-              <!-- End .row -->
-            </div>
-            <!-- End .products -->
-          </div>
-          <!-- End .col-lg-9 -->
-
-          <aside class="col-lg-2 order-lg-first mt-2">
-            <div class="sidebar sidebar-shop sidebar-shop-solution">
-              <!-- End .widget widget-clean -->
-              <div
-                v-if="solutionCategoriesList.length"
-                class="widget widget-collapsible widget-categories"
-              >
-                <h3 class="widget-title">
                   <a
-                    data-toggle="collapse"
-                    href="#widget-1"
-                    role="button"
-                    aria-expanded="true"
-                    aria-controls="widget-1"
+                    v-for="(image, index) in product.product_images"
+                    :key="image.id"
+                    :class="[
+                      'product-gallery-item',
+                      { active: index === activeIndex },
+                    ]"
+                    :data-image="assets(image.name)"
+                    :data-zoom-image="assets(image.name)"
+                    @mouseover="changeMainImage(image.name, index)"
                   >
-                    Product Categories
+                    <img :src="assets(image.name)" :alt="product.name" />
                   </a>
-                </h3>
-                <!-- End .widget-title -->
-                <div id="widget-1" class="show">
-                  <div class="widget-body">
-                    <div class="filter-items filter-items-count">
-                      <div
-                        v-for="category in solutionCategoriesList"
-                        :key="category.id"
-                        class="filter-item"
-                      >
-                        <div class="custom-control custom-checkbox">
-                          <input
-                            :id="'cat-' + category.id"
-                            type="checkbox"
-                            class="custom-control-input"
-                            :value="category.id"
-                            @change="handleCheckboxChange(category.id)"
-                          />
-                          <label
-                            class="custom-control-label"
-                            :for="'cat-' + category.id"
-                            >{{ category.name }}</label
-                          >
-                        </div>
-                      </div>
-                    </div>
-                    <!-- End .filter-items -->
-                  </div>
-                  <!-- End .widget-body -->
                 </div>
-                <!-- End .collapse -->
+                <!-- End .product-image-gallery -->
               </div>
-
-              <div class="widget widget-collapsible">
-                <div id="widget-4" class="show">
-                  <div class="widget-body">
-                    <NuxtImg
-                      :src="assets(solutionCategories.main_image_path)"
-                      format="webp"
-                      quality="80"
-                      loading="lazy"
-                      class="w-full h-auto object-cover product-image"
-                    />
-                    <!-- End .filter-items -->
-                  </div>
-                  <!-- End .widget-body -->
-                </div>
-                <!-- End .collapse -->
-              </div>
+              <!-- End .product-gallery -->
             </div>
-            <!-- End .sidebar sidebar-shop -->
-          </aside>
-          <!-- End .col-lg-3 -->
+            <!-- End .col-lg-7 -->
+
+            <div class="col-md-7">
+              <div class="product-details">
+                <h3 class="header text-primary" style="">
+                  {{ product.name }}
+                </h3>
+                <div
+                  class="short_description"
+                  v-html="product.short_description"
+                ></div>
+                <p class="">
+                  <span>Brand : </span>
+
+                  {{ product.brand_name }}
+                </p>
+                <span>Category : </span>
+
+                <router-link
+                  v-for="category in product.categories_json"
+                  :key="category.id"
+                  style="font-weight: 500"
+                  :to="
+                    getCategoryLink(
+                      category.id,
+                      category.name,
+                      1,
+                      product.categories_json[0].parent_name_with_slashes
+                    )
+                  "
+                >
+                  {{ category.name }}
+                </router-link>
+
+                <div v-if="qrCodeDataUrl" class="qr_section">
+                  <small class="mb-1">Product QR</small>
+                  <img
+                    style="width: 120px"
+                    :src="qrCodeDataUrl"
+                    alt="QR Code"
+                  />
+                </div>
+
+                <div
+                  class="product-details-action product-details-sheffield mt-2"
+                >
+                  <button
+                    type="button"
+                    class="btn-product btn-cart"
+                    :class="{ 'disabled cursor-not-allowed': !product.id }"
+                    :disabled="!product.id"
+                    @click="addToCart(product)"
+                  >
+                    <span>Add to Cart</span>
+                  </button>
+                </div>
+
+                <div class="product-details-tab mt-2">
+                  <ul
+                    class="nav nav-pills justify-content-left mobile-description"
+                    role="tablist"
+                  >
+                    <li class="nav-item">
+                      <a
+                        id="product-desc-link"
+                        class="nav-link active"
+                        data-toggle="tab"
+                        href="#product-desc-tab"
+                        role="tab"
+                        aria-controls="product-desc-tab"
+                        aria-selected="false"
+                        >Description</a
+                      >
+                    </li>
+                    <li class="nav-item">
+                      <a
+                        id="product-info-link"
+                        class="nav-link"
+                        data-toggle="tab"
+                        href="#product-info-tab"
+                        role="tab"
+                        aria-controls="product-info-tab"
+                        aria-selected="false"
+                        >Technical Specifications</a
+                      >
+                    </li>
+                  </ul>
+                  <div class="tab-content">
+                    <div
+                      id="product-desc-tab"
+                      class="tab-pane fade active show"
+                      role="tabpanel"
+                      aria-labelledby="product-desc-link"
+                    >
+                      <div class="product-desc-content">
+                        <div v-html="product.description"></div>
+                      </div>
+                      <!-- End .product-desc-content -->
+                    </div>
+                    <!-- .End .tab-pane -->
+                    <div
+                      id="product-info-tab"
+                      class="tab-pane fade"
+                      role="tabpanel"
+                      aria-labelledby="product-info-link"
+                    >
+                      <div class="product-desc-content">
+                        <div v-html="product.technical_specification"></div>
+                      </div>
+                      <!-- End .product-desc-content -->
+                    </div>
+                    <!-- .End .tab-pane -->
+                    <!-- .End .tab-pane -->
+                  </div>
+                  <!-- End .tab-content -->
+                </div>
+                <!-- End .product-details-footer -->
+              </div>
+              <!-- End .product-details -->
+            </div>
+            <!-- End .col-md-6 -->
+          </div>
+          <!-- End .row -->
         </div>
-        <!-- End .row -->
+        <!-- End .product-details-top -->
       </div>
       <!-- End .container -->
     </div>
@@ -226,196 +256,125 @@
 </template>
 
 <script setup>
-definePageMeta({
-  validate: async (route) => {
-    return (
-      APP_SEGMENTS.some((item) => item.slug === route.params.segment) &&
-      route.params.id &&
-      Number.isInteger(Number(route.params.id))
-    );
-  },
-});
+import { ref, watch, onMounted, watchEffect } from "vue";
+import VueEasyLightbox from "vue-easy-lightbox";
+import QRCode from "qrcode-generator";
 
-import { ref, computed, watch, onMounted, watchEffect } from "vue";
 const route = useRoute();
+const { api, loading } = useAxios();
+const title = ref("");
 
-const pageSegment = computed(() => {
-  return APP_SEGMENTS.find((item) => item.slug === route.params.segment);
-});
+const product = ref([]);
+const product_id = ref(route.params.id ? parseInt(route.params.id) : 1);
 
-const { segment, id } = route.params;
-const slug = Array.isArray(route.params.slug)
-  ? route.params.slug
-  : [route.params.slug];
-
-const category = slug[0];
-const page = slug[2];
-
-const { api } = useAxios();
-
-const title = ref(
-  `${capitalizeMainWords(segment)} - ${capitalizeMainWords(category)}`
-);
+const formatTextHeader = (text) => {
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
 
 useHead({
   title: title,
   meta: [
     {
       name: "description",
-      content:
-        "We offer state of the art commercial cold room equipment at Sheffield africa Ltd",
-    },
-    {
-      name: "keywords",
-      content: "Cold room equipment",
+      content: "Product details",
     },
   ],
 });
 
-const currentPage = ref(page ? parseInt(page) : 1);
-const perPage = ref(12);
-const totalProducts = ref(0);
-const products = ref([]);
-const solution_id = ref(id ? parseInt(id) : 1);
-const solutionCategories = ref([]);
-const solutionCategoriesList = ref([]);
-
-const checkedCategoriesSolutions = ref([]);
-
-const fetchSolutionCategories = async () => {
+// Fetch products based on the current page
+const fetchProduct = async () => {
   try {
-    const response = await api.get("/api/get-solution-categories", {
+    const response = await api.get("/api/get-product", {
       params: {
-        solution_id: solution_id.value,
+        product_id: product_id.value,
       },
     });
-    solutionCategories.value = response.data.data;
-    solutionCategoriesList.value = response.data.data.product_categories_json;
+    product.value = response.data.data;
 
-    //
-
-    //useMeta({ title: solutionCategories.value.name + " | Cold Storage Solution" });
+    title.value = formatTextHeader(product.value.name);
   } catch (error) {
     console.error(error);
   }
 };
 
-const solutionCategoryProducts = ref([]);
+const imgs = ref([]);
 
-const fetchSolutionCategoryProducts = async () => {
-  const newCheckedCategoriesSolutions = {
-    [solution_id.value]:
-      checkedCategoriesSolutions.value[solution_id.value] || [],
-  };
-
-  try {
-    const response = await api.get("/api/get-solution-category-products", {
-      params: {
-        solution_id: solution_id.value,
-        checkedCategoriesSolutions: checkedCategoriesSolutions.value,
-      },
-    });
-    solutionCategoryProducts.value = response.data.products.data;
-
-    //
-  } catch (error) {
-    console.error(error);
-  }
+const showMultiple = async () => {
+  imgs.value = product.value.product_images.map((item) => assets(item.name));
+  show();
 };
 
-function handleCheckboxChange(categoryId) {
-  let mainCategoryId = solution_id.value;
-
-  if (!(mainCategoryId in checkedCategoriesSolutions.value)) {
-    checkedCategoriesSolutions.value[mainCategoryId] = [];
-  }
-
-  const categoryArray = checkedCategoriesSolutions.value[mainCategoryId];
-
-  if (categoryArray.includes(categoryId)) {
-    categoryArray.splice(categoryArray.indexOf(categoryId), 1);
-  } else {
-    categoryArray.push(categoryId);
-  }
-}
-
-// Determine the total number of pages
-const totalPages = computed(() => {
-  return Math.ceil(totalProducts.value / perPage.value);
-});
-
-// Displayed products based on the current page
-const displayedProducts = ref([]);
-
-// Update displayedProducts based on the current page and products
-const updateDisplayedProducts = () => {
-  const startIndex = 0;
-  displayedProducts.value = products.value.slice(
-    startIndex,
-    startIndex + perPage.value
-  );
+const visible = ref(false);
+const indexRef = ref(0);
+const show = () => {
+  indexRef.value = 2;
+  visible.value = true;
 };
 
-const isInteger = (value) => {
-  return Number.isInteger(value);
+const handleHide = () => {
+  visible.value = false;
 };
 
-// Generate the page links
-const generatePageLinks = computed(() => {
-  const pageLinks = [];
-  const maxVisiblePages = 5; // Maximum number of visible page links
+const getCategoryMainLinkTop = (name) => {
+  let parts = name.split("/");
+  parts = parts[0];
+  return "/" + parts;
+};
 
-  // Add previous link
-  if (currentPage.value > 1) {
-    pageLinks.push("Prev");
-  }
+const getCategoryMainLinkTopName = (name) => {
+  let parts = name.split("/");
+  parts = parts[0];
+  parts = parts.toUpperCase();
+  return parts;
+};
 
-  // Add current page and surrounding pages
-  let startPage = Math.max(
-    1,
-    currentPage.value - Math.floor(maxVisiblePages / 2)
-  );
-  let endPage = Math.min(startPage + maxVisiblePages - 1, totalPages.value);
+const qrCodeDataUrl = ref(null);
+const currentUrl = ref("");
 
-  if (endPage - startPage < maxVisiblePages - 1) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-  }
+const generateQRCode = (currentUrl) => {
+  // Clear previous QR code
+  qrCodeDataUrl.value = null;
 
-  for (let page = startPage; page <= endPage; page++) {
-    pageLinks.push(page);
-  }
+  // Generate new QR code
+  const typeNumber = 0;
+  const errorCorrectionLevel = "L";
+  const qr = QRCode(typeNumber, errorCorrectionLevel);
+  qr.addData(currentUrl.value);
+  qr.make();
 
-  // Add next link
-  if (currentPage.value < totalPages.value) {
-    pageLinks.push("Next");
-  }
-
-  return pageLinks;
-});
+  // Set QR code data URL
+  qrCodeDataUrl.value = qr.createDataURL();
+};
 
 // Initial fetch of products
 onMounted(() => {
-  //fetchProducts();
-  fetchSolutionCategories();
-  fetchSolutionCategoryProducts();
+  fetchProduct();
+  currentUrl.value = window.location.href;
+  generateQRCode(currentUrl);
 });
 
-// Watch for changes in the products and update displayedProducts
-watch(products, updateDisplayedProducts);
+const mainImage = ref("");
+const activeIndex = ref(0);
+
+const changeMainImage = (imageName, index) => {
+  mainImage.value = imageName;
+  activeIndex.value = index;
+};
+
+watch(product, () => {
+  if (product.value.product_images.length > 0) {
+    mainImage.value = product.value.product_images[0].name;
+  }
+});
 
 watchEffect(() => {
   const params = route.params; // Access the route parameters
-  const query = route.query; // Access the query parameters
 
-  if (id !== "" && solution_id.value !== id) {
-    currentPage.value = 1;
+  if (params.id !== "" && product_id.value !== params.id) {
+    product_id.value = params.id ? parseInt(params.id) : 1;
 
-    solution_id.value = id ? parseInt(id) : 1;
-
-    if (page !== "" && currentPage.value !== page) {
-      currentPage.value = page ? parseInt(page) : 1;
-    }
-    fetchSolutionCategoryProducts();
+    fetchProduct();
+    generateQRCode(currentUrl);
   }
 });
 </script>
@@ -424,13 +383,39 @@ watchEffect(() => {
 .product-item {
   margin-bottom: 20px;
 }
-
-.product-title a {
-  font-weight: 550 !important;
+.short_description p strong {
+  font-weight: 300 !important;
 }
 
-.sidebar-shop-solution .filter-items-count .filter-item {
-  padding-right: 0rem !important;
+.qr_section {
+  position: absolute;
+  right: 30px;
+  top: 40px;
+}
+
+.product-details .short_description {
+  width: 80%;
+}
+
+.product-details-sheffield .btn-cart {
+  color: #ffffff !important;
+}
+
+.product-details-sheffield .btn-cart:hover {
+  color: #ffffff !important;
+  background-color: #304296 !important;
+  border-color: #304296 !important;
+}
+
+.product-details-sheffield .btn-cart:focus {
+  color: #ffffff !important;
+  background-color: #c02434 !important;
+  border-color: #c02434 !important;
+}
+
+.product-details-sheffield .btn-cart:hover span,
+.product-details-sheffield .btn-cart:focus span {
+  color: #ffffff !important;
 }
 
 .swal2-popup.swal2-toast .swal2-title {
@@ -443,5 +428,29 @@ watchEffect(() => {
 
 .swal2-popup.swal2-toast .swal2-title {
   color: #ffffff;
+}
+
+@media only screen and (max-width: 768px) {
+  .header {
+    font-size: 18px;
+  }
+  .mobile-description {
+    display: block;
+  }
+  a.nav-item {
+    font-size: 68px;
+  }
+
+  .breadcrumb-item {
+    font-size: 12px;
+  }
+  .nav-link > a {
+    font-size: 1rem;
+  }
+
+  .product-details-tab .nav.nav-pills .nav-link {
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
 }
 </style>

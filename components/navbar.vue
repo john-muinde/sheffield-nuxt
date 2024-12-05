@@ -101,17 +101,7 @@
                           @click.self="hideResults"
                         >
                           <li v-for="result in results" :key="result.id">
-                            <NuxtLink
-                              :to="
-                                getProductLink(
-                                  result.id,
-                                  result.name,
-                                  result.model_number,
-                                  result.categories_json[0]
-                                    ?.parent_name_with_slashes
-                                )
-                              "
-                            >
+                            <NuxtLink :to="getProductLink(result)">
                               <img
                                 style="display: inline; height: 28px"
                                 :src="assets(result.main_image_path)"
@@ -368,29 +358,6 @@ const fetchCategories = () => {
 onMounted(() => {
   fetchCategories();
 });
-
-const getProductLink = (id, name, model_number, main_second_parent_cat) => {
-  const firstPart = main_second_parent_cat?.split("/")[0];
-  // Replace spaces with dashes
-  let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedName = transformedName.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedName = transformedName.replace(/^-+|-+$/g, "");
-  // Convert to lowercase
-  transformedName = transformedName.toLowerCase();
-
-  let transformedModelNumber = model_number
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedModelNumber = transformedModelNumber.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedModelNumber = transformedModelNumber.replace(/^-+|-+$/g, "");
-
-  return `/${firstPart}/product/${id}/${transformedName}-${transformedModelNumber}`;
-};
 
 const query = ref("");
 const results = ref([]);
