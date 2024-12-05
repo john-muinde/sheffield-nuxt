@@ -1,3 +1,5 @@
+import { generateSolutionRoutes, generateCategoryRoutes } from "./utils/functions"
+
 export default defineNuxtConfig({
   modules: [
     ['@pinia/nuxt', { disableVuex: true, autoImports: ['defineStore', 'acceptHMRUpdate'] }],
@@ -27,6 +29,17 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: false,
+      routes: await (async () => {
+        const [solutionRoutes, categoryRoutes] = await Promise.all([
+          generateSolutionRoutes(),
+          generateCategoryRoutes()
+        ])
+
+        return [
+          ...solutionRoutes,
+          ...categoryRoutes,
+        ]
+      })()
     }
   },
   postcss: {

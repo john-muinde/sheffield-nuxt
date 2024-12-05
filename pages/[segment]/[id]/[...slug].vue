@@ -475,11 +475,6 @@ function handleCheckboxChange(categoryId) {
   } else {
     categoryArray.push(categoryId);
   }
-
-  // const newCheckedCategories = {
-  //   [mainCategoryId]: checkedCategories.value[mainCategoryId] || [],
-  // };
-  // checkedCategories.value = newCheckedCategories;
 }
 
 function handleCheckboxBrandChange(categoryId) {
@@ -496,11 +491,6 @@ function handleCheckboxBrandChange(categoryId) {
   } else {
     brandArray.push(categoryId);
   }
-
-  // const newCheckedBrands = {
-  //   [mainCategoryId]: checkedBrands.value[mainCategoryId] || [],
-  // };
-  // checkedBrands.value = newCheckedBrands;
 }
 
 function resetSortValues() {
