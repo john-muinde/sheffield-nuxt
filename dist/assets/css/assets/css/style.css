@@ -12075,7 +12075,7 @@ a:focus {
     margin-bottom: 0.3rem;
 }
 
-.product-cat router-link {
+.product-cat NuxtLink {
     color: #21409a;
 }
 
