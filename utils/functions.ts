@@ -1,6 +1,7 @@
 import showToast from "./notification";
 import { ref, computed } from "vue";
 import { APP_SEGMENTS } from "./api";
+import axios from "axios";
 
 export function getProductLink(id: number, name: string, model_number: string, main_second_parent_cat: string) {
   const firstPart = main_second_parent_cat?.split("/")[0];
@@ -28,6 +29,7 @@ export function getProductLink(id: number, name: string, model_number: string, m
 }
 
 const isAdding = ref(false);
+const url = process.env.API_URL;
 
 export const addToCartText = computed(() => {
   return isAdding.value ? "Adding..." : "Add to Cart";
@@ -78,46 +80,84 @@ export function capitalizeMainWords(str: string) {
 // Function to generate solution routes
 export async function generateSolutionRoutes() {
   const routes: string[] = [];
+  console.log("🚀 Starting Solution Routes Generation");
+  console.log(`Base URL: ${url}`);
+  console.log(`Total Segments to Process: ${APP_SEGMENTS.length}`);
 
-  for (const segment of APP_SEGMENTS) {
+  for (const [index, segment] of APP_SEGMENTS.entries()) {
+    console.log(`\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name}`);
+
     try {
-      // Simulate your API call - you'll need to replace this with actual data fetching
-      const response = await fetch(
-        `https://sheffieldafrica.com/api/get-solutions/${segment.id}`
+      console.log(`Fetching solutions for segment: ${segment.id}`);
+      const response = await axios.get(
+        `/api/get-solutions/${segment.id}`,
+        {
+          baseURL: url,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          withCredentials: true,
+          withXSRFToken: true,
+        }
       );
-      const data = await response.json();
 
-      const solutionRoutes = data.data.map((solution: any) => {
+      const data = response.data.data;
+      console.log(`Received ${data.length} solutions for ${segment.name}`);
+
+      const solutionRoutes = data.map((solution: any) => {
         const transformedName = solution.name
           .toLowerCase()
           .replace(/[\s/]+/g, "-")
           .replace(/^-+|-+$/g, "");
 
-        return `/${segment.slug}/solutions/${solution.id}/${transformedName}`;
+        const route = `/${segment.slug}/solutions/${solution.id}/${transformedName}`;
+        console.log(`Generated Route: ${route}`);
+        return route;
       });
 
       routes.push(...solutionRoutes);
+      console.log(`✅ Successfully processed ${segment.name}`);
     } catch (error) {
-      console.error(`Error fetching solutions for ${segment.name}:`, error);
+      console.error(`❌ Error fetching solutions for ${segment.name}:`, error);
+      console.warn(`Continuing to next segment despite error...`);
     }
   }
 
+  console.log(`\n🏁 Solution Routes Generation Complete`);
+  console.log(`Total Routes Generated: ${routes.length}`);
   return routes;
-};
+}
 
 // Function to generate category routes
 export async function generateCategoryRoutes() {
   const routes: string[] = [];
+  console.log("🚀 Starting Category Routes Generation");
+  console.log(`Base URL: ${url}`);
+  console.log(`Total Segments to Process: ${APP_SEGMENTS.length}`);
 
-  for (const segment of APP_SEGMENTS) {
+  for (const [index, segment] of APP_SEGMENTS.entries()) {
+    console.log(`\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name}`);
+
     try {
-      // Simulate your API call - you'll need to replace this with actual data fetching
-      const response = await fetch(
-        `https://sheffieldafrica.com/api/get-main-categories/${segment.id}`
+      console.log(`Fetching categories for segment: ${segment.id}`);
+      const response = await axios.get(
+        `/api/get-main-categories/${segment.id}`,
+        {
+          baseURL: url,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          withCredentials: true,
+          withXSRFToken: true,
+        }
       );
-      const data = await response.json();
 
-      const categoryRoutes = data.data.map((category: any) => {
+      const data = response.data.data;
+      console.log(`Received ${data.length} categories for ${segment.name}`);
+
+      const categoryRoutes = data.map((category: any) => {
         let transformedName = category.name
           .replace(/ /g, "-")
           .replace(/\//g, "-")
@@ -125,14 +165,20 @@ export async function generateCategoryRoutes() {
           .replace(/^-+|-+$/g, "")
           .toLowerCase();
 
-        return `/${segment.slug}/${category.id}/${transformedName}`;
+        const route = `/${segment.slug}/${category.id}/${transformedName}`;
+        console.log(`Generated Route: ${route}`);
+        return route;
       });
 
       routes.push(...categoryRoutes);
+      console.log(`✅ Successfully processed ${segment.name}`);
     } catch (error) {
-      console.error(`Error fetching categories for ${segment.name}:`, error);
+      console.error(`❌ Error fetching categories for ${segment.name}:`, error);
+      console.warn(`Continuing to next segment despite error...`);
     }
   }
 
+  console.log(`\n🏁 Category Routes Generation Complete`);
+  console.log(`Total Routes Generated: ${routes.length}`);
   return routes;
-};
+}

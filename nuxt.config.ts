@@ -1,4 +1,5 @@
 import { generateSolutionRoutes, generateCategoryRoutes } from "./utils/functions"
+import { APP_SEGMENTS } from "./utils/api"
 
 export default defineNuxtConfig({
   modules: [
@@ -38,6 +39,7 @@ export default defineNuxtConfig({
         return [
           ...solutionRoutes,
           ...categoryRoutes,
+          ...APP_SEGMENTS.map(segment => `/${segment.slug}`)
         ]
       })()
     }

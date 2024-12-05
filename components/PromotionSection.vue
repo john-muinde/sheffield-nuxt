@@ -14,47 +14,65 @@
     </div>
   </div>
 
-  <div v-else-if="promotionProducts.length" class="container-fluid promotion-section">
+  <div
+    v-else-if="promotionProducts.length"
+    class="container-fluid promotion-section"
+  >
     <div class="row align-items-center">
       <!-- Promo Image -->
       <div class="col-xl-3 col-lg-4 col-md-12 mb-md-4">
         <div class="promo-image-wrapper">
-          <img src="/assets/images/events/november-promo.png" alt="Promotion Banner" class="img-fluid promo-image" />
+          <img
+            src="/assets/images/events/november-promo.png"
+            alt="Promotion Banner"
+            class="img-fluid promo-image"
+          />
         </div>
       </div>
 
       <!-- Products Section -->
       <div class="col-xl-9 col-lg-8 col-md-12">
         <!-- Promo Header -->
-        <div class="promo-header d-flex justify-content-between align-items-center">
+        <div
+          class="promo-header d-flex justify-content-between align-items-center"
+        >
           <div class="promo-details">
-            <h2 class="promo-title">
-              Pizzeria November Promotions
-            </h2>
-            <p class="promo-date text-muted">
-              Valid 1st - 30th November, 2024
-            </p>
+            <h2 class="promo-title">Pizzeria November Promotions</h2>
+            <p class="promo-date text-muted">Valid 1st - 30th November, 2024</p>
           </div>
 
-          <NuxtLink to="/promotional-solutions/371/nov-1-nov-31-2024-promotions"
-            class="btn btn-outline-primary d-none d-lg-block">
+          <NuxtLink
+            to="/promotional-solutions/371/nov-1-nov-31-2024-promotions"
+            class="btn btn-outline-primary d-none d-lg-block"
+          >
             View All Products
             <i class="icon-arrow-right ml-2"></i>
           </NuxtLink>
         </div>
 
         <!-- Products Carousel -->
-        <swiper :slides-per-view="swiperConfig.slidesPerView" :space-between="swiperConfig.spaceBetween"
-          :navigation="swiperConfig.navigation" :modules="swiperConfig.modules" :pagination="swiperConfig.pagination"
-          :autoplay="swiperConfig.autoplay">
+        <swiper
+          :slides-per-view="swiperConfig.slidesPerView"
+          :space-between="swiperConfig.spaceBetween"
+          :navigation="swiperConfig.navigation"
+          :modules="swiperConfig.modules"
+          :pagination="swiperConfig.pagination"
+          :autoplay="swiperConfig.autoplay"
+        >
           <swiper-slide v-for="product in promotionProducts" :key="product.id">
-            <ProductCard :product="product" @click="handleProductClick(product)" />
+            <ProductCard
+              :product="product"
+              @click="handleProductClick(product)"
+            />
           </swiper-slide>
         </swiper>
 
         <!-- Mobile View All Button -->
         <div class="d-md-none text-center mt-4">
-          <NuxtLink to="/promotional-solutions/371/nov-1-nov-31-2024-promotions" class="btn btn-block btn-primary">
+          <NuxtLink
+            to="/promotional-solutions/371/nov-1-nov-31-2024-promotions"
+            class="btn btn-block btn-primary"
+          >
             View All Products
           </NuxtLink>
         </div>
@@ -65,10 +83,10 @@
 
 <script>
 // PromotionSection.vue
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { Navigation, Pagination, Autoplay } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import axios from 'axios';
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/vue";
+import axios from "axios";
 
 // Performance and error handling utility
 const createCancelToken = () => {
@@ -77,11 +95,11 @@ const createCancelToken = () => {
 };
 
 export default {
-  name: 'PromotionSection',
+  name: "PromotionSection",
   components: {
     Swiper,
     SwiperSlide,
-    ProductCard: () => import('@/Components/ProductCard.vue'),
+    ProductCard: () => import("~/components/ProductCard.vue"),
   },
   props: {
     initialCategoryId: {
@@ -117,7 +135,7 @@ export default {
     const fetchPromotionProducts = async (categoryId) => {
       // Cancel any existing request
       if (cancelTokenSource.value) {
-        cancelTokenSource.value.cancel('New request initiated');
+        cancelTokenSource.value.cancel("New request initiated");
       }
 
       // Create new cancel token
@@ -127,34 +145,34 @@ export default {
       error.value = null;
 
       try {
-        const response = await axios.get('/api/get-products', {
+        const response = await axios.get("/api/get-products", {
           params: {
             category_id: categoryId,
             per_page: 30,
-            with: ['images', 'category'],
+            with: ["images", "category"],
           },
           cancelToken: cancelTokenSource.value.token,
           headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Expires': '0',
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            Expires: "0",
           },
         });
 
         // Advanced product filtering and transformation
         promotionProducts.value = (response.data.products?.data || [])
           .map(transformProduct)
-          .filter(product => isValidProduct(product))
+          .filter((product) => isValidProduct(product))
           .slice(0, 20); // Limit to 20 products for performance
       } catch (err) {
         if (axios.isCancel(err)) {
-          console.log('Request canceled', err.message);
+          console.log("Request canceled", err.message);
         } else {
           error.value = {
-            message: err.response?.data?.message || 'Failed to fetch products',
+            message: err.response?.data?.message || "Failed to fetch products",
             code: err.response?.status,
           };
-          console.error('Promotion fetch error:', err);
+          console.error("Promotion fetch error:", err);
         }
       } finally {
         loading.value = false;
@@ -163,7 +181,7 @@ export default {
 
     // Product transformation utility
     const transformProduct = (product) => {
-      const defaultImage = '/assets/images/default-product.png';
+      const defaultImage = "/assets/images/default-product.png";
 
       return {
         ...product,
@@ -200,16 +218,16 @@ export default {
 
     // Lifecycle hooks
     onMounted(() => {
-      window.addEventListener('resize', handleResize);
+      window.addEventListener("resize", handleResize);
       fetchPromotionProducts(props.initialCategoryId);
     });
 
     onUnmounted(() => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
 
       // Cancel any ongoing requests
       if (cancelTokenSource.value) {
-        cancelTokenSource.value.cancel('Component unmounted');
+        cancelTokenSource.value.cancel("Component unmounted");
       }
     });
 
@@ -241,7 +259,7 @@ export default {
   methods: {
     // Additional methods like handling product clicks, tracking, etc.
     handleProductClick(product) {
-      this.$emit('product-selected', product);
+      this.$emit("product-selected", product);
       // Optional: Track product view
       this.trackProductView(product);
     },
@@ -251,13 +269,13 @@ export default {
       try {
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({
-          event: 'promotion_product_view',
+          event: "promotion_product_view",
           product_id: product.id,
           product_name: product.name,
           product_category: product.category_name,
         });
       } catch (error) {
-        console.error('Tracking error:', error);
+        console.error("Tracking error:", error);
       }
     },
   },
