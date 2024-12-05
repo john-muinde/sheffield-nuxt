@@ -40,7 +40,7 @@ class ProductResource extends JsonResource
             'document_path' => $this->document_path,
             'document' => $this->document,
             'product_images' => ProductImagesResource::collection($this->productImages),
-            'brand_json' => $this->productBrand ? $this->productBrand : null,
+            'product_brand' => $this->productBrand ? $this->productBrand : null,
             'categories_json' => $this->productCategories ? CategoryResource::collection($this->productCategories->pluck('category')) : null,
             // 'parent_name' => $this->parent ? $this->parent->name : null,
             // 'parent_json' => $this->parent ? $this->parent : null,

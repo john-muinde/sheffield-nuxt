@@ -104,8 +104,4 @@ const addClassToBody = () => {
   document.body.classList.toggle("mmenu-active");
   bodyClassAdded.value = !bodyClassAdded.value;
 };
-
-const removeFromCart = (index) => {
-  store.commit("cart/removeFromCart", index);
-};
 </script>

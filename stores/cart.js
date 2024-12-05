@@ -14,8 +14,6 @@ export const useCartStore = defineStore("cart-store", {
         product.quantity = 1;
         this.stateCartItems.push(product);
       }
-
-      console.log(Object.keys(this.stateCartItems));
     },
 
     removeFromCart(index) {
@@ -33,6 +31,9 @@ export const useCartStore = defineStore("cart-store", {
         (acc, item) => acc + item.price * item.quantity,
         0
       ),
+  },
+  persist: {
+    storage: piniaPluginPersistedstate.sessionStorage(),
   },
 });
 

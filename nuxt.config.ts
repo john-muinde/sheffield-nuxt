@@ -4,6 +4,7 @@ import { APP_SEGMENTS } from "./utils/api"
 export default defineNuxtConfig({
   modules: [
     ['@pinia/nuxt', { disableVuex: true, autoImports: ['defineStore', 'acceptHMRUpdate'] }],
+    'pinia-plugin-persistedstate/nuxt',
     'vue3-carousel-nuxt',
     '@nuxt/image',
   ],

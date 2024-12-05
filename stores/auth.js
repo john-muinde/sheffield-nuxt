@@ -45,4 +45,7 @@ export const useAuthStore = defineStore("authStore", {
       this.authenticated = value;
     },
   },
+  persist: {
+    storage: piniaPluginPersistedstate.sessionStorage(),
+  },
 });

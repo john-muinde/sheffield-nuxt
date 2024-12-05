@@ -50,6 +50,30 @@ export function addToCart(product: any) {
   }
 }
 
+export const getCategoryLink = (id: number, name: string, page?: string): string => {
+  const route = useRoute();
+
+  const segment = APP_SEGMENTS.find((item) => item.slug === route.params.segment);
+
+  const transformedName = transformName(name);
+
+  if (page) {
+    return segment ? `/${segment.slug}/${id}/${transformedName}/page/${page}` : `/product/${id}/${transformedName}/page/${page}`;
+  }
+
+  return segment ? `/${segment.slug}/${id}/${transformedName}` : `/product/${id}/${transformedName}`;
+};
+
+const transformName = (name: string): string => {
+  if (!name) return "";
+  return name
+    .replace(/ /g, "-")
+    .replace(/\//g, "-")
+    .replace(/-+/g, "-") // Remove consecutive dashes
+    .replace(/^-+|-+$/g, "") // Remove leading and trailing dashes
+    .toLowerCase();
+};
+
 export function removeFromCart(index: number) {
   const store = useCartStore();
   store.removeFromCart(index);

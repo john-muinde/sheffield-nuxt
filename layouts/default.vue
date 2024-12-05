@@ -111,7 +111,7 @@ useHead({
     // Custom scripts
     {
       children: `
-                window.dFlipLocation = "/wp-content/plugins/dflip/assets/";
+                window.dFlipLocation = "https://js.dearflip.com/wp-content/plugins/dflip/assets/";
                 window.dFlipWPGlobal = ${JSON.stringify({
                   text: {
                     toggleSound: "Turn on\/off Sound",
@@ -206,6 +206,7 @@ const isHomePage = computed(() => route.path === "/");
 onMounted(() => {
   const trackPixel = async () => {
     let trackingId = localStorage.getItem("pixel-tracker");
+    localStorage.setItem("promotionActive", "true");
 
     if (!trackingId) {
       trackingId = generateRandomString(30);

@@ -19,50 +19,16 @@
               <li>
                 <a href="#">Links</a>
                 <ul class="menus">
-                  <!-- <div class="header-dropdown">
-                                      <a href="#">USD</a>
-                                      <div class="header-menu">
-                                        <ul>
-                                          <li><a href="#">Eur</a></li>
-                                          <li><a href="#">Usd</a></li>
-                                        </ul>
-                                      </div>
-
-                                    </div> -->
-                  <!-- End .header-dropdown -->
-
-                  <li :class="{ 'active-li': isKitchenPage }">
-                    <NuxtLink to="/commercial-kitchen">
+                  <li
+                    v-for="segment in APP_SEGMENTS"
+                    key="segment.id"
+                    :class="{ 'active-li': $route.path.includes(segment.slug) }"
+                  >
+                    <NuxtLink :to="`/${segment.slug}`">
                       <span class="top-icon">
-                        <img
-                          class="top-menu-icon"
-                          src="/assets/images/menu-icons/top-menu/kitchen.png"
-                        />
+                        <img class="top-menu-icon" :src="segment.icon" />
                       </span>
-                      KITCHEN
-                    </NuxtLink>
-                  </li>
-                  <li :class="{ 'active-li': isLaundryPage }">
-                    <NuxtLink to="/laundry">
-                      <span class="top-icon">
-                        <img
-                          class="top-menu-icon"
-                          src="/assets/images/menu-icons/top-menu/laundry.png"
-                        />
-                      </span>
-                      LAUNDRY
-                    </NuxtLink>
-                  </li>
-
-                  <li :class="{ 'active-li': isColdRoomPage }">
-                    <NuxtLink to="/cold-storage">
-                      <span class="top-icon">
-                        <img
-                          class="top-menu-icon"
-                          src="/assets/images/menu-icons/top-menu/cold-room.png"
-                        />
-                      </span>
-                      COLD STORAGE
+                      {{ segment.name.toUpperCase() }}
                     </NuxtLink>
                   </li>
 
@@ -77,115 +43,10 @@
                       Consultancy
                     </NuxtLink>
                   </li>
-                  <!-- <li
-                                        class="login ml-5 pl-5"
-                                        v-if="!user?.name"
-                                    >
-                                        <NuxtLink to="/login">
-                                            LOG IN
-                                        </NuxtLink>
-                                    </li>
-
-                                    <li class="login" v-if="!user?.name">
-                                        <NuxtLink to="/register">
-                                            REGISTER</NuxtLink
-                                        >
-                                    </li> -->
-
-                  <!-- <li v-if="user?.name" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ user.name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><NuxtLink class="dropdown-item" to="/admin">Admin</NuxtLink></li>
-                            <li><NuxtLink to="/admin/posts" class="dropdown-item">Post</NuxtLink></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="javascript:void(0)" @click="logout">Logout</a></li>
-                        </ul>
-                    </li> -->
-
-                  <!-- <li v-if="user?.name">
-                                        <div
-                                            class="header-dropdown"
-                                            v-if="user?.name"
-                                        >
-                                            <NuxtLink to="/my-account">{{
-                                                user.name
-                                            }}</NuxtLink>
-                                            <div class="header-menu">
-                                                <ul>
-                                                    <li>
-                                                        <NuxtLink
-                                                            class="dropdown-item"
-                                                            to="/my-account"
-                                                            >My
-                                                            Account</NuxtLink
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        <hr
-                                                            class="dropdown-divider"
-                                                        />
-                                                    </li>
-                                                    <li>
-                                                        <NuxtLink
-                                                            to="/admin/posts"
-                                                            class="dropdown-item"
-                                                            >Wishlist</NuxtLink
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        <hr
-                                                            class="dropdown-divider"
-                                                        />
-                                                    </li>
-                                                    <li>
-                                                        <NuxtLink
-                                                            to="/admin/posts"
-                                                            class="dropdown-item"
-                                                            >Change
-                                                            Password</NuxtLink
-                                                        >
-                                                    </li>
-                                                    <li>
-                                                        <hr
-                                                            class="dropdown-divider"
-                                                        />
-                                                    </li>
-                                                    <li>
-                                                        <a
-                                                            class="dropdown-item"
-                                                            href="javascript:void(0)"
-                                                            @click="logout"
-                                                            >Logout</a
-                                                        >
-                                                    </li>
-                                                </ul>
-                                            </div>
-
-                                        </div>
-                                    </li> -->
                 </ul>
               </li>
             </ul>
           </div>
-          <!-- End .header-right -->
-
-          <!-- <div class="header-right d-block d-lg-none">
-                        <ul class="top-menu">
-                            <li class="login" v-if="!user?.name">
-                                <NuxtLink to="/login"> LOG IN </NuxtLink>
-                            </li>
-
-                            <li class="register" v-if="!user?.name">
-                                <NuxtLink to="/register">
-                                    REGISTER
-                                </NuxtLink>
-                            </li>
-                        </ul>
-
-                    </div> -->
-          <!-- End .header-right -->
         </div>
         <!-- End .container -->
       </div>
@@ -444,8 +305,6 @@ import { computed, reactive, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 
 const { api } = useAxios();
-
-let isShown = false;
 
 const route = useRoute();
 const store = useAuthStore();

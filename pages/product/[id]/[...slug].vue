@@ -237,12 +237,12 @@ definePageMeta({
 });
 
 import { ref, computed, watch, onMounted, watchEffect } from "vue";
+const route = useRoute();
 
 const pageSegment = computed(() => {
   return APP_SEGMENTS.find((item) => item.slug === route.params.segment);
 });
 
-const route = useRoute();
 const { segment, id } = route.params;
 const slug = Array.isArray(route.params.slug)
   ? route.params.slug

@@ -530,47 +530,6 @@ const goToThisPage = (page) => {
   currentPage.value = page;
 };
 
-const getProductLink = (id, name, model_number, parent_cat) => {
-  let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
-  transformedName = transformedName.replace(/-+/g, "-");
-  transformedName = transformedName.replace(/^-+|-+$/g, "");
-  transformedName = transformedName.toLowerCase();
-
-  let transformedName_cat = parent_cat.replace(/ /g, "-").replace(/\//g, "-");
-  transformedName_cat = transformedName_cat.replace(/-+/g, "-");
-  transformedName_cat = transformedName_cat.replace(/^-+|-+$/g, "");
-  transformedName_cat = transformedName_cat.toLowerCase();
-
-  let transformedModelNumber = model_number
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedModelNumber = transformedModelNumber.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedModelNumber = transformedModelNumber.replace(/^-+|-+$/g, "");
-
-  return `/laundry/product/${id}/${transformedName}-${transformedModelNumber}`;
-};
-
-const getCategoryLink = (id, name, page) => {
-  //Replace spaces with dashes
-
-  if (name === undefined) {
-    return "/laundry";
-  } else {
-    let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
-    // Remove consecutive dashes
-    transformedName = transformedName.replace(/-+/g, "-");
-    // Remove leading and trailing dashes
-    transformedName = transformedName.replace(/^-+|-+$/g, "");
-    // Convert to lowercase
-    transformedName = transformedName.toLowerCase();
-
-    return `/laundry/${id}/${transformedName}/page/${page}`;
-  }
-};
-
 // Update displayedProducts based on the current page and products
 const updateDisplayedProducts = () => {
   const startIndex = 0;

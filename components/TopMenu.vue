@@ -102,7 +102,7 @@ const props = defineProps({
 import { ref, onMounted } from "vue";
 
 const { api } = useAxios();
-const segment = ref(props.segment);
+const segment = computed(() => props.segment);
 const mainCategories = ref([]);
 const cssVars = ref({
   "--segment-primary-color": segment.value.color,
@@ -121,18 +121,6 @@ const fetchMainCategories = async () => {
   }
 };
 
-const getCategoryLink = (id, name, page) => {
-  let transformedName = name.replace(/ /g, "-").replace(/\//g, "-");
-  // Remove consecutive dashes
-  transformedName = transformedName.replace(/-+/g, "-");
-  // Remove leading and trailing dashes
-  transformedName = transformedName.replace(/^-+|-+$/g, "");
-  // Convert to lowercase
-  transformedName = transformedName.toLowerCase();
-
-  return `/${segment.value.slug}/${id}/${transformedName}`;
-};
-
 onMounted(async () => {
   fetchMainCategories();
 });
@@ -140,6 +128,13 @@ onMounted(async () => {
 const formattedName = (category_name) => {
   return category_name.toLowerCase().replace(/\s/g, "-");
 };
+
+watch(segment, () => {
+  cssVars.value = {
+    "--segment-primary-color": segment.value.color,
+  };
+  fetchMainCategories();
+});
 </script>
 
 <style scoped>

@@ -544,6 +544,13 @@ const fetchProducts = async () => {
       .filter((product) => product !== null);
   } catch (error) {
     console.error(error);
+  } finally {
+    if (import.meta.browser) {
+      window.localStorage.setItem(
+        "promotionActive",
+        promotionProducts.value?.length > 0 ? "true" : "false"
+      );
+    }
   }
 };
 

@@ -72,11 +72,8 @@ pageSegment.value = APP_SEGMENTS.find(
   (item) => item.slug === route.params.segment
 );
 
-console.log("pageSegment", pageSegment.value);
-
 definePageMeta({
   validate: async (route) => {
-    console.log("route", route.params.segment);
     return APP_SEGMENTS.some((item) => item.slug === route.params.segment);
   },
 });

@@ -29,30 +29,40 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
 export const APP_SEGMENTS = [
   {
     id: 301,
+    active: true,
     name: "Cold Storage",
     slug: "cold-storage",
     color: "#3d62ad",
     image: "/assets/images/homepage/cold_storage_page.jpg",
+    icon: "/assets/images/menu-icons/top-menu/cold-room.png",
   },
   {
     id: 247,
+    active: true,
     name: "Laundry",
     slug: "laundry",
     color: "#7ab337",
     image: "/assets/images/homepage/laundry_page.jpg",
+    icon: "/assets/images/menu-icons/top-menu/laundry.png",
   },
   {
     id: 21,
+    active: true,
     name: "Commercial Kitchen",
     slug: "commercial-kitchen",
     color: "#c02434",
     image: "/assets/images/homepage/commercial_kitchen.jpg",
+    icon: "/assets/images/menu-icons/top-menu/kitchen.png",
   },
   {
     id: 370,
+    active:
+      import.meta.browser &&
+      window.localStorage.getItem("promotionActive") === "true",
     name: "Promotional Solutions",
     slug: "promotional-solutions",
     color: "#f4a261",
-    image: "/assets/images/homepage/promotional_solutions.jpg",
+    image: "/assets/images/events/november-promo.png",
+    icon: "/assets/images/menu-icons/top-menu/kitchen.png",
   },
 ];

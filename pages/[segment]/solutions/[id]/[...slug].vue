@@ -114,7 +114,7 @@
                             )
                           "
                         >
-                          {{ product.product_brand.name }}
+                          {{ product.product_brand?.name }}
                         </NuxtLink>
                       </div>
                       <!-- End .product-cat -->
@@ -303,11 +303,6 @@ const fetchSolutionCategories = async () => {
 const solutionCategoryProducts = ref([]);
 
 const fetchSolutionCategoryProducts = async () => {
-  const newCheckedCategoriesSolutions = {
-    [solution_id.value]:
-      checkedCategoriesSolutions.value[solution_id.value] || [],
-  };
-
   try {
     const response = await api.get("/api/get-solution-category-products", {
       params: {
@@ -316,8 +311,6 @@ const fetchSolutionCategoryProducts = async () => {
       },
     });
     solutionCategoryProducts.value = response.data.products.data;
-
-    //
   } catch (error) {
     console.error(error);
   }
