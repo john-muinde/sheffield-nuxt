@@ -16,6 +16,16 @@ export default defineNuxtConfig({
   ignore: [
     'backend/**'
   ],
+  app: {
+    head: {
+      meta: [
+        {
+          name: 'google-site-verification',
+          content: 'HTu3UM8rSXb95ng7ySUN6dIa0OTHQtzcZiJa7C9T1pk'
+        }
+      ]
+    }
+  },
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
