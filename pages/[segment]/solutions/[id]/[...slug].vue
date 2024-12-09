@@ -24,6 +24,7 @@
       <div class="container">
         <LoadingData v-if="loading && !solutionCategories.length" />
         <NoSolutionData
+          :retry-function="fetchItems"
           v-if="
             (!solutionCategories.length &&
               !solutionCategoriesList.length &&
@@ -37,7 +38,12 @@
           "
           class="row"
         >
-          <div class="col-lg-10">
+          <div
+            v-show="
+              (!loading && pageSegment?.active) || solutionCategories.length
+            "
+            class="col-lg-10"
+          >
             <!-- End .toolbox -->
             <div class="products mb-3">
               <div class="row">
@@ -136,7 +142,12 @@
           </div>
           <!-- End .col-lg-9 -->
 
-          <aside class="col-lg-2 order-lg-first mt-2">
+          <aside
+            v-show="
+              (!loading && pageSegment?.active) || solutionCategories.length
+            "
+            class="col-lg-2 order-lg-first mt-2"
+          >
             <div class="sidebar sidebar-shop sidebar-shop-solution">
               <!-- End .widget widget-clean -->
               <div
@@ -229,7 +240,7 @@ definePageMeta({
 import { ref, computed, watch, onMounted, watchEffect } from "vue";
 
 const pageSegment = computed(() => {
-  return APP_SEGMENTS.find((item) => item.slug === route.params.segment);
+  return getSegment(route.params.segment);
 });
 
 const route = useRoute();
@@ -331,18 +342,21 @@ const updateDisplayedProducts = () => {
   );
 };
 
-// Initial fetch of products
-onMounted(() => {
+const fetchItems = (cb = null) => {
   loading.value = true;
   fetchSolutionCategories();
   fetchSolutionCategoryProducts();
+};
+
+// Initial fetch of products
+onMounted(() => {
+  fetchItems();
 });
 
 // Watch for changes in the products and update displayedProducts
 watch(products, updateDisplayedProducts);
 
 watchEffect(() => {
-
   if (id !== "" && solution_id.value !== id) {
     currentPage.value = 1;
 

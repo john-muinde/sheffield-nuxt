@@ -1,340 +1,221 @@
 <template>
-  <div class="container" :style="cssVars">
-    <div class="row elements top-menu categories">
-      <div
-        v-for="(category, index) in mainCategories"
-        :key="index.id"
-        class="col-xs-3 col-sm-4 col-md-2 white-bg"
-      >
-        <NuxtLink
-          class="element-type"
-          :to="getCategoryLink(category.id, category.name, 1)"
+  <!-- Error State -->
+  <div v-if="error" class="container mx-auto px-4">
+    <div class="flex items-center justify-center p-4 bg-red-50 rounded-lg">
+      <div class="text-center">
+        <p class="text-red-600 mb-2">Unable to load categories</p>
+        <button
+          class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+          @click="refresh"
         >
-          <div class="element box">
-            <p>
-              <img
-                class="menu-icon"
-                :src="`/assets/images/menu-icons/${formattedName(
-                  category.name
-                )}.png`"
-              />{{ category.name }}
-            </p>
-          </div>
-        </NuxtLink>
-      </div>
-
-      <div class="col-xs-3 col-sm-4 col-md-2 white-bg">
-        <NuxtLink
-          class="element-type NuxtLink-active active"
-          to="/consultancy-and-design"
-        >
-          <div class="element box box2 box3">
-            <p>
-              <img
-                class="menu-icon"
-                src="/assets/images/menu-icons/consultancy-design.png"
-              />Consultancy & Design
-            </p>
-          </div>
-        </NuxtLink>
+          Retry
+        </button>
       </div>
     </div>
   </div>
-  <div class="mobile-categories">
-    <button
-      id="menu1"
-      class="btn btn-default dropdown-toggle button"
-      type="button"
-      data-toggle="dropdown"
-    >
-      BROWSE CATEGORIES <span class="caret"></span>
-    </button>
-    <ul
-      class="dropdown-menu browse-categories mobile-menu"
-      role="menu"
-      aria-labelledby="menu1"
-    >
-      <li
-        v-for="category in mainCategories"
-        :key="category.id"
-        role="presentation"
-      >
-        <NuxtLink
-          class="element-type"
-          :to="getCategoryLink(category.id, category.name, 1)"
-        >
-          <div class="sf-with-ul">
-            <p class="category">
-              <img
-                class="mobile-menu-icon"
-                :src="`/assets/images/menu-icons/${formattedName(
-                  category.name
-                )}.png`"
-              />
-              {{ category.name }}
-            </p>
-          </div>
-        </NuxtLink>
-      </li>
 
-      <li role="presentation">
-        <NuxtLink class="element-type" to="/consultancy-and-design">
-          <div class="sf-with-ul">
-            <p class="category">
-              <img
-                class="mobile-menu-icon"
-                src="/assets/images/menu-icons/consultancy-design.png"
-              />
-              Consultancy & Design
-            </p>
+  <!-- Main Content -->
+  <ClientOnly>
+    <!-- Loading Fallback -->
+    <template #fallback>
+      <div class="container mx-auto px-4 mt-5">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div
+            v-for="n in 6"
+            :key="n"
+            class="h-[33px] bg-gray-200 rounded animate-pulse"
+          >
+            <div class="flex items-center h-full px-2">
+              <div class="w-[15%] h-5 bg-gray-300 rounded mr-2"></div>
+              <div class="flex-1 h-4 bg-gray-300 rounded"></div>
+            </div>
           </div>
-        </NuxtLink>
-      </li>
-    </ul>
-  </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Default Content -->
+    <div class="container mx-auto px-4 mt-5">
+      <!-- Desktop Menu -->
+      <div class="hidden md:block">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div v-for="(category, index) in mainCategories" :key="index">
+            <NuxtLink
+              :to="getCategoryLink(category.id, category.name)"
+              class="block"
+            >
+              <div
+                class="rounded-lg px-2 py-1 border transition-colors"
+                :class="[
+                  isActive(category.id)
+                    ? 'bg-white border-2 border-dashed'
+                    : 'text-white',
+                ]"
+                :style="{
+                  backgroundColor: !isActive(category.id)
+                    ? segment.color
+                    : 'white',
+                  borderColor: segment.color,
+                }"
+              >
+                <p class="flex items-center h-full px-2 text-sm">
+                  <img
+                    :src="`/assets/images/menu-icons/${formattedName(
+                      category.name
+                    )}.png`"
+                    :alt="category.name"
+                    class="h-9 w-9 mr-2"
+                    :class="[
+                      isActive(category.id)
+                        ? 'filter-primary'
+                        : 'brightness-90 invert sepia-0 hue-rotate-0 saturate-0',
+                    ]"
+                  />
+                  <span
+                    :class="[
+                      isActive(category.id) ? 'text-primary' : 'text-white',
+                    ]"
+                    :style="{
+                      color: isActive(category.id) ? segment.color : 'white',
+                    }"
+                  >
+                    {{ category.name }}
+                  </span>
+                </p>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Menu -->
+      <div class="md:hidden">
+        <button
+          type="button"
+          class="w-full px-4 py-2 text-white rounded text-left flex justify-between items-center"
+          :style="{ backgroundColor: segment.color }"
+          @click="toggleMobileMenu"
+        >
+          <span class="font-semibold">BROWSE CATEGORIES</span>
+          <span
+            class="transition-transform"
+            :class="{ 'rotate-180': isMobileMenuOpen }"
+            >▼</span
+          >
+        </button>
+
+        <div
+          v-show="isMobileMenuOpen"
+          class="mt-2 rounded shadow-lg"
+          :style="{ backgroundColor: segment.color }"
+        >
+          <div class="py-2">
+            <NuxtLink
+              v-for="category in mainCategories"
+              :key="category.id"
+              :to="getCategoryLink(category.id, category.name, 1)"
+              class="block px-4 py-2 hover:bg-white/10 transition-colors"
+            >
+              <div class="flex items-center">
+                <img
+                  :src="`/assets/images/menu-icons/${formattedName(
+                    category.name
+                  )}.png`"
+                  :alt="category.name"
+                  class="w-8 mr-3 brightness-90 invert sepia-0 hue-rotate-0 saturate-0"
+                />
+                <span class="text-white text-sm">{{ category.name }}</span>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ClientOnly>
 </template>
 
 <script setup>
+import { ref, watch } from "vue";
+
 const props = defineProps({
-  segment: Object,
+  segment: {
+    type: Object,
+    required: true,
+  },
 });
 
-import { ref, onMounted } from "vue";
+console.log(props.segment);
 
+const route = useRoute();
 const { api } = useAxios();
-const segment = computed(() => props.segment);
-const mainCategories = ref([]);
-const cssVars = ref({
-  "--segment-primary-color": segment.value.color,
-});
+const isMobileMenuOpen = ref(false);
+const arr = ref([
+  {
+    id: 0,
+    name: "Consultancy & Design",
+  },
+]);
+const {
+  data: mainCategories,
+  pending,
+  error,
+  refresh,
+} = await useAsyncData(
+  `categories-${props.segment.id}`,
+  async () => {
+    console.log(`/api/get-main-categories/${props.segment.id}`);
+    if (!props.segment.id) {
+      return [];
+    }
 
-// Fetch products based on the current page
-const fetchMainCategories = async () => {
-  try {
-    const response = await api.get(
-      `/api/get-main-categories/${segment.value.id}`,
-      {}
+    const { data } = await api.get(
+      `/api/get-main-categories/${props.segment.id}`
     );
-    mainCategories.value = response.data.data;
-  } catch (error) {
-    console.error(error);
+
+    arr.value.unshift(...data.data);
+    return arr.value;
+  },
+  {
+    server: true,
+    lazy: false,
   }
+);
+
+const formattedName = (name) => name?.toLowerCase().replace(/\s/g, "-");
+
+const isActive = (categoryId) => {
+  return route.params.id === categoryId?.toString();
 };
 
-onMounted(async () => {
-  fetchMainCategories();
-});
-
-const formattedName = (category_name) => {
-  return category_name.toLowerCase().replace(/\s/g, "-");
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
-watch(segment, () => {
-  cssVars.value = {
-    "--segment-primary-color": segment.value.color,
-  };
-  fetchMainCategories();
-});
+watch(
+  () => props.segment,
+  () => {
+    refresh();
+  }
+);
 </script>
 
 <style scoped>
-.header-left > .category-dropdown {
-  pointer-events: none;
-}
-
-.theClass1 {
-  position: absolute;
-  width: 94.8% !important;
-}
-
-.megamenu-scrollable {
-  overflow-y: auto;
-  direction: rtl;
-}
-
-.megamenu-container {
-  direction: ltr;
-}
-
-.megamenu-scrollable::-webkit-scrollbar {
-  width: 8px;
-}
-
-.megamenu-scrollable::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-}
-
-.megamenu-scrollable::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
-}
-
-.menu-vertical .megamenu {
-}
-
-.scroll-track {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 16px;
-  background-color: #f0f0f0;
-}
-
-.scroll-arrow {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 50%;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.up-arrow {
-  border-bottom: 1px solid #ccc;
-}
-
-.down-arrow {
-  border-top: 1px solid #ccc;
-}
-
-.scroll-arrow:hover {
-  background-color: #ccc;
-  color: #fff;
-}
-
-.container {
-  margin-top: 20px;
-}
-
-.box {
-  height: 33px;
-  background: var(--segment-primary-color);
-  border-radius: 5px;
-  margin-bottom: 5px;
-  /* max-width: 330px; */
-  border: 1px solid #9d9d9d;
-}
-
-.box p {
-  font-size: 1.15rem;
-  color: #ffffff;
-}
-
-.box2 {
-  height: 33px;
-  background: #ffffff;
-  border-radius: 5px;
-  margin-bottom: 5px;
-  /* max-width: 330px; */
-  border: 1px solid var(--segment-primary-color);
-}
-
-.box3 {
-  border: 3.5px dotted var(--segment-primary-color) !important;
-}
-
-.box2 p {
-  font-size: 1.2rem;
-  color: var(--segment-primary-color);
-}
-
-.elements {
-  position: relative;
-  /*background-image: url(/assets/images/sheffield_stainless_steel_background.jpg);*/
-  background-size: cover;
-  overflow: hidden;
-  margin-bottom: 15px;
-}
-
-.NuxtLink-active .box p {
-  color: var(--segment-primary-color);
-}
-
-.NuxtLink-active .box {
-  background-color: #ffffff;
-  border: 3.5px solid var(--segment-primary-color);
-}
-
-.NuxtLink-active .box2 p {
-  color: var(--segment-primary-color);
-}
-
-.NuxtLink-active .box2 {
-  background-color: #ffffff;
-  border: 3.5px solid var(--segment-primary-color);
-}
-
-.mobile-categories {
-  display: none;
-  margin-top: -2rem;
-}
-
-.box .menu-icon {
-  width: 15.5%;
-  padding-left: 8px;
-  padding-right: 8px;
-  display: inline-block;
-  filter: brightness(0.9) invert(1) sepia(0) hue-rotate(0deg) saturate(0);
-}
-
-.NuxtLink-active .box .menu-icon {
+.filter-primary {
   filter: invert(20%) sepia(63%) saturate(3227%) hue-rotate(337deg)
     brightness(88%) contrast(94%);
 }
 
-.mobile-menu-icon {
-  width: 35px;
-  padding-left: 5px;
-  padding-right: 10px;
-  display: inline-block;
-  filter: brightness(0.9) invert(1) sepia(0) hue-rotate(0deg) saturate(0);
-}
-
-@media only screen and (max-width: 768px) {
-  .button {
-    width: 100%;
-    background: var(--segment-primary-color);
-    color: #fff;
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
-
-  .browse-categories {
-    width: 97%;
-    padding: 0px;
-    background-color: var(--segment-primary-color);
-    margin-top: 3.5rem;
-    border-radius: 0px;
-  }
-
-  .categories {
-    display: none;
-  }
-
-  .category {
-    color: #fff;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .mobile-categories .btn {
-    font-weight: 600;
-    display: none;
-  }
-
-  .mobile-menu li a {
-    padding: 5px;
-  }
-
-  .mobile-categories {
-    display: block;
-    max-height: 100vh;
-    overflow-y: auto;
+  50% {
+    opacity: 0.5;
   }
 }
 
-@media (max-width: 1367px) {
-  .box p {
-    font-size: 1rem;
-  }
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 </style>

@@ -158,13 +158,6 @@
     <!-- End .header-middle -->
   </header>
 
-  <!-- <div class="video-container">
-          <video autoplay="" muted="" loop="" id="myVideo">
-              <source src="/assets/videos/sheffield_website_video.mp4" type="video/mp4">
-          </video>
-          <div class="overlay"></div>
-      </div> -->
-
   <div class="page-wrapper">
     <main class="main1 container">
       <div class="justify-content-center mt-4 home-design">

@@ -5,7 +5,7 @@
 
     <!-- Menu components -->
     <TopMenu
-      v-if="pageSegment != null && !$route.path.includes('product')"
+      v-if="pageSegment != null && !$route.path.includes('/product')"
       :segment="pageSegment"
     />
 
@@ -22,9 +22,7 @@ import { computed, onMounted } from "vue";
 
 const route = useRoute();
 
-const pageSegment = computed(() => {
-  return APP_SEGMENTS.find((item) => item.slug === route.params.segment);
-});
+const pageSegment = getSegment(route.params.segment);
 
 const { API_URL } = useAxios();
 

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-center justify-center min-h-[400px] p-6 bg-gradient-to-br from-rose-50 to-rose-100 w-full"
+    class="flex flex-col items-center justify-center min-h-[400px] p-6 bg-gradient-to-br w-full"
   >
     <div class="text-center">
       <svg
@@ -43,7 +43,7 @@
       </svg>
 
       <h2 class="text-2xl font-bold mb-4" :class="titleColor">
-        Exciting Promotions Coming Soon!
+        Exciting Products Coming Soon!
       </h2>
       <p class="max-w-md mx-auto mb-6" :class="subtitleColor">
         We're crafting something extraordinary just for you. Stay tuned for
@@ -77,40 +77,52 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      isAnimating: false,
-      primaryColor: "#c02434",
-      gradientStart: "#e74c5d",
-      gradientEnd: "#a11d2a",
-      borderColor: "#7c1520",
-    };
+<script setup>
+const props = defineProps({
+  isAnimating: {
+    type: Boolean,
+    default: false,
   },
-  computed: {
-    titleColor() {
-      return "text-rose-900";
-    },
-    subtitleColor() {
-      return "text-rose-800";
-    },
-    buttonClasses() {
-      return [
-        "bg-rose-600",
-        "text-white",
-        "hover:bg-rose-700",
-        { "animate-pulse": this.isAnimating },
-      ];
-    },
+  primaryColor: {
+    type: String,
+    default: "#c02434",
   },
-  methods: {
-    handleRetry() {
-      this.isAnimating = true;
-      setTimeout(() => {
-        this.isAnimating = false;
-      }, 1500);
-    },
+  gradientStart: {
+    type: String,
+    default: "#e74c5d",
   },
+  gradientEnd: {
+    type: String,
+    default: "#a11d2a",
+  },
+  borderColor: {
+    type: String,
+    default: "#7c1520",
+  },
+  retryFunction: {
+    type: Function,
+    required: true,
+  },
+});
+
+const isAnimating = ref(props.isAnimating);
+const gradientStart = computed(() => props.gradientStart);
+const gradientEnd = computed(() => props.gradientEnd);
+const borderColor = computed(() => props.borderColor);
+
+const titleColor = computed(() => "text-rose-900");
+const subtitleColor = computed(() => "text-rose-800");
+const buttonClasses = computed(() => [
+  "bg-rose-600",
+  "text-white",
+  "hover:bg-rose-700",
+  { "animate-pulse": isAnimating },
+]);
+
+const handleRetry = () => {
+  isAnimating.value = true;
+  props.retryFunction(() => {
+    isAnimating.value = false;
+  });
 };
 </script>

@@ -37,7 +37,7 @@
                       <span class="top-icon">
                         <img
                           class="top-menu-icon"
-                          src="/assets/images/menu-icons/consultancy-design.png"
+                          src="/assets/images/menu-icons/consultancy-&-design.png"
                         />
                       </span>
                       Consultancy

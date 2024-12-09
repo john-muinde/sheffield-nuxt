@@ -21060,7 +21060,7 @@ button:focus {
     font-size: 1.8rem;
     line-height: 1.5;
     letter-spacing: -0.025em;
-    padding-top: 8.5rem;
+    /* padding-top: 8.5rem; */
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
@@ -21079,7 +21079,7 @@ button:focus {
 
 @media screen and (min-width: 768px) {
     .error-content {
-        padding-top: 12.5rem;
+        /* padding-top: 12.5rem; */
         min-height: 540px;
     }
 

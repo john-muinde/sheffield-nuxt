@@ -1,0 +1,1 @@
+import{ag as s}from"./DqP3LHpI.js";function u(e){if(!e)return null;let o;try{const t=s(),{useAxios:r}=t.useAxios()}catch{o="https://sheffieldafrica.com"}return e=(t=>t.split("/").map(encodeURIComponent).join("/"))(e),`${o}/storage/${e}`}export{u as a};
