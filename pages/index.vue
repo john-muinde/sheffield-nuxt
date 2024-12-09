@@ -450,7 +450,6 @@ const search = async () => {
     searchLoading.value = true;
     try {
       const response = await api.get(`/api/product_search/${query.value}`);
-      console.log(response.data);
       results.value = response.data;
       showResults.value = true;
     } catch (error) {

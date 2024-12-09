@@ -150,19 +150,6 @@ export function useMediaDocuments(options = {}) {
         (a, b) => b.heightWidthRatio - a.heightWidthRatio
       );
 
-      console.log(
-        "Processed documents:",
-        documents.value.map((d) => {
-          return {
-            name: d.name,
-            height: d.height,
-            width: d.width,
-            heightWidthRatio: d.heightWidthRatio.toFixed(2),
-            orientation: d.orientation,
-          };
-        })
-      );
-
       loading.value = false;
       return documents.value;
     } catch (err) {

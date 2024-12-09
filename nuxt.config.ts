@@ -1,13 +1,14 @@
-import { generateSolutionRoutes, generateCategoryRoutes } from "./utils/functions"
 import { APP_SEGMENTS } from "./utils/api"
+import { RouteGenerator } from "./utils/urls";
 
 export default defineNuxtConfig({
-  
+  site: { url: 'https://dev.sheffieldafrica.com' },
   modules: [
     ['@pinia/nuxt', { disableVuex: true, autoImports: ['defineStore', 'acceptHMRUpdate'] }],
     'pinia-plugin-persistedstate/nuxt',
     'vue3-carousel-nuxt',
     '@nuxt/image',
+    '@nuxtjs/sitemap',
   ],
   imports: {
     dirs: [
@@ -35,28 +36,33 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     // These will be accessible as process.env.API_URL and process.env.BASE_URL
-    API_URL: process.env.API_URL || "https://sheffieldafrica.com",
+    API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
     public: {
-      API_URL: process.env.API_URL || "https://sheffieldafrica.com",
+      API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
     }
   },
-  nitro: {
-    dev: process.env.NODE_ENV !== 'production',
-    prerender: {
-      crawlLinks: true,
-      failOnError: false,
-      routes: await (async () => {
-        const [solutionRoutes, categoryRoutes] = await Promise.all([
-          generateSolutionRoutes(),
-          generateCategoryRoutes()
-        ])
+  hooks: {
+    async 'nitro:config'(nitroConfig) {
+      if (process.env.NODE_ENV === 'production') {
+        const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
+        const routes = await generator.generateAllRoutes();
 
-        return [
-          ...solutionRoutes,
-          ...categoryRoutes,
-          ...APP_SEGMENTS.map(segment => `/${segment.slug}`)
-        ]
-      })()
+        nitroConfig.prerender = nitroConfig.prerender || {};
+        nitroConfig.prerender.routes = [
+          '/',
+          ...routes
+        ];
+
+        await generator.generateSitemap(process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com");
+      }
+    }
+  },
+
+  //@ts-ignore
+  sitemap: {
+    routes: async () => {
+      const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
+      return generator.generateAllRoutes();
     }
   },
   postcss: {

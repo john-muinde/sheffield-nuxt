@@ -144,8 +144,6 @@ const props = defineProps({
   },
 });
 
-console.log(props.segment);
-
 const route = useRoute();
 const { api } = useAxios();
 const isMobileMenuOpen = ref(false);
@@ -163,7 +161,6 @@ const {
 } = await useAsyncData(
   `categories-${props.segment.id}`,
   async () => {
-    console.log(`/api/get-main-categories/${props.segment.id}`);
     if (!props.segment.id) {
       return [];
     }

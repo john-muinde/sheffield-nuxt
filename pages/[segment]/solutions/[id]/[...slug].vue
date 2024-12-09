@@ -292,7 +292,6 @@ const fetchSolutionCategories = async () => {
     });
     solutionCategories.value = response.data.data;
     solutionCategoriesList.value = response.data.data.product_categories_json;
-    console.log(solutionCategoriesList.value);
   } catch (error) {
     console.error(error);
   }

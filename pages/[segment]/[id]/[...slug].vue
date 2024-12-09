@@ -386,13 +386,11 @@ const {
     };
     store.setCheckedBrands(newCheckedBrands);
 
-    console.log("Fetching products... ", store.trackApiCalls++);
-
     const response = await api.get("/api/get-products", {
       params: {
+        category_id: category_id.value,
         page: store.currentPage,
         per_page: store.perPage,
-        category_id: category_id.value,
         checkedCategories: store.checkedCategories,
         checkedBrands: store.checkedBrands,
         selectedSortOption: store.selectedSortOption,

@@ -75,7 +75,6 @@ $(document).ready(function () {
 
     // Mobile Menu Toggle - Show & Hide
     $('.mobile-menu-toggler').on('click', function (e) {
-        console.log('test');
         $body.addClass('mmenu-active');
         $('.the_main_div').addClass('mmenu-active');
         $(this).toggleClass('active');
@@ -83,7 +82,6 @@ $(document).ready(function () {
     });
 
     $('.mobile-menu-overlay, .mobile-menu-close').on('click', function (e) {
-        console.log('test');
         $body.removeClass('mmenu-active');
         $('.the_main_div').removeClass('mmenu-active');
         $('.menu-toggler').removeClass('active');
