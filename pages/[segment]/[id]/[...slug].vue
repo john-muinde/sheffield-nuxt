@@ -8,49 +8,72 @@
           </li>
           <li class="breadcrumb-item">
             <NuxtLink :to="`/${pageSegment.slug}`">
-              {{ pageSegment.name.toUpperCase() }}
+              {{ pageSegment?.name.toUpperCase() }}
             </NuxtLink>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            {{ productsData?.theCategory.name }}
+            {{ productsData?.theCategory?.name }}
           </li>
         </ol>
       </div>
     </nav>
     <div class="page-content">
       <div class="container">
-        <ClientOnly>
-          <template #default>
-            <div class="row">
-              <div class="col-lg-10">
-                <div v-if="error" class="error-content">
-                  <i
-                    class="icon-exclamation-circle text-danger mb-4"
-                    style="font-size: 3rem"
-                  ></i>
-                  <h2 class="error-title mb-3">No Products Found</h2>
-                  <p class="error-message text-muted mb-4">
-                    We couldn't find any products in this category. This might
-                    be because:
-                  </p>
-                  <ul
-                    class="error-reasons text-left mb-4 mx-auto"
-                    style="max-width: 400px"
-                  >
-                    <li>The selected filters might be too restrictive</li>
-                    <li>The category might be temporarily empty</li>
-                    <li>New products might be coming soon</li>
-                  </ul>
-                  <div class="error-actions">
-                    <button class="btn btn-primary me-3" @click="() => null">
-                      Try Again
-                    </button>
-                    <NuxtLink to="/" class="btn btn-outline-primary">
-                      Browse All Products
-                    </NuxtLink>
+        <div v-if="status == 'pending'" class="products mb-3 products-section">
+          <div class="row">
+            <div
+              v-for="n in 12"
+              :key="n"
+              class="col-6 col-md-3 col-lg-2 col-xl-2"
+            >
+              <div class="product product-7 text-center">
+                <div class="product-media shimmer">
+                  <div class="product-image-shimmer"></div>
+                </div>
+                <div class="product-body">
+                  <div class="product-cat">
+                    <div class="shimmer brand-shimmer"></div>
+                  </div>
+                  <div class="product-title">
+                    <div class="shimmer title-shimmer"></div>
                   </div>
                 </div>
-                <div v-else>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ClientOnly>
+          <template #default>
+            <div v-if="error || !pageSegment?.active" class="error-content">
+              <i
+                class="icon-exclamation-circle text-danger mb-4"
+                style="font-size: 3rem"
+              ></i>
+              <h2 class="error-title mb-3">No Products Found</h2>
+              <p class="error-message text-muted mb-4">
+                We couldn't find any products in this category. This might be
+                because:
+              </p>
+              <ul
+                class="error-reasons text-left mb-4 mx-auto"
+                style="max-width: 400px"
+              >
+                <li>The selected filters might be too restrictive</li>
+                <li>The category might be temporarily empty</li>
+                <li>New products might be coming soon</li>
+              </ul>
+              <div class="error-actions">
+                <button class="btn btn-primary me-3" @click="refreshProducts">
+                  Try Again
+                </button>
+                <NuxtLink to="/" class="btn btn-outline-primary">
+                  Browse All Products
+                </NuxtLink>
+              </div>
+            </div>
+            <div v-else class="row">
+              <div class="col-lg-10">
+                <div>
                   <!-- Toolbar -->
                   <div class="toolbox">
                     <div class="toolbox-left">
@@ -99,7 +122,7 @@
                             <NuxtLink :to="getProductLink(product)">
                               <NuxtImg
                                 :src="assets(product.main_image_path)"
-                                :alt="product.name"
+                                :alt="product?.name"
                                 format="webp"
                                 quality="80"
                                 loading="lazy"
@@ -124,7 +147,7 @@
                             </div>
                             <h3 class="product-title">
                               <NuxtLink :to="getProductLink(product)">
-                                {{ product.name }}
+                                {{ product?.name }}
                               </NuxtLink>
                             </h3>
                           </div>
@@ -209,7 +232,7 @@
                               <label
                                 class="custom-control-label"
                                 :for="'cat-' + category.id"
-                                >{{ category.name }}</label
+                                >{{ category?.name }}</label
                               >
                               <span class="item-count">
                                 <template v-if="!store.isFilterLoading">
@@ -269,8 +292,8 @@
                               />
                               <label
                                 class="custom-control-label"
-                                :for="'brand-' + brand.product_brand.id"
-                                >{{ brand.product_brand.name }}</label
+                                :for="'brand-' + brand.product_brand?.id"
+                                >{{ brand.product_brand?.name }}</label
                               >
                             </div>
                             <!-- End .custom-checkbox -->
@@ -342,6 +365,8 @@ const slug = Array.isArray(route.params.slug)
 const category = slug[0];
 const page = slug[2];
 
+const productsFetched = ref(false);
+
 const store = useProductsStore();
 
 const createPageLink = (page) => {
@@ -370,6 +395,7 @@ const pageSegment = computed(() => {
 const {
   data: productsData,
   refresh: refreshProducts,
+  status,
   error,
 } = await useAsyncData(
   `products-${category_id.value}-${store.currentPage}-${JSON.stringify(
@@ -396,6 +422,8 @@ const {
         selectedSortOption: store.selectedSortOption,
       },
     });
+
+    productsFetched.value = true;
 
     return {
       products: response.data.products.data,

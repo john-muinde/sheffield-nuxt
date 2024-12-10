@@ -26,10 +26,9 @@
         <NoSolutionData
           :retry-function="fetchItems"
           v-if="
-            (!solutionCategories.length &&
-              !solutionCategoriesList.length &&
-              loading == false) ||
-            !pageSegment?.active
+            ((!solutionCategories.length && !solutionCategoriesList.length) ||
+              !pageSegment?.active) &&
+            loading == false
           "
         />
         <div

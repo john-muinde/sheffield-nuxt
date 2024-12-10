@@ -41,7 +41,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <div v-for="(category, index) in mainCategories" :key="index">
             <NuxtLink
-              :to="getCategoryLink(category.id, category.name)"
+              :to="category?.url || getCategoryLink(category.id, category.name)"
               class="block"
             >
               <div
@@ -149,8 +149,9 @@ const { api } = useAxios();
 const isMobileMenuOpen = ref(false);
 const arr = ref([
   {
-    id: 0,
+    id: 24343434,
     name: "Consultancy & Design",
+    url: "/consultancy-and-design",
   },
 ]);
 const {

@@ -32,9 +32,10 @@ export const getSolutionLink = (id: number, name: string, segment: any) => {
 export const transformName = (name: string): string => {
   return name
     .toLowerCase()
-    .replace(/[\s/]+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[\s/]+/g, '-') // Replace spaces and slashes with hyphens
+    .replace(/[^\w-]+/g, '') // Remove non-word characters except hyphens
+    .replace(/-+/g, '-') // Replace consecutive hyphens with a single hyphen
+    .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
 }
 
 export function getProductLink(product: any = {}): string {

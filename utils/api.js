@@ -64,6 +64,7 @@ export const APP_SEGMENTS = [
       window.localStorage.getItem("promotionActive") === "true",
     name: "Promotional Solutions",
     slug: "promotional-solutions",
+    slugs: ["promotions"],
     color: "#f4a261",
     image: "/assets/images/events/november-promo.png",
     icon: "/assets/images/menu-icons/top-menu/kitchen.png",

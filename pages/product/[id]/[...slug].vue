@@ -15,18 +15,8 @@
             "
             class="breadcrumb-item"
           >
-            <NuxtLink
-              :to="
-                getCategoryMainLinkTop(
-                  product?.categories_json[0].parent_name_with_slashes
-                )
-              "
-            >
-              {{
-                getCategoryMainLinkTopName(
-                  product?.categories_json[0].parent_name_with_slashes
-                )
-              }}
+            <NuxtLink :to="'/' + segment?.slug">
+              {{ segment?.name.toUpperCase() }}
             </NuxtLink>
           </li>
 
@@ -35,12 +25,7 @@
               v-for="category in product?.categories_json"
               :key="category.id"
               :to="
-                getCategoryLink(
-                  category.id,
-                  category.name,
-                  1,
-                  product?.categories_json[0].parent_name_with_slashes
-                )
+                getCategoryLink(category.id, category.name, undefined, segment)
               "
             >
               {{ category.name }}
@@ -199,8 +184,8 @@
                         getCategoryLink(
                           category.id,
                           category.name,
-                          1,
-                          product?.categories_json[0].parent_name_with_slashes
+                          undefined,
+                          segment
                         )
                       "
                     >
@@ -314,6 +299,10 @@ const route = useRoute();
 const { api } = useAxios();
 
 const { createProductSchema } = useSchemas();
+
+const segment = computed(() =>
+  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
+);
 
 // State
 const visible = ref(false);
@@ -443,16 +432,6 @@ const handleHide = () => {
 const changeMainImage = (imageName, index) => {
   mainImage.value = imageName;
   activeIndex.value = index;
-};
-
-const getCategoryMainLinkTop = (name) => {
-  const parts = name.split("/");
-  return "/" + parts[0];
-};
-
-const getCategoryMainLinkTopName = (name) => {
-  const parts = name.split("/");
-  return parts[0].toUpperCase();
 };
 
 // Computed
