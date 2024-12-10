@@ -1,0 +1,7 @@
+RewriteEngine On
+
+# Handle Laravel routes first
+RewriteCond %{REQUEST_URI} ^/(api|storage|public|pixel-tracker)
+RewriteRule ^(.*)$ backend/public/index.php [QSA,L]
+
+ErrorDocument 404 /404.html

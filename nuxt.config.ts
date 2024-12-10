@@ -1,4 +1,3 @@
-import { APP_SEGMENTS } from "./utils/api"
 import { RouteGenerator } from "./utils/urls";
 
 export default defineNuxtConfig({
@@ -45,7 +44,7 @@ export default defineNuxtConfig({
     async 'nitro:config'(nitroConfig) {
       if (process.env.NODE_ENV === 'production') {
         const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
-        const routes = await generator.generateAllRoutes();
+        const routes = await generator.generateAllRoutes(true);
 
         nitroConfig.prerender = nitroConfig.prerender || {};
         nitroConfig.prerender.routes = [
@@ -60,9 +59,10 @@ export default defineNuxtConfig({
 
   //@ts-ignore
   sitemap: {
+    //@ts-ignore
     routes: async () => {
       const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
-      return generator.generateAllRoutes();
+      return generator.generateAllRoutes(true);
     }
   },
   postcss: {

@@ -28,7 +28,7 @@
               >
                 <NuxtLink
                   class="cat-block"
-                  :to="getSolutionLink(solution.id, solution.name)"
+                  :to="getSolutionLink(solution.id, solution.name, pageSegment)"
                 >
                   <figure>
                     <span>
@@ -90,15 +90,6 @@ const fetchMainSolutions = async () => {
   } catch (error) {
     console.error(error);
   }
-};
-
-const getSolutionLink = (id, name) => {
-  const transformedName = name
-    .toLowerCase()
-    .replace(/[\s/]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return `/${pageSegment.value.slug}/solutions/${id}/${transformedName}`;
 };
 
 onMounted(async () => {

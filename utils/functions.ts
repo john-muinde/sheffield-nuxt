@@ -17,6 +17,23 @@ export function getSegment(slug: string | string[]) {
   );
 }
 
+export const getSolutionLink = (id: number, name: string, segment: any) => {
+  const transformedName = name
+    .toLowerCase()
+    .replace(/[\s/]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `/${segment.slug}/solutions/${id}/${transformedName}`;
+};
+
+export const transformName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/[\s/]+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/^-+|-+$/g, '');
+}
+
 export function getProductLink(product: any = {}): string {
   if (!product) return `/${APP_SEGMENTS[0].slug}`;
 
@@ -58,11 +75,13 @@ export function addToCart(product: any) {
 export const getCategoryLink = (
   id: number,
   name: string,
-  page?: string
+  page?: string,
+  segment?: any
 ): string => {
-  const route = useRoute();
-
-  const segment = getSegment(route.params.segment);
+  if (!segment) {
+    const route = useRoute();
+    segment = getSegment(route.params.segment);
+  }
 
   const transformedName = transformName(name);
 
@@ -77,15 +96,7 @@ export const getCategoryLink = (
     : `/product/${id}/${transformedName}`;
 };
 
-const transformName = (name: string): string => {
-  if (!name) return "";
-  return name
-    .replace(/ /g, "-")
-    .replace(/\//g, "-")
-    .replace(/-+/g, "-") // Remove consecutive dashes
-    .replace(/^-+|-+$/g, "") // Remove leading and trailing dashes
-    .toLowerCase();
-};
+
 
 export function removeFromCart(index: number) {
   const store = useCartStore();

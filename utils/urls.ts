@@ -3,6 +3,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { APP_SEGMENTS } from './api';
+import { getSolutionLink } from './functions';
 
 interface RouteCache {
   timestamp: number;
@@ -90,14 +91,6 @@ export class RouteGenerator {
     }
   }
 
-  private transformName(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[\s/]+/g, '-')
-      .replace(/[^\w-]+/g, '')
-      .replace(/^-+|-+$/g, '');
-  }
-
   private async getProductsForSolution(solutionId: number, segment: any): Promise<string[]> {
     const routes: string[] = [];
     try {
@@ -109,9 +102,10 @@ export class RouteGenerator {
         withXSRFToken: true
       });
 
+
       for (const product of response.data.products.data) {
         if (!this.cache.products.ids.has(product.id)) {
-          routes.push(`/${segment.slug}/product/${product.id}/${this.transformName(product.name)}`);
+          routes.push(getProductLink(product));
           this.cache.products.ids.add(product.id);
         }
       }
@@ -134,7 +128,7 @@ export class RouteGenerator {
 
       for (const product of response.data.products.data) {
         if (!this.cache.products.ids.has(product.id)) {
-          routes.push(`/${segment.slug}/product/${product.id}/${this.transformName(product.name)}`);
+          routes.push(getProductLink(product));
           this.cache.products.ids.add(product.id);
         }
       }
@@ -163,8 +157,7 @@ export class RouteGenerator {
 
         for (const solution of solutionsResponse.data.data) {
           if (!this.cache.solutions.ids.has(solution.id)) {
-            const solutionRoute = `/${segment.slug}/solutions/${solution.id}/${this.transformName(solution.name)}`;
-            allRoutes.push(solutionRoute);
+            allRoutes.push(getSolutionLink(solution.id, solution.name, segment));
             this.cache.solutions.ids.add(solution.id);
 
             // Get products for this solution
@@ -187,8 +180,8 @@ export class RouteGenerator {
 
         for (const category of categoriesResponse.data.data) {
           if (!this.cache.categories.ids.has(category.id)) {
-            const categoryRoute = `/${segment.slug}/${category.id}/${this.transformName(category.name)}`;
-            allRoutes.push(categoryRoute);
+
+            allRoutes.push(getCategoryLink(category.id, category.name, undefined, segment));
             this.cache.categories.ids.add(category.id);
 
             // Get products for this category
