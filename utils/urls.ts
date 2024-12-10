@@ -3,7 +3,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { APP_SEGMENTS } from './api';
-import { getSolutionLink } from './functions';
+import { getSolutionLink, getProductLink, getCategoryLink } from './functions';
 
 interface RouteCache {
   timestamp: number;
@@ -166,7 +166,7 @@ export class RouteGenerator {
           }
         }
       } catch (error) {
-        console.error(`Error processing solutions for segment ${segment.name}:`, error);
+        console.error(`Error processing solutions for segment ${segment.name} url /api/get-solutions/${segment.id}:`, error);
       }
 
       // Generate category routes and their products
@@ -190,7 +190,7 @@ export class RouteGenerator {
           }
         }
       } catch (error) {
-        console.error(`Error processing categories for segment ${segment.name}:`, error);
+        console.error(`Error processing categories for segment ${segment.name} url /api/get-main-categories/${segment.id}:`, error);
       }
     }
 

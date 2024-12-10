@@ -1,4 +1,5 @@
 import { RouteGenerator } from "./utils/urls";
+const generator = new RouteGenerator(process.env.API_BASE_URL || "https://sheffieldafrica.com");
 
 export default defineNuxtConfig({
   site: { url: 'https://dev.sheffieldafrica.com' },
@@ -30,23 +31,29 @@ export default defineNuxtConfig({
     // pageTransition: { name: "page", mode: "out-in" },
     // layoutTransition: { name: "layout", mode: "out-in" },
   },
+  generate: {
+    //@ts-ignore
+    fallback: '404.html'
+  },
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     // These will be accessible as process.env.API_URL and process.env.BASE_URL
-    API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
+    API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     public: {
-      API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
+      API_URL: process.env.API_URL || "https://sheffieldafrica.com",
+      PUBLIC_URL: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com"
     }
   },
   hooks: {
     async 'nitro:config'(nitroConfig) {
       if (process.env.NODE_ENV === 'production') {
-        const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
-        const routes = await generator.generateAllRoutes(true);
+
+        const routes = await generator.generateAllRoutes();
 
         nitroConfig.prerender = nitroConfig.prerender || {};
+        nitroConfig.prerender.failOnError = false;
         nitroConfig.prerender.routes = [
           '/',
           ...routes
@@ -61,8 +68,7 @@ export default defineNuxtConfig({
   sitemap: {
     //@ts-ignore
     routes: async () => {
-      const generator = new RouteGenerator(process.env.API_BASE_URL || "https://dev.sheffieldafrica.com");
-      return generator.generateAllRoutes(true);
+      return generator.generateAllRoutes();
     }
   },
   postcss: {
@@ -70,10 +76,5 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {},
     },
-  },
-  routeRules: {
-    // Try a more specific route first
-    '/kitchen': { redirect: { to: '/commercial-kitchen', statusCode: 301 } },
-    '/kitchen/**': { redirect: { to: '/commercial-kitchen/**', statusCode: 301 } }
   },
 })

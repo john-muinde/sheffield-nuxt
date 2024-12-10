@@ -25335,16 +25335,8 @@ li ul {
     visibility: hidden !important;
 }
 
-.main {
-    /*margin-top: 130px;*/
-}
-
 .the_main_div {
     margin-top: 130px !important;
-}
-
-.the_main_div .main {
-    /*margin-top: 0px !important;*/
 }
 
 @media only screen and (max-width: 768px) {
