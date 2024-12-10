@@ -27,19 +27,27 @@ export default defineNuxtConfig({
         }
       ]
     },
-    // global transition
-    // pageTransition: { name: "page", mode: "out-in" },
-    // layoutTransition: { name: "layout", mode: "out-in" },
   },
   generate: {
     //@ts-ignore
-    fallback: '404.html'
+    fallback: '404.html',
+    crawler: false, // Disable automatic route discovery
+  },
+  nitro: {
+    output: {
+      //@ts-ignore
+      clean: false // Prevent cleaning output directory on build
+    },
+    prerender: {
+      failOnError: false,
+      //@ts-ignore
+      ignorePaths: ['/api/**']
+    }
   },
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
-    // These will be accessible as process.env.API_URL and process.env.BASE_URL
     API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     public: {
       API_URL: process.env.API_URL || "https://sheffieldafrica.com",
@@ -49,22 +57,21 @@ export default defineNuxtConfig({
   hooks: {
     async 'nitro:config'(nitroConfig) {
       if (process.env.NODE_ENV === 'production') {
-
         const routes = await generator.generateAllRoutes();
 
         nitroConfig.prerender = nitroConfig.prerender || {};
+        //@ts-ignore
+        nitroConfig.prerender.enabled = false;
         nitroConfig.prerender.failOnError = false;
+        //@ts-ignore
+        nitroConfig.prerender.ignorePaths = ['/api/**'];
         nitroConfig.prerender.routes = [
           '/',
           ...routes
         ];
-
-        // await generator.generateSitemap(process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com");
       }
     }
   },
-
-  //@ts-ignore
   sitemap: {
     //@ts-ignore
     routes: async () => {

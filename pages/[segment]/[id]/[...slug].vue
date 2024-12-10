@@ -445,6 +445,17 @@ const {
   }
 );
 
+// SEO
+useHead({
+  title: title,
+  meta: [
+    {
+      name: "description",
+      content: title,
+    },
+  ],
+});
+
 // Filter handlers
 async function handleCheckboxChange(categoryId) {
   store.setIsFilterLoading(true);
@@ -525,17 +536,6 @@ async function resetSortValues() {
     store.setIsFilterLoading(false);
   }
 }
-
-// SEO
-useHead({
-  title: title,
-  meta: [
-    {
-      name: "description",
-      content: title,
-    },
-  ],
-});
 </script>
 
 <style>
