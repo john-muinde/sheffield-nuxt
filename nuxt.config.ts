@@ -34,6 +34,11 @@ export default defineNuxtConfig({
     crawler: false, // Disable automatic route discovery
   },
   nitro: {
+    preset: 'node-server',
+    server: {
+      host: '127.0.0.1',
+      port: process.env.PORT || 3000
+    },
     output: {
       //@ts-ignore
       clean: false // Prevent cleaning output directory on build
@@ -83,5 +88,9 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {},
     },
+  },
+  routeRules: {
+    '/kitchen': { redirect: 'commercial-kitchen' },
+    '/kitchen/**': { redirect: '/commercial-kitchen/**' },
   },
 })

@@ -40,7 +40,7 @@
                       v-for="segment in APP_SEGMENTS?.filter(
                         (segment) => segment.active
                       )"
-                      key="segment.id"
+                      :key="segment.id"
                       :class="{
                         'active-li': $route.path.includes(segment.slug),
                       }"
