@@ -22,7 +22,7 @@ import { computed, onMounted } from "vue";
 
 const route = useRoute();
 
-const pageSegment = getSegment(route.params.segment);
+const pageSegment = ref(null);
 
 const { API_URL } = useAxios();
 
@@ -263,6 +263,10 @@ onMounted(() => {
 
   // Pixel tracking
   trackPixel();
+});
+
+watchEffect(() => {
+  pageSegment.value = getSegment(route.params.segment);
 });
 
 // Utility function for generating random string

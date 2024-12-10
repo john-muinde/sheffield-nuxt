@@ -15,18 +15,8 @@
             "
             class="breadcrumb-item"
           >
-            <NuxtLink
-              :to="
-                getCategoryMainLinkTop(
-                  product?.categories_json[0].parent_name_with_slashes
-                )
-              "
-            >
-              {{
-                getCategoryMainLinkTopName(
-                  product?.categories_json[0].parent_name_with_slashes
-                )
-              }}
+            <NuxtLink :to="'/' + segment?.slug">
+              {{ segment?.name.toUpperCase() }}
             </NuxtLink>
           </li>
 
@@ -34,14 +24,7 @@
             <NuxtLink
               v-for="category in product?.categories_json"
               :key="category.id"
-              :to="
-                getCategoryLink(
-                  category.id,
-                  category.name,
-                  1,
-                  product?.categories_json[0].parent_name_with_slashes
-                )
-              "
+              :to="getCategoryLink(category.id, category.name)"
             >
               {{ category.name }}
             </NuxtLink>
@@ -195,14 +178,7 @@
                       v-for="category in product?.categories_json"
                       :key="category.id"
                       style="font-weight: 500"
-                      :to="
-                        getCategoryLink(
-                          category.id,
-                          category.name,
-                          1,
-                          product?.categories_json[0].parent_name_with_slashes
-                        )
-                      "
+                      :to="getCategoryLink(category.id, category.name)"
                     >
                       {{ category.name }}
                     </NuxtLink>
@@ -314,6 +290,10 @@ const route = useRoute();
 const { api } = useAxios();
 
 const { createProductSchema } = useSchemas();
+
+const segment = computed(() =>
+  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
+);
 
 // State
 const visible = ref(false);

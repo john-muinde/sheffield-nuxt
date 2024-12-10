@@ -59,7 +59,7 @@ export default defineNuxtConfig({
           ...routes
         ];
 
-        await generator.generateSitemap(process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com");
+        // await generator.generateSitemap(process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com");
       }
     }
   },

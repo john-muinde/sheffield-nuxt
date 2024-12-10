@@ -9,6 +9,9 @@ export const stripHtml = (html: string) => {
 }
 
 export function getSegment(slug: string | string[]) {
+  if (typeof slug == 'string' && slug.includes('/')) {
+    slug = slug.split('/')[0];
+  }
   slug = Array.isArray(slug) ? slug[0] : slug;
   return APP_SEGMENTS.find((item) =>
     [item.slug, ...(item.slugs || [])].includes(
@@ -78,7 +81,7 @@ export const getCategoryLink = (
   page?: string,
   segment?: any
 ): string => {
-  if (!segment) {
+  if (!segment || !segment.slug) {
     const route = useRoute();
     segment = getSegment(route.params.segment);
   }

@@ -19,30 +19,52 @@
               <li>
                 <a href="#">Links</a>
                 <ul class="menus">
-                  <li
-                    v-for="segment in APP_SEGMENTS"
-                    key="segment.id"
-                    :class="{ 'active-li': $route.path.includes(segment.slug) }"
-                  >
-                    <NuxtLink :to="`/${segment.slug}`">
-                      <span class="top-icon">
-                        <img class="top-menu-icon" :src="segment.icon" />
-                      </span>
-                      {{ segment.name.toUpperCase() }}
-                    </NuxtLink>
-                  </li>
+                  <ClientOnly>
+                    <template #fallback>
+                      <!-- shimmer using tailwind loading -->
+                      <li
+                        v-for="n in 4"
+                        :key="n"
+                        class="h-[20px] bg-gray-200 rounded animate-pulse"
+                      >
+                        <div class="flex items-center h-full px-2">
+                          <div
+                            class="w-[40px] h-5 bg-gray-300 rounded mr-2"
+                          ></div>
+                          <div class="flex-1 h-4 bg-gray-300 rounded"></div>
+                        </div>
+                      </li>
+                    </template>
 
-                  <li :class="{ 'active-li': isConsultancyDesignPage }">
-                    <NuxtLink to="/consultancy-and-Design">
-                      <span class="top-icon">
-                        <img
-                          class="top-menu-icon"
-                          src="/assets/images/menu-icons/consultancy-&-design.png"
-                        />
-                      </span>
-                      Consultancy
-                    </NuxtLink>
-                  </li>
+                    <li
+                      v-for="segment in APP_SEGMENTS?.filter(
+                        (segment) => segment.active
+                      )"
+                      key="segment.id"
+                      :class="{
+                        'active-li': $route.path.includes(segment.slug),
+                      }"
+                    >
+                      <NuxtLink :to="`/${segment.slug}`">
+                        <span class="top-icon">
+                          <img class="top-menu-icon" :src="segment.icon" />
+                        </span>
+                        {{ segment.name.toUpperCase() }}
+                      </NuxtLink>
+                    </li>
+
+                    <li :class="{ 'active-li': isConsultancyDesignPage }">
+                      <NuxtLink to="/consultancy-and-design">
+                        <span class="top-icon">
+                          <img
+                            class="top-menu-icon"
+                            src="/assets/images/menu-icons/consultancy-&-design.png"
+                          />
+                        </span>
+                        Consultancy
+                      </NuxtLink>
+                    </li>
+                  </ClientOnly>
                 </ul>
               </li>
             </ul>
@@ -299,20 +321,8 @@ const { api } = useAxios();
 const route = useRoute();
 const store = useAuthStore();
 
-const isKitchenPage = computed(() => {
-  return route.path.includes("/commercial-kitchen");
-});
-
-const isLaundryPage = computed(() => {
-  return route.path.includes("/laundry");
-});
-
-const isColdRoomPage = computed(() => {
-  return route.path.includes("/cold-storage");
-});
-
 const isConsultancyDesignPage = computed(() => {
-  return route.path.includes("/consultancy-and-Design");
+  return route.path.includes("/consultancy-and-design");
 });
 
 const user = computed(() => store.user);

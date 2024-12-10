@@ -148,21 +148,6 @@
         </image:image>
     </url>
     <url>
-        <loc>https://dev.sheffieldafrica.com/consultancy-and-Design</loc>
-        <image:image>
-            <image:loc>https://dev.sheffieldafrica.com/assets/images/consultancy-and-design.jpg</image:loc>
-        </image:image>
-        <image:image>
-            <image:loc>https://dev.sheffieldafrica.com/assets/images/design/image3_design_c.jpg</image:loc>
-        </image:image>
-        <image:image>
-            <image:loc>https://dev.sheffieldafrica.com/assets/images/design/image1_design_c.jpg</image:loc>
-        </image:image>
-        <image:image>
-            <image:loc>https://dev.sheffieldafrica.com/assets/images/design/image2_design_c.jpg</image:loc>
-        </image:image>
-    </url>
-    <url>
         <loc>https://dev.sheffieldafrica.com/contact-us</loc>
         <image:image>
             <image:loc>https://dev.sheffieldafrica.com/assets/images/about/contact_us_sheffield.jpg</image:loc>
@@ -1129,13 +1114,121 @@
         <loc>https://dev.sheffieldafrica.com/cold-storage/313/hospital-cold-rooms</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/cold-storage/314/mortuary-cold-rooms</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/22/refrigeration</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/24/counter-chillers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/26/bar-line-chillers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/27/back-bar-coolers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/30/wine-coolers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/35/pastry-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/36/ice-cream-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/37/meat-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/39/ice-cube-machines</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/43/meat-preparation</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/45/blenders</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/46/potato-peelers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/47/potato-chippers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/48/potato-mashers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/49/cutter-mixers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/51/hamburger-press-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/52/pineapple-cutters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/53/spiral-mixers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/54/dough-sheeters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/59/marinators</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/60/bone-saw-cutters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/61/meat-mincers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/62/meat-slicers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/63/sausage-stuffers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/64/meat-ball-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/67/vacuum-packers</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/68/hot-cooking</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/69/wall-type-hoods</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/70/island-type-hoods</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/71/hot-plates-griddles</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/72/cookers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/73/salamanders</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/74/pressure-fryers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/77/boiling-pans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/78/bratt-pans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/80/toasters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/82/microwaves</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/85/fryers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/88/ovens</loc>
@@ -1144,13 +1237,61 @@
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/89/rational-combi-steamer</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/90/convection-ovens</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/91/deck-ovens</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/92/pizza-ovens</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/93/rotary-ovens</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/94/oven-accessories</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/95/coffee-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/96/automatic</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/97/semi-automatic</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/98/coffee-grinders</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/99/coffee-machine-accessories</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/100/dishwashers</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/101/glass-washers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/102/under-counter-dishwashers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/103/hood-type-dishwashers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/104/conveyor-dishwashers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/105/pots--utensil-dishwasherss</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/107/buffet--servery</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/109/chaffing-dishes</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/111/juice-dispensers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/121/fire-suppression</loc>
@@ -1159,22 +1300,127 @@
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/130/ice-cream-machines</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/131/chest-freezers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/132/salad-displays--salad-counters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/133/rational-oven-accessories</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/134/coffee-servery</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/135/coffee-brewers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/137/icombi-pro</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/138/icombi-classic</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/139/cleaner-care--active-green-tabs</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/141/displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/142/supermarket--deli-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/144/beverage-visi-coolers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/146/warm-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/147/upright-chillers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/148/dishwasher-racks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/149/pre-rinse-showers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/150/grills</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/151/bulk-cooking</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/152/steam-based-cooking</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/155/induction-chaffers--cookers</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/160/hvac</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/161/axial-fans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/162/centrifugal-fans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/163/inline-fans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/164/ducting</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/169/fire-suppression-system</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/170/food-transportation</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/171/insulated-food-thermo-boxes</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/172/hot--cold-banquet-trolleys</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/173/hot-banqueting-trolleys</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/175/storage</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/176/stainless-steel-racks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/177/pvc-racks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/178/soft-serve-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/179/gelato-machines</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/180/juice-processors</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/181/centrifugal-juicers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/182/citrus-juicers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/183/ice-crusher</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/184/ice-shaver</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/185/sugarcane-juicers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/186/milk-shake-mixers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/187/vegetable-preparation</loc>
@@ -1183,43 +1429,310 @@
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/188/bakery-preparation</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/189/planetary-mixers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/190/bread-slicers</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/191/beverage-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/192/milk-boilers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/193/water-heaters</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/198/mobile-concepts</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/199/grill-concepts</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/200/coffee-concepts</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/201/food-trucks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/204/bar-concepts</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/205/containerized-restaurants</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/206/containerized-laundromats</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/209/hygiene-products</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/210/hand-wash-basins</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/211/taps</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/212/dust-bins</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/214/insectocutors</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/217/sheffield-floor-gulleys</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/221/kitchen-smalls</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/223/cutlery--crockery</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/225/pots-and-pans</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/commercial-kitchen/226/stainless-steel-fabrication</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/227/tables</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/228/wall-type-cooking-island</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/229/island-type-combined-cookers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/230/sheffield-wall-type-hood</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/231/sheffield-island-type-hood</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/232/free-standing-cooking-range</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/233/sinks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/234/overshelves</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/239/trollies</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/240/cocktail-stations</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/315/propeller-fans</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/316/thermotrays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/317/wall-type-combined-cookers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/318/island-type-combined-cookers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/319/orange-juicers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/320/display-chillers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/321/vegetable-processors</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/322/graters</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/325/open-cupboards</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/328/sheffield-floor-gulleys</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/330/gelato-concepts</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/331/containerized-butcheries</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/332/cupboards</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/333/sushi-displays</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/334/moulds</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/335/rational-xs</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/337/sc15</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/338/tea-urns</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/339/water-boilers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/340/water-softeners</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/341/empbst001</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/343/grill-trailer</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/344/coffee-trailer</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/345/bar-trailer</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/346/ice-cream-cart</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/347/safari-kitchen</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/348/grill-box</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/349/coffee-box</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/350/beer-box</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/351/gelato-box</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/352/coffee-tuktuk</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/353/coffee-bucks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/354/free-standing-fabricated-cooking-range</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/355/panini-grills</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/356/spice-grinders</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/357/waffle-makers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/358/crepe-machines</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/359/knife-sterilizer</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/360/sinks</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/361/silicone-moulds</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/commercial-kitchen/364/charcoal-ovens</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/laundry/248/washer-extractors</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/249/fagor-high-spin-washers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/250/fagor-normal-spin-washers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/251/huebsch-normal-spin-washers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/252/semi-commercial-washers</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/laundry/254/dryers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/255/fagor-tumble-dryers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/256/huebsch-tumble-dryers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/257/semi-commercial-dryers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/laundry/258/flatwork-ironers</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/259/huebsch-flatwork-ironers</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/laundry/261/finishing-equipments</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/262/ghidini--steam-ironer-with-boilers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/263/ghidini--vacuum-heated-ironing-tables</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/264/ghidini--pneumatic-presses</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/265/ghidini--form-finishers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/laundry/266/logistics--accessories</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/267/trolleys</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/laundry/269/wet--dry-cleaning</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/270/dry-cleaning</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/271/wet-cleaning</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/laundry/272/semi-commercial-range</loc>
     </url>
     <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/273/washers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/275/stacked</loc>
+    </url>
+    <url>
         <loc>https://dev.sheffieldafrica.com/laundry/276/floor-cleaning</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/277/scrubber-dryers</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/278/vacuums</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/279/single-discs</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/laundry/362/dryers</loc>
     </url>
     <url>
         <loc>https://dev.sheffieldafrica.com/laundry/363/carpet-cleaning</loc>
@@ -4113,5 +4626,17 @@
     <url>
         <loc>https://dev.sheffieldafrica.com/promotional-solutions/solutions/40/pizzeria</loc>
     </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/product/138/icombi-classic/page/1</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/product/142/supermarket--deli-displays/page/1</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/product/148/dishwasher-racks/page/1</loc>
+    </url>
+    <url>
+        <loc>https://dev.sheffieldafrica.com/product/371/nov-1---nov-31---2024-promotions/page/1</loc>
+    </url>
 </urlset>
-<!-- XML Sitemap generated by @nuxtjs/sitemap v7.0.0 at 2024-12-10T06:51:47.444Z -->
+<!-- XML Sitemap generated by @nuxtjs/sitemap v7.0.0 at 2024-12-10T08:48:49.587Z -->
