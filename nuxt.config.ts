@@ -35,6 +35,12 @@ export default defineNuxtConfig({
   },
   nitro: {
     preset: 'node-server',
+    publicAssets: [
+      {
+        baseURL: '/backend',
+        dir: './backend'
+      }
+    ],
     server: {
       host: '127.0.0.1',
       port: process.env.PORT || 3000

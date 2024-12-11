@@ -167,7 +167,10 @@
           as="a"
         >
           <div class="home-section-white">
-            <img src="/assets/images/homepage/sheffield_engineer.jpg" />
+            <img
+              src="/assets/images/homepage/sheffield_engineer.jpg"
+              alt="Sheffield Engineer"
+            />
           </div>
         </NuxtLink>
 
@@ -216,7 +219,10 @@
           as="a"
         >
           <div class="home-section-white">
-            <img src="/assets/images/homepage/female_worker.jpg" />
+            <img
+              src="/assets/images/homepage/female_worker.jpg"
+              alt="Sheffield Female Worker"
+            />
           </div>
         </NuxtLink>
       </div>
@@ -469,10 +475,6 @@ const addClassToBody = () => {
   targetElement.classList.add("mmenu-active");
 };
 
-const handleButtonClick = () => {
-  addClassToBody();
-};
-
 // Function to dismiss the popup
 const dismissPopup = () => {
   showPopup.value = false;
@@ -536,10 +538,6 @@ const convertToNumber = (value) => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", handleResize);
-});
-
-onBeforeMount(() => {
-  // Initial fetch of products
 });
 
 onMounted(async () => {
