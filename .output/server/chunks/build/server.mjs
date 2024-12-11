@@ -6362,7 +6362,7 @@ const plugins = [
   plugin_rEHAXyA4gp
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-ZaXt4LtL.mjs'))
+  default: defineAsyncComponent(() => import('./default-C6VHM0yh.mjs'))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",

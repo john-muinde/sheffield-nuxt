@@ -47,7 +47,7 @@ const { createFAQSchema, createOrganizationSchema, createServiceAreasSchema } =
   useSchemas();
 const metaTags = generateMetaTags();
 
-const schema = [
+const schemas = [
   createOrganizationSchema(),
   createServiceAreasSchema([
     "Nairobi",
@@ -136,6 +136,12 @@ useHead({
     { rel: "stylesheet", href: `/assets/css/skins/skin-demo-14.css` },
     { rel: "stylesheet", href: `/assets/css/demos/demo-14.css` },
     { rel: "stylesheet", href: `/assets/css/demos/demo-4.css` },
+  ],
+  script: [
+    ...schemas.map((schema) => ({
+      type: "application/ld+json",
+      children: JSON.stringify(schema),
+    })),
   ],
 });
 
