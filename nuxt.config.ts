@@ -37,8 +37,8 @@ export default defineNuxtConfig({
     preset: 'node-server',
     publicAssets: [
       {
-        baseURL: '/backend',
-        dir: './backend'
+        baseURL: 'backend',
+        dir: '~/backend',
       }
     ],
     server: {

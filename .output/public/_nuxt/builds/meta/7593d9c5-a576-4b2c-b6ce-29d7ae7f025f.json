@@ -1,0 +1,1 @@
+{"id":"7593d9c5-a576-4b2c-b6ce-29d7ae7f025f","timestamp":1733916259003,"matcher":{"static":{"/kitchen":{"redirect":"commercial-kitchen"}},"wildcard":{"/kitchen":{"redirect":"/commercial-kitchen/**"}},"dynamic":{}},"prerendered":[]}
