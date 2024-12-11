@@ -17,18 +17,60 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted } from "vue";
+
+declare global {
+  interface Window {
+    smartlook: any;
+  }
+}
 
 const route = useRoute();
 
-const pageSegment = ref(null);
+const pageSegment = ref<{
+  id: number;
+  active: boolean;
+  name: string;
+  slug: string;
+  slugs: string[];
+  color: string;
+  image: string;
+  icon: string;
+} | null>(null);
 
 const { API_URL } = useAxios();
 
 // Generate meta tags
 const { generateMetaTags, config } = useMetaGenerator();
+const { createFAQSchema, createOrganizationSchema, createServiceAreasSchema } =
+  useSchemas();
 const metaTags = generateMetaTags();
+
+const schema = [
+  createOrganizationSchema(),
+  createServiceAreasSchema([
+    "Nairobi",
+    "Mombasa",
+    "Kisumu",
+    "Kampala",
+    "Dar es Salaam",
+    "Kigali",
+  ]),
+  createFAQSchema([
+    {
+      question:
+        "What commercial kitchen equipment services does Sheffield provide?",
+      answer:
+        "Sheffield provides complete commercial kitchen solutions including design, equipment supply, installation, maintenance, and custom fabrication. We serve restaurants, hotels, hospitals, schools, and industrial facilities.",
+    },
+    {
+      question: "Which areas does Sheffield serve in East Africa?",
+      answer:
+        "Sheffield serves all major cities in East Africa including Nairobi, Mombasa, Kisumu, Kampala, Dar es Salaam, and Kigali, with additional coverage across Kenya, Uganda, Tanzania, and Rwanda.",
+    },
+  ]),
+];
 
 // Apply meta tags using useHead
 useHead({
@@ -47,16 +89,14 @@ useHead({
     { property: "og:description", content: metaTags.ogDescription },
     { property: "og:image", content: `${metaTags.primaryImage}` },
     { property: "og:type", content: "website" },
-    { property: "og:url", content: metaTags.url },
+    { property: "og:url", content: config.url + route.fullPath },
     { property: "og:site_name", content: config.appName },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:site", content: config.twitterHandle },
-    { name: "twitter:creator", content: config.twitterHandle },
     { name: "twitter:title", content: metaTags.ogTitle },
     { name: "twitter:description", content: metaTags.ogDescription },
     { name: "twitter:image", content: `${metaTags.primaryImage}` },
-    { name: "twitter:url", content: metaTags.url },
-    { name: "twitter:domain", content: metaTags.url },
+    { name: "twitter:url", content: config.url + route.fullPath },
+    { name: "twitter:domain", content: config.url },
     { name: "robots", content: "index, follow" },
   ],
   htmlAttrs: {
@@ -82,10 +122,6 @@ useHead({
       sizes: "16x16",
       href: `/favicon-16x16.png`,
     },
-
-    // DearFlip CSS
-    { rel: "stylesheet", href: `/dearflip/dflip/css/dflip.min.css` },
-
     // Other CSS files (converted from Laravel vite imports)
     { rel: "stylesheet", href: `/assets/css/bootstrap.min.css` },
     {
@@ -100,121 +136,6 @@ useHead({
     { rel: "stylesheet", href: `/assets/css/skins/skin-demo-14.css` },
     { rel: "stylesheet", href: `/assets/css/demos/demo-14.css` },
     { rel: "stylesheet", href: `/assets/css/demos/demo-4.css` },
-  ],
-  script: [
-    // jQuery and its migrate plugin
-    {
-      src: `/dearflip/dflip/js/libs/jquery.min.js`,
-      id: "jquery-core-js",
-    },
-    {
-      src: `/dearflip/dflip/js/libs/jquery-migrate.min.js`,
-      id: "jquery-migrate-js",
-    },
-
-    // DearFlip and other JS libraries
-    {
-      src: `/dearflip/dflip/js/libs/imagesloaded.min.js`,
-      id: "imagesloaded-js",
-    },
-    {
-      src: `/dearflip/dflip/js/libs/masonry.min.js`,
-      id: "masonry-js",
-    },
-    { src: `/dearflip/dflip/js/dflip.min.js`, id: "dflip-script-js" },
-    {
-      src: "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js",
-    },
-
-    // Custom scripts
-    {
-      children: `
-                window.dFlipLocation = "https://js.dearflip.com/wp-content/plugins/dflip/assets/";
-                window.dFlipWPGlobal = ${JSON.stringify({
-                  text: {
-                    toggleSound: "Turn on\/off Sound",
-                    toggleThumbnails: "Toggle Thumbnails",
-                    toggleOutline: "Toggle Outline\/Bookmark",
-                    previousPage: "Previous Page",
-                    nextPage: "Next Page",
-                    toggleFullscreen: "Toggle Fullscreen",
-                    zoomIn: "Zoom In",
-                    zoomOut: "Zoom Out",
-                    toggleHelp: "Toggle Help",
-                    singlePageMode: "Single Page Mode",
-                    doublePageMode: "Double Page Mode",
-                    downloadPDFFile: "Download PDF File",
-                    gotoFirstPage: "Goto First Page",
-                    gotoLastPage: "Goto Last Page",
-                    share: "Share",
-                    search: "Search",
-                    print: "Print",
-                    mailSubject: "I wanted you to see this FlipBook",
-                    mailBody: "Check out this site {{ url()->current() }}",
-                    loading: "Loading",
-                  },
-                  viewerType: "flipbook",
-                  mobileViewerType: "auto",
-                  moreControls: "download,pageMode,startPage,endPage,sound",
-                  hideControls: "altPrev,altNext",
-                  leftControls: "outline,thumbnail",
-                  rightControls: "fullScreen,share,download,more",
-                  hideShareControls: "",
-                  scrollWheel: "true",
-                  backgroundColor: "rgb(229,229,229)",
-                  backgroundImage: "",
-                  height: "auto",
-                  paddingTop: "30",
-                  paddingBottom: "30",
-                  paddingLeft: "30",
-                  paddingRight: "30",
-                  controlsPosition: "bottom",
-                  controlsFloating: true,
-                  direction: "1",
-                  duration: "800",
-                  soundEnable: "true",
-                  showDownloadControl: "true",
-                  showSearchControl: "false",
-                  showPrintControl: "false",
-                  enableAnalytics: "true",
-                  webgl: "true",
-                  hard: "none",
-                  autoEnableOutline: "false",
-                  autoEnableThumbnail: "false",
-                  pageScale: "fit",
-                  maxTextureSize: "3200",
-                  rangeChunkSize: "1048576",
-                  disableRange: false,
-                  zoomRatio: "1.5",
-                  flexibility: "1",
-                  pageMode: "0",
-                  singlePageMode: "0",
-                  pageSize: "0",
-                  autoPlay: "false",
-                  autoPlayDuration: "5000",
-                  autoPlayStart: "false",
-                  linkTarget: "2",
-                  sharePrefix: "flipbook-",
-                  pdfVersion: "default",
-                  thumbLayout: "book-title-hover",
-                  targetWindow: "_popup",
-                  buttonClass: "",
-                  hasSpiral: false,
-                  spiralColor: "#eee",
-                  cover3DType: "plain",
-                  color3DCover: "#aaaaaa",
-                  color3DSheets: "#fff",
-                  flipbook3DTiltAngleUp: "0",
-                  flipbook3DTiltAngleLeft: "0",
-                  autoPDFLinktoViewer: false,
-                  sideMenuOverlay: true,
-                  displayLightboxPlayIcon: true,
-                  popupBackGroundColor: "#eee",
-                  shelfImage: "",
-                  enableAutoLinks: false,
-                })}
-            `,
-    },
   ],
 });
 
@@ -245,11 +166,11 @@ onMounted(() => {
     window.smartlook ||
       (function (d) {
         const o = (window.smartlook = function () {
-          o.api.push(arguments);
+          (o as any).api.push(arguments);
         });
         const h = d.getElementsByTagName("head")[0];
         const c = d.createElement("script");
-        o.api = new Array();
+        (o as any).api = new Array();
         c.async = true;
         c.type = "text/javascript";
         c.charset = "utf-8";
@@ -266,11 +187,11 @@ onMounted(() => {
 });
 
 watchEffect(() => {
-  pageSegment.value = getSegment(route.params.segment);
+  pageSegment.value = getSegment(route.params.segment) || null;
 });
 
 // Utility function for generating random string
-function generateRandomString(length) {
+function generateRandomString(length: number) {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";

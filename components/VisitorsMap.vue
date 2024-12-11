@@ -125,13 +125,13 @@ import {
   onBeforeUnmount,
   watch,
   nextTick,
-} from 'vue';
-import { useStore } from 'vuex';
-import jsVectorMap from 'jsvectormap';
-import 'jsvectormap/dist/maps/world-merc';
-import 'jsvectormap/src/scss/jsvectormap.scss';
-import { countries as countriesData } from 'countries-list';
-import { getCountryCodeByName } from '@/utils';
+} from "vue";
+import { useStore } from "vuex";
+import jsVectorMap from "jsvectormap";
+import "jsvectormap/dist/maps/world-merc";
+import "jsvectormap/src/scss/jsvectormap.scss";
+import { countries as countriesData } from "countries-list";
+import { getCountryCodeByName } from "~/utils";
 
 const props = defineProps({
   visitors: {
@@ -164,24 +164,24 @@ const toggleFullscreen = () => {
 
 // Handle ESC key for fullscreen exit
 const handleKeydown = (event) => {
-  if (event.key === 'Escape' && isFullscreen.value) {
+  if (event.key === "Escape" && isFullscreen.value) {
     toggleFullscreen();
   }
 };
 
 const processedCountries = computed(() => {
   const processed = props.visitors.reduce((acc, visitor) => {
-    let countryCode = visitor.location.split('-').pop().trim();
-    let countryName = visitor.location.split('-').shift().trim();
+    let countryCode = visitor.location.split("-").pop().trim();
+    let countryName = visitor.location.split("-").shift().trim();
 
     countryCode = countryCode.toUpperCase();
 
     if (!countriesData[countryCode]) {
-      countryCode = getCountryCodeByName(countryName) || 'XX';
+      countryCode = getCountryCodeByName(countryName) || "XX";
     }
 
-    if (countryCode === 'XX') {
-      countryCode = getCountryCodeByName(countryName.split(' ')[1]) || 'XX';
+    if (countryCode === "XX") {
+      countryCode = getCountryCodeByName(countryName.split(" ")[1]) || "XX";
     }
 
     if (!acc[countryCode]) {
@@ -200,7 +200,7 @@ const processedCountries = computed(() => {
 
 const sortedCountries = computed(() => {
   return Object.values(processedCountries.value).sort(
-    (a, b) => b.count - a.count,
+    (a, b) => b.count - a.count
   );
 });
 
@@ -215,7 +215,7 @@ const mapData = computed(() => {
 const focusCountry = (code) => {
   if (map.value) {
     // Set zoom level based on country size
-    const largeCountries = ['RU', 'CN', 'US', 'CA', 'BR', 'AU'];
+    const largeCountries = ["RU", "CN", "US", "CA", "BR", "AU"];
     const zoomLevel = largeCountries.includes(code) ? 5 : 8;
 
     map.value.setFocus({
@@ -231,11 +231,11 @@ const destroyMap = () => {
     try {
       const element = document.getElementById(mapId);
       if (element) {
-        element.innerHTML = '';
+        element.innerHTML = "";
       }
       map.value.destroy();
     } catch (error) {
-      console.error('Error destroying map:', error);
+      console.error("Error destroying map:", error);
     }
     map.value = null;
   }
@@ -251,14 +251,14 @@ const initMap = () => {
     if (!mapElement) return;
 
     const isDarkMode = $store.state.is_dark_mode;
-    const primaryColor = isDarkMode ? '#009688' : '#1b55e2';
-    const secondaryColor = isDarkMode ? '#1b2e4b' : '#c2d5ff';
+    const primaryColor = isDarkMode ? "#009688" : "#1b55e2";
+    const secondaryColor = isDarkMode ? "#1b2e4b" : "#c2d5ff";
 
     try {
       map.value = new jsVectorMap({
         selector: `#${mapId}`,
-        map: 'world_merc',
-        backgroundColor: 'transparent',
+        map: "world_merc",
+        backgroundColor: "transparent",
 
         zoomMax: 12,
         zoomMin: 1,
@@ -272,13 +272,13 @@ const initMap = () => {
 
         regionStyle: {
           initial: {
-            fill: isDarkMode ? '#1b2e4b' : '#e0e6ed',
-            stroke: isDarkMode ? '#3b3f5c' : '#fff',
+            fill: isDarkMode ? "#1b2e4b" : "#e0e6ed",
+            stroke: isDarkMode ? "#3b3f5c" : "#fff",
             strokeWidth: 0.5,
           },
           hover: {
             fill: primaryColor,
-            cursor: 'pointer',
+            cursor: "pointer",
           },
         },
 
@@ -294,31 +294,31 @@ const initMap = () => {
                             <div class="map-tooltip">
                                 <strong>${country.name}</strong><br/>
                                 ${country.count} visitor${
-  country.count !== 1 ? 's' : ''
-}
+                country.count !== 1 ? "s" : ""
+              }
                             </div>
                         `,
-              true,
+              true
             );
           } else {
             tooltip.text(
               `
                             <div class="map-tooltip">
                                 <strong>${
-  countriesData[code]?.name || code
-}</strong><br/>
+                                  countriesData[code]?.name || code
+                                }</strong><br/>
                                 No visitors
                             </div>
                         `,
-              true,
+              true
             );
           }
 
-          tooltip._tooltip.style.zIndex = '1035';
+          tooltip._tooltip.style.zIndex = "1035";
         },
       });
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error("Error initializing map:", error);
     }
   });
 };
@@ -328,7 +328,7 @@ watch(
   () => $store.state.is_dark_mode,
   () => {
     initMap();
-  },
+  }
 );
 
 // Watch for visitor data changes
@@ -337,18 +337,18 @@ watch(
   () => {
     initMap();
   },
-  { deep: true },
+  { deep: true }
 );
 
 // Add event listener for ESC key
 onMounted(() => {
   initMap();
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener("keydown", handleKeydown);
 });
 
 onBeforeUnmount(() => {
   destroyMap();
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

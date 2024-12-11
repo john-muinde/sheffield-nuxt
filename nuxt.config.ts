@@ -2,6 +2,7 @@ import { RouteGenerator } from "./utils/urls";
 const generator = new RouteGenerator(process.env.API_BASE_URL || "https://sheffieldafrica.com");
 
 export default defineNuxtConfig({
+
   site: { url: 'https://dev.sheffieldafrica.com' },
   modules: [
     ['@pinia/nuxt', { disableVuex: true, autoImports: ['defineStore', 'acceptHMRUpdate'] }],
@@ -48,7 +49,6 @@ export default defineNuxtConfig({
     output: {
       //@ts-ignore
       clean: false,
-      format: 'cjs'
     },
     prerender: {
       failOnError: false,

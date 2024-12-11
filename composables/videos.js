@@ -1,17 +1,17 @@
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { apiRequest } from '../utils/api';
-import { Modal } from 'ant-design-vue';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { apiRequest } from "../utils/api";
+import { Modal } from "ant-design-vue";
 
 export default function useVideos() {
   const videos = ref([]);
   const videoList = ref([]);
   const video = ref({
-    name: '',
-    type: '',
-    content: '',
-    is_published: '',
-    shown_in_about_us: '',
+    name: "",
+    type: "",
+    content: "",
+    is_published: "",
+    shown_in_about_us: "",
     video_url: null,
     main_image_path: null,
     file_path: null,
@@ -23,17 +23,17 @@ export default function useVideos() {
 
   const getVideos = async (
     page = 1,
-    search_id = '',
-    search_title = '',
-    search_parent_id = '',
-    search_global = '',
-    order_column = 'created_at',
-    order_direction = 'desc',
+    search_id = "",
+    search_title = "",
+    search_parent_id = "",
+    search_global = "",
+    order_column = "created_at",
+    order_direction = "desc"
   ) => {
     try {
       const response = await apiRequest(
-        'get',
-        `/api/videos?page=${page}&search_id=${search_id}&search_title=${search_title}&search_parent_id=${search_parent_id}&search_global=${search_global}&order_column=${order_column}&order_direction=${order_direction}`,
+        "get",
+        `/api/videos?page=${page}&search_id=${search_id}&search_title=${search_title}&search_parent_id=${search_parent_id}&search_global=${search_global}&order_column=${order_column}&order_direction=${order_direction}`
       );
       videos.value = response;
     } catch (errors) {
@@ -43,7 +43,7 @@ export default function useVideos() {
 
   const getVideo = async (id) => {
     try {
-      const response = await apiRequest('get', `/api/videos/${id}`);
+      const response = await apiRequest("get", `/api/videos/${id}`);
       video.value = response;
     } catch (errors) {
       validationErrors.value = errors;
@@ -61,7 +61,7 @@ export default function useVideos() {
     for (let item in video) {
       if (
         Object.prototype.hasOwnProperty.call(video, item) &&
-        video[item] != 'null' &&
+        video[item] != "null" &&
         video[item] != null
       ) {
         serializedPost.append(item, video[item]);
@@ -69,12 +69,12 @@ export default function useVideos() {
     }
 
     const config = {
-      headers: { 'content-type': 'multipart/form-data' },
+      headers: { "content-type": "multipart/form-data" },
     };
 
     try {
-      await apiRequest('post', '/api/videos', serializedPost, config);
-      router.push({ name: 'videos.index' });
+      await apiRequest("post", "/api/videos", serializedPost, config);
+      router.push({ name: "videos.index" });
       // Reset the form values
       video.name = null;
       video.content = null;
@@ -82,7 +82,7 @@ export default function useVideos() {
       video.is_published = null;
       video.shown_in_about_us = null;
 
-      showToast('Video saved successfully', 'success');
+      showToast("Video saved successfully", "success");
     } catch (errors) {
       validationErrors.value = errors;
     } finally {
@@ -101,7 +101,7 @@ export default function useVideos() {
     for (let item in video) {
       if (
         Object.prototype.hasOwnProperty.call(video, item) &&
-        video[item] != 'null' &&
+        video[item] != "null" &&
         video[item] != null
       ) {
         serializedPost.append(item, video[item]);
@@ -109,15 +109,20 @@ export default function useVideos() {
     }
 
     const config = {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { "Content-Type": "multipart/form-data" },
     };
 
-    serializedPost.append('_method', 'put');
+    serializedPost.append("_method", "put");
 
     try {
-      await apiRequest('post', `/api/videos/${video.id}`, serializedPost, config);
-      router.push({ name: 'videos.index' });
-      showToast('Video updated successfully', 'success');
+      await apiRequest(
+        "post",
+        `/api/videos/${video.id}`,
+        serializedPost,
+        config
+      );
+      router.push({ name: "videos.index" });
+      showToast("Video updated successfully", "success");
     } catch (errors) {
       validationErrors.value = errors;
     } finally {
@@ -127,26 +132,25 @@ export default function useVideos() {
 
   const deleteVideo = async (id) => {
     Modal.confirm({
-      title: 'Are you sure?',
-      content: 'You won\'t be able to revert this action!',
-      okText: 'Yes, delete it!',
-      okType: 'danger',
-      cancelText: 'No, cancel',
+      title: "Are you sure?",
+      content: "You won't be able to revert this action!",
+      okText: "Yes, delete it!",
+      okType: "danger",
+      cancelText: "No, cancel",
       onOk() {
-        apiRequest('delete', `/api/videos/${id}`).then(() => {
+        apiRequest("delete", `/api/videos/${id}`).then(() => {
           getVideos();
-          router.push({ name: 'videos.index' });
-          showToast('Video deleted successfully', 'success');
+          router.push({ name: "videos.index" });
+          showToast("Video deleted successfully", "success");
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const getVideoList = async () => {
     try {
-      const response = await apiRequest('get', '/api/video-list');
+      const response = await apiRequest("get", "/api/video-list");
       videoList.value = response;
     } catch (errors) {
       validationErrors.value = errors;

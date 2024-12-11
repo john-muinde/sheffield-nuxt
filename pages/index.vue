@@ -414,7 +414,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-import { ref, onMounted, onBeforeUnmount, onBeforeMount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 
 import { useRouter } from "vue-router";
 
