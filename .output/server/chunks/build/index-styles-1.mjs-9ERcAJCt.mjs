@@ -1,4 +1,0 @@
-const index_vue_vue_type_style_index_0_scoped_b62d9f79_lang = ".slide-from-left .slide-solutions[data-v-b62d9f79]{animation:slideRight-b62d9f79 1s cubic-bezier(.68,-.55,.27,1.55) forwards;list-style:none;opacity:0;transform:translateX(-100%)}.slide-from-right[data-v-b62d9f79]{animation:slideRight-b62d9f79 .5s ease-in-out forwards;opacity:0;transform:translateX(100%)}@keyframes slideRight-b62d9f79{to{opacity:1;transform:translateX(0)}}.slide-from-left .slide-solutions[data-v-b62d9f79]:nth-child(2n){animation-delay:2ms}.slide-solutions a:hover .cat-block-title[data-v-b62d9f79]{color:#c02435}@media only screen and (max-width:768px){.solution-image[data-v-b62d9f79]{display:none}}";
-
-export { index_vue_vue_type_style_index_0_scoped_b62d9f79_lang as i };
-//# sourceMappingURL=index-styles-1.mjs-9ERcAJCt.mjs.map
