@@ -1,5 +1,5 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import http from 'node:http';
-import https from 'node:https';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import vt from 'node:http';
+import Bs from 'node:https';
 import { toValue } from 'vue';
 import { promises, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -102,7 +102,7 @@ function encodeQueryKey(text) {
 function encodePath(text) {
   return encode(text).replace(HASH_RE, "%23").replace(IM_RE, "%3F").replace(ENC_ENC_SLASH_RE, "%2F").replace(AMPERSAND_RE, "%26").replace(PLUS_RE, "%2B");
 }
-function decode(text = "") {
+function decode$1(text = "") {
   try {
     return decodeURIComponent("" + text);
   } catch {
@@ -110,13 +110,13 @@ function decode(text = "") {
   }
 }
 function decodePath(text) {
-  return decode(text.replace(ENC_SLASH_RE, "%252F"));
+  return decode$1(text.replace(ENC_SLASH_RE, "%252F"));
 }
 function decodeQueryKey(text) {
-  return decode(text.replace(PLUS_RE, " "));
+  return decode$1(text.replace(PLUS_RE, " "));
 }
 function decodeQueryValue(text) {
-  return decode(text.replace(PLUS_RE, " "));
+  return decode$1(text.replace(PLUS_RE, " "));
 }
 
 function parseQuery(parametersString = "") {
@@ -352,6 +352,152 @@ function stringifyParsedURL(parsed) {
   const host = parsed.host || "";
   const proto = parsed.protocol || parsed[protocolRelative] ? (parsed.protocol || "") + "//" : "";
   return proto + auth + host + pathname + search + hash;
+}
+
+function parse(str, options) {
+  if (typeof str !== "string") {
+    throw new TypeError("argument str must be a string");
+  }
+  const obj = {};
+  const opt = {};
+  const dec = opt.decode || decode;
+  let index = 0;
+  while (index < str.length) {
+    const eqIdx = str.indexOf("=", index);
+    if (eqIdx === -1) {
+      break;
+    }
+    let endIdx = str.indexOf(";", index);
+    if (endIdx === -1) {
+      endIdx = str.length;
+    } else if (endIdx < eqIdx) {
+      index = str.lastIndexOf(";", eqIdx - 1) + 1;
+      continue;
+    }
+    const key = str.slice(index, eqIdx).trim();
+    if (opt?.filter && !opt?.filter(key)) {
+      index = endIdx + 1;
+      continue;
+    }
+    if (void 0 === obj[key]) {
+      let val = str.slice(eqIdx + 1, endIdx).trim();
+      if (val.codePointAt(0) === 34) {
+        val = val.slice(1, -1);
+      }
+      obj[key] = tryDecode(val, dec);
+    }
+    index = endIdx + 1;
+  }
+  return obj;
+}
+function decode(str) {
+  return str.includes("%") ? decodeURIComponent(str) : str;
+}
+function tryDecode(str, decode2) {
+  try {
+    return decode2(str);
+  } catch {
+    return str;
+  }
+}
+
+const fieldContentRegExp = /^[\u0009\u0020-\u007E\u0080-\u00FF]+$/;
+function serialize(name, value, options) {
+  const opt = options || {};
+  const enc = opt.encode || encodeURIComponent;
+  if (typeof enc !== "function") {
+    throw new TypeError("option encode is invalid");
+  }
+  if (!fieldContentRegExp.test(name)) {
+    throw new TypeError("argument name is invalid");
+  }
+  const encodedValue = enc(value);
+  if (encodedValue && !fieldContentRegExp.test(encodedValue)) {
+    throw new TypeError("argument val is invalid");
+  }
+  let str = name + "=" + encodedValue;
+  if (void 0 !== opt.maxAge && opt.maxAge !== null) {
+    const maxAge = opt.maxAge - 0;
+    if (Number.isNaN(maxAge) || !Number.isFinite(maxAge)) {
+      throw new TypeError("option maxAge is invalid");
+    }
+    str += "; Max-Age=" + Math.floor(maxAge);
+  }
+  if (opt.domain) {
+    if (!fieldContentRegExp.test(opt.domain)) {
+      throw new TypeError("option domain is invalid");
+    }
+    str += "; Domain=" + opt.domain;
+  }
+  if (opt.path) {
+    if (!fieldContentRegExp.test(opt.path)) {
+      throw new TypeError("option path is invalid");
+    }
+    str += "; Path=" + opt.path;
+  }
+  if (opt.expires) {
+    if (!isDate(opt.expires) || Number.isNaN(opt.expires.valueOf())) {
+      throw new TypeError("option expires is invalid");
+    }
+    str += "; Expires=" + opt.expires.toUTCString();
+  }
+  if (opt.httpOnly) {
+    str += "; HttpOnly";
+  }
+  if (opt.secure) {
+    str += "; Secure";
+  }
+  if (opt.priority) {
+    const priority = typeof opt.priority === "string" ? opt.priority.toLowerCase() : opt.priority;
+    switch (priority) {
+      case "low": {
+        str += "; Priority=Low";
+        break;
+      }
+      case "medium": {
+        str += "; Priority=Medium";
+        break;
+      }
+      case "high": {
+        str += "; Priority=High";
+        break;
+      }
+      default: {
+        throw new TypeError("option priority is invalid");
+      }
+    }
+  }
+  if (opt.sameSite) {
+    const sameSite = typeof opt.sameSite === "string" ? opt.sameSite.toLowerCase() : opt.sameSite;
+    switch (sameSite) {
+      case true: {
+        str += "; SameSite=Strict";
+        break;
+      }
+      case "lax": {
+        str += "; SameSite=Lax";
+        break;
+      }
+      case "strict": {
+        str += "; SameSite=Strict";
+        break;
+      }
+      case "none": {
+        str += "; SameSite=None";
+        break;
+      }
+      default: {
+        throw new TypeError("option sameSite is invalid");
+      }
+    }
+  }
+  if (opt.partitioned) {
+    str += "; Partitioned";
+  }
+  return str;
+}
+function isDate(val) {
+  return Object.prototype.toString.call(val) === "[object Date]" || val instanceof Date;
 }
 
 const defaults = Object.freeze({
@@ -2251,6 +2397,32 @@ function sanitizeStatusCode(statusCode, defaultStatusCode = 200) {
   }
   return statusCode;
 }
+
+function parseCookies(event) {
+  return parse(event.node.req.headers.cookie || "");
+}
+function getCookie(event, name) {
+  return parseCookies(event)[name];
+}
+function setCookie(event, name, value, serializeOptions) {
+  serializeOptions = { path: "/", ...serializeOptions };
+  const cookieStr = serialize(name, value, serializeOptions);
+  let setCookies = event.node.res.getHeader("set-cookie");
+  if (!Array.isArray(setCookies)) {
+    setCookies = [setCookies];
+  }
+  const _optionsHash = objectHash(serializeOptions);
+  setCookies = setCookies.filter((cookieValue) => {
+    return cookieValue && _optionsHash !== objectHash(parse(cookieValue));
+  });
+  event.node.res.setHeader("set-cookie", [...setCookies, cookieStr]);
+}
+function deleteCookie(event, name, serializeOptions) {
+  setCookie(event, name, "", {
+    ...serializeOptions,
+    maxAge: 0
+  });
+}
 function splitCookiesString(cookiesString) {
   if (Array.isArray(cookiesString)) {
     return cookiesString.flatMap((c) => splitCookiesString(c));
@@ -3744,8 +3916,8 @@ function createNodeFetch() {
     return l;
   }
   const agentOptions = { keepAlive: true };
-  const httpAgent = new http.Agent(agentOptions);
-  const httpsAgent = new https.Agent(agentOptions);
+  const httpAgent = new vt.Agent(agentOptions);
+  const httpsAgent = new Bs.Agent(agentOptions);
   const nodeFetchOptions = {
     agent(parsedURL) {
       return parsedURL.protocol === "http:" ? httpAgent : httpsAgent;
@@ -4331,13 +4503,6 @@ const assets$1 = {
     "size": 15406,
     "path": "../public/favicon.ico"
   },
-  "/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c0-RsVrXC+81HMDxA4wx+FFzDXtu3M\"",
-    "mtime": "2024-12-16T10:02:52.926Z",
-    "size": 78528,
-    "path": "../public/index.html"
-  },
   "/placeholder_image.webp": {
     "type": "image/webp",
     "etag": "\"a3ea-LNxuIB5EPPpFs6U6zgN71idXtts\"",
@@ -4358,27 +4523,6 @@ const assets$1 = {
     "mtime": "2024-12-11T06:56:33.806Z",
     "size": 443,
     "path": "../public/site.webmanifest"
-  },
-  "/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.126Z",
-    "size": 69,
-    "path": "../public/_payload.json"
-  },
-  "/assets/.DS_Store": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"2804-m0pN7sBBVWdwRCLBlrqXBYZ55Tg\"",
-    "mtime": "2024-12-02T12:49:20.849Z",
-    "size": 10244,
-    "path": "../public/assets/.DS_Store"
-  },
-  "/assets/vue.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"1f0-4hXJ6NQY+M4nORm2NfiTNkqISLc\"",
-    "mtime": "2024-12-02T12:49:20.848Z",
-    "size": 496,
-    "path": "../public/assets/vue.svg"
   },
   "/dearflip/.gitignore": {
     "type": "text/plain; charset=utf-8",
@@ -4401,677 +4545,663 @@ const assets$1 = {
     "size": 4123,
     "path": "../public/dearflip/README.md"
   },
+  "/assets/.DS_Store": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"2804-m0pN7sBBVWdwRCLBlrqXBYZ55Tg\"",
+    "mtime": "2024-12-02T12:49:20.849Z",
+    "size": 10244,
+    "path": "../public/assets/.DS_Store"
+  },
+  "/assets/vue.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"1f0-4hXJ6NQY+M4nORm2NfiTNkqISLc\"",
+    "mtime": "2024-12-02T12:49:20.848Z",
+    "size": 496,
+    "path": "../public/assets/vue.svg"
+  },
   "/_nuxt/1vm4lv-O.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"8ec-DQAUK9buHddunfa0yj2DWbMkLwI\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 2284,
     "path": "../public/_nuxt/1vm4lv-O.js"
   },
   "/_nuxt/3U2bDQEK.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"e991-c8Q692UCyUQpbIetBczUBdmjOmQ\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 59793,
     "path": "../public/_nuxt/3U2bDQEK.js"
   },
   "/_nuxt/8D7o4nwa.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1125-dD5weJOE1ale7rVvCbWEKYsHKlc\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 4389,
     "path": "../public/_nuxt/8D7o4nwa.js"
   },
   "/_nuxt/AagL2_sA.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1c333-LT35WrB284nWKijtm1V21rv4RcU\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 115507,
     "path": "../public/_nuxt/AagL2_sA.js"
   },
   "/_nuxt/aLIAi1C2.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"672e-hDHNuh0IWn75Cx3fMkzjJPqoGlM\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 26414,
     "path": "../public/_nuxt/aLIAi1C2.js"
   },
   "/_nuxt/B8clw0i_.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1dce-GK8MxSgj5g5F+O13Z27LjVRjPcw\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 7630,
     "path": "../public/_nuxt/B8clw0i_.js"
   },
   "/_nuxt/B9TBLu2s.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"13b7-9q1RdZwig6L8EbChydhAWYqXeHQ\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 5047,
     "path": "../public/_nuxt/B9TBLu2s.js"
   },
   "/_nuxt/BAeON7cS.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"4011-3AP/TEIe9FqEVi0cQOlP9V7cAsE\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 16401,
     "path": "../public/_nuxt/BAeON7cS.js"
   },
   "/_nuxt/BclF-yw9.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"32922-OOQP/aZ0mV/rB3fvevWpDZhlf4I\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 207138,
     "path": "../public/_nuxt/BclF-yw9.js"
   },
   "/_nuxt/BenqVpKE.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"2ee9-J/TOsr9huJwmHvvL2YNfYSJKJ8I\"",
-    "mtime": "2024-12-16T10:02:34.932Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 12009,
     "path": "../public/_nuxt/BenqVpKE.js"
   },
   "/_nuxt/BHIiYVKw.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"2960-OzG0uPQSeLKs8ew14lww5GPFNuo\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 10592,
     "path": "../public/_nuxt/BHIiYVKw.js"
   },
   "/_nuxt/Bifhdyn8.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1d63-H0x3KF98RXZAOjIyBNg0ueaWShw\"",
-    "mtime": "2024-12-16T10:02:34.921Z",
+    "mtime": "2024-12-16T10:14:47.271Z",
     "size": 7523,
     "path": "../public/_nuxt/Bifhdyn8.js"
   },
   "/_nuxt/BJbjQ7Oe.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1356-iK524zVC8zvjeBNRrurZJddbStA\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 4950,
     "path": "../public/_nuxt/BJbjQ7Oe.js"
   },
   "/_nuxt/blogs.BiTTuJ_O.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"265-NAALBEJYgUpj3CfBtv+idnCTkzw\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 613,
     "path": "../public/_nuxt/blogs.BiTTuJ_O.css"
   },
   "/_nuxt/BNiPQXBz.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"19633-zQaoCoj+E6vsCzG1RAg68I6HYzw\"",
-    "mtime": "2024-12-16T10:02:34.933Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 103987,
     "path": "../public/_nuxt/BNiPQXBz.js"
   },
   "/_nuxt/BosuxZz1.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"2b3-Gs2c8CozuFz8HQpV2+LRxv0gz5Q\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 691,
     "path": "../public/_nuxt/BosuxZz1.js"
   },
   "/_nuxt/BPb74xHN.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1103-8Xigxcy5uDGl4kTbXFwNV9SwtAY\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 4355,
     "path": "../public/_nuxt/BPb74xHN.js"
   },
   "/_nuxt/brochures-and-catalogs.C4awO-T1.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"2b9-J1cZn8WKjBHGVXulcBQs9sKYtY8\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 697,
     "path": "../public/_nuxt/brochures-and-catalogs.C4awO-T1.css"
   },
   "/_nuxt/BUlWonKV.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1fe-HuYEBUfzx2G4k84IJrt04uqPWkI\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 510,
     "path": "../public/_nuxt/BUlWonKV.js"
   },
   "/_nuxt/BVYfNQXj.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1cb7-Fw7mtJJGrl6q/su7KNL6Sye0BH0\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 7351,
     "path": "../public/_nuxt/BVYfNQXj.js"
   },
   "/_nuxt/BWeI_sl4.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"6683-mAITV9/Lp5ScVKrfZV+L11eY0rY\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 26243,
     "path": "../public/_nuxt/BWeI_sl4.js"
   },
   "/_nuxt/BWiPyGlQ.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"566-yuRXKf55ydUmIu6k1croKM5b4ks\"",
-    "mtime": "2024-12-16T10:02:34.932Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 1382,
     "path": "../public/_nuxt/BWiPyGlQ.js"
   },
   "/_nuxt/C-gNZJaQ.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"8f5-5L2S1cDuZwKv17EwCmpzbOlbmZg\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 2293,
     "path": "../public/_nuxt/C-gNZJaQ.js"
   },
   "/_nuxt/C6-auSY3.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"6a1-QpxVkVtKaXdxeFA0gJ/Hj0pMJxg\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 1697,
     "path": "../public/_nuxt/C6-auSY3.js"
   },
   "/_nuxt/C6jr5TIf.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"6461-XFKGvji526jeXZXZrxj5Pnsz0OI\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 25697,
     "path": "../public/_nuxt/C6jr5TIf.js"
   },
   "/_nuxt/Ca-114eZ.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"7f2-xYtjibPCNYEIsR0VjSIBqgl+ep4\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 2034,
     "path": "../public/_nuxt/Ca-114eZ.js"
   },
   "/_nuxt/careers.BHB41rMJ.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"19b8-IiF+Eg1/7SiVggA2+7oQic9MjFA\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 6584,
     "path": "../public/_nuxt/careers.BHB41rMJ.css"
   },
   "/_nuxt/CB9hAHoZ.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"12d02-ABNEfNzTQHAXQOR6kfOZKVrUYb0\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 77058,
     "path": "../public/_nuxt/CB9hAHoZ.js"
   },
   "/_nuxt/CDQ6QxRF.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"b90-AtrJCJ+ooYPB11PJb4748gktiUQ\"",
-    "mtime": "2024-12-16T10:02:34.932Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 2960,
     "path": "../public/_nuxt/CDQ6QxRF.js"
   },
   "/_nuxt/CFDpbP5C.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"25e3-rjD7JnImPKSSSzHaHu58BHLIzhQ\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 9699,
     "path": "../public/_nuxt/CFDpbP5C.js"
   },
   "/_nuxt/Cg6WK9Tj.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"5fcef-HM3sIX8kBVV2dune6jcBfW297ZM\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 392431,
     "path": "../public/_nuxt/Cg6WK9Tj.js"
   },
   "/_nuxt/CGLlpjeW.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"41-N/bQn1NOBg8GuUj+K5hVA/H7Wwo\"",
-    "mtime": "2024-12-16T10:02:34.921Z",
+    "mtime": "2024-12-16T10:14:47.271Z",
     "size": 65,
     "path": "../public/_nuxt/CGLlpjeW.js"
   },
   "/_nuxt/Ch97Ff_P.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"14d3e-I6F3lBlbFRDKnOT66onDW5SOig4\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 85310,
     "path": "../public/_nuxt/Ch97Ff_P.js"
   },
   "/_nuxt/CjM_IXEH.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"550d-qKURDZpX3YnWEWUpfj0rAjzzmZU\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 21773,
     "path": "../public/_nuxt/CjM_IXEH.js"
   },
   "/_nuxt/Cmx_2-sP.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"18ef-Zp1QZnFF7+utumMyhx5EpLvZG2o\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 6383,
     "path": "../public/_nuxt/Cmx_2-sP.js"
   },
   "/_nuxt/CNY48zI9.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"561-NB1akH860YEQeA0W6p1LCxIBaYU\"",
-    "mtime": "2024-12-16T10:02:34.932Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 1377,
     "path": "../public/_nuxt/CNY48zI9.js"
   },
   "/_nuxt/consultancy-and-design.DbecIXp3.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"a81-dKUnnwMNh7ugkxq6W4jc3HVrDN8\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 2689,
     "path": "../public/_nuxt/consultancy-and-design.DbecIXp3.css"
   },
   "/_nuxt/contact-us.D_SoQ-Ih.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"245-X9ZWFdSPmucx3+sqId4rpwgdto0\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 581,
     "path": "../public/_nuxt/contact-us.D_SoQ-Ih.css"
   },
   "/_nuxt/ContentState.Dx_TUrC7.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"e82-653Hwt9ZgthbzxWqhCz2AgoxV1Q\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3714,
     "path": "../public/_nuxt/ContentState.Dx_TUrC7.css"
   },
   "/_nuxt/CPTDUZO2.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"25c5-Z1q+cDNjlzKUZMuk1ja9qMj0ZpQ\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 9669,
     "path": "../public/_nuxt/CPTDUZO2.js"
   },
   "/_nuxt/CPV0cuBy.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"246f-Tl0zM2s1z+ESgOjE1TEebwh3Gyg\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 9327,
     "path": "../public/_nuxt/CPV0cuBy.js"
   },
   "/_nuxt/CPx7KUT9.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"358-CSZ/M+e3Xyr+n42kaO7aejAHMEo\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 856,
     "path": "../public/_nuxt/CPx7KUT9.js"
   },
   "/_nuxt/CqO6XEy7.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"10a8-vkH69KCe3KMNTVwDo3hNfrtvaJ8\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 4264,
     "path": "../public/_nuxt/CqO6XEy7.js"
   },
   "/_nuxt/CQtZMqEo.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1b5f8-ZUiXdUGLy7x3Q2Ta8mgPz+kpZrQ\"",
-    "mtime": "2024-12-16T10:02:34.936Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 112120,
     "path": "../public/_nuxt/CQtZMqEo.js"
   },
   "/_nuxt/CunJncIT.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"2663-Efsp33BmrOurmL4o4MDL1kPQSDg\"",
-    "mtime": "2024-12-16T10:02:34.924Z",
+    "mtime": "2024-12-16T10:14:47.273Z",
     "size": 9827,
     "path": "../public/_nuxt/CunJncIT.js"
   },
   "/_nuxt/Czejm-UM.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"12ad-lwcg7SYwU3QI9+GolgfbA6jfMpI\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 4781,
     "path": "../public/_nuxt/Czejm-UM.js"
   },
   "/_nuxt/CZuYlZUe.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"307f-If/fTSm10KoxiEIk6qhVsIytC/Q\"",
-    "mtime": "2024-12-16T10:02:34.936Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 12415,
     "path": "../public/_nuxt/CZuYlZUe.js"
   },
   "/_nuxt/DaNBrdEy.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"8c52-dHsdhHkPJA1IyTWDeQ5mlWQ73Ok\"",
-    "mtime": "2024-12-16T10:02:34.921Z",
+    "mtime": "2024-12-16T10:14:47.271Z",
     "size": 35922,
     "path": "../public/_nuxt/DaNBrdEy.js"
   },
   "/_nuxt/Dd2ktJ3W.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"d2c-sqUwiozoki6zK/GCqH8X/hDcxUU\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 3372,
     "path": "../public/_nuxt/Dd2ktJ3W.js"
   },
   "/_nuxt/default.MrKA4IK1.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"1e26-3gpLCEqVzPKkDc41B109RB7FzSA\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 7718,
     "path": "../public/_nuxt/default.MrKA4IK1.css"
   },
   "/_nuxt/DfCIsICM.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"22c9-TK5m3ZG7HsKycNGTznfwRK528hE\"",
-    "mtime": "2024-12-16T10:02:34.921Z",
+    "mtime": "2024-12-16T10:14:47.271Z",
     "size": 8905,
     "path": "../public/_nuxt/DfCIsICM.js"
   },
   "/_nuxt/DJ_te2rl.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"2297-0kR19zMzuhDOZJR/w64IfPz6OS4\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 8855,
     "path": "../public/_nuxt/DJ_te2rl.js"
   },
   "/_nuxt/DlQZnIjd.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"3f0e-lM5Zin878h4KonRTXP0MG/FxWQg\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 16142,
     "path": "../public/_nuxt/DlQZnIjd.js"
   },
   "/_nuxt/DLsNrc7_.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"10ec-EVUYqaypwC7xsgHQe+I0N628vBg\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 4332,
     "path": "../public/_nuxt/DLsNrc7_.js"
   },
   "/_nuxt/Dmqew6US.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"d52-YixX5YX1286r7UzBzsE0CoAquSM\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3410,
     "path": "../public/_nuxt/Dmqew6US.js"
   },
   "/_nuxt/Dmyv3A9K.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"549-dY/ry6+QuCWDLzIfqxQ03iENqkQ\"",
-    "mtime": "2024-12-16T10:02:34.933Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 1353,
     "path": "../public/_nuxt/Dmyv3A9K.js"
   },
   "/_nuxt/DN3Sx4_u.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"551c-uqxSS9h8t8Xxyh/7dxQ/M4P9kN8\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.274Z",
     "size": 21788,
     "path": "../public/_nuxt/DN3Sx4_u.js"
   },
   "/_nuxt/DNiCKMHD.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"15f2-RlCzOWWLIBw4durgvoZG1nSsHHM\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 5618,
     "path": "../public/_nuxt/DNiCKMHD.js"
   },
   "/_nuxt/DoGN5c6i.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"79f-a7IQVmFAqpJLuDVBBnb2IrWwEes\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 1951,
     "path": "../public/_nuxt/DoGN5c6i.js"
   },
   "/_nuxt/DQNKoLgK.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"1172-vkRu4nWY01wEfUZOCyOEq4F2QIs\"",
-    "mtime": "2024-12-16T10:02:34.925Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 4466,
     "path": "../public/_nuxt/DQNKoLgK.js"
   },
   "/_nuxt/DqVMX9d2.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"f1e-U1CgeJd0A6RvQ4NJzveiaYe7S88\"",
-    "mtime": "2024-12-16T10:02:34.929Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 3870,
     "path": "../public/_nuxt/DqVMX9d2.js"
   },
   "/_nuxt/DTOzZtqW.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"17f-88mtA7rBqeTkmmxk8w1eRIa1krg\"",
-    "mtime": "2024-12-16T10:02:34.930Z",
+    "mtime": "2024-12-16T10:14:47.278Z",
     "size": 383,
     "path": "../public/_nuxt/DTOzZtqW.js"
   },
   "/_nuxt/DXI9yaRo.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"12fe-Kvp6d7Ts/dt8XeyaqUvUlIDJ4r4\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 4862,
     "path": "../public/_nuxt/DXI9yaRo.js"
   },
   "/_nuxt/Dy2GHos1.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"ec4-mXkoGC4eUzTY+CkI+uSOPzhMOEA\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3780,
     "path": "../public/_nuxt/Dy2GHos1.js"
   },
   "/_nuxt/DZ1oNqWa.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"dff-dkclcbLWZani72fzgU6zuRJozGk\"",
-    "mtime": "2024-12-16T10:02:34.936Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 3583,
     "path": "../public/_nuxt/DZ1oNqWa.js"
   },
   "/_nuxt/D_YVp5sg.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"8cf4-JnaTBA9qkV1XtDx/BfJalWyfVnU\"",
-    "mtime": "2024-12-16T10:02:34.933Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 36084,
     "path": "../public/_nuxt/D_YVp5sg.js"
   },
   "/_nuxt/entry.B0b_3z4T.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"76-CDQoouRgFWCPiMclGbN+epGTMOs\"",
-    "mtime": "2024-12-16T10:02:34.913Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 118,
     "path": "../public/_nuxt/entry.B0b_3z4T.css"
   },
   "/_nuxt/error-404.cEmUNyxp.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"de4-SdihvCQPvoXinRf/wSOAzbKP+44\"",
-    "mtime": "2024-12-16T10:02:34.915Z",
+    "mtime": "2024-12-16T10:14:47.261Z",
     "size": 3556,
     "path": "../public/_nuxt/error-404.cEmUNyxp.css"
   },
   "/_nuxt/error-500.BInHDAkn.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"75c-i6xwOB651WplF0+ERsedcNBaYsI\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 1884,
     "path": "../public/_nuxt/error-500.BInHDAkn.css"
   },
   "/_nuxt/faq.v4_bOzNi.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"d2-F1+sD+Bqbd2P1ZgRbDtaFQgVWd0\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 210,
     "path": "../public/_nuxt/faq.v4_bOzNi.css"
   },
   "/_nuxt/gallery.Brxc1ER3.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"90b-bOsarFDTBFHp8ZB+Ri5/r5uVcdI\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 2315,
     "path": "../public/_nuxt/gallery.Brxc1ER3.css"
   },
   "/_nuxt/in-the-news.B09aBegM.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"14f-2JL9yowJcZ5peu5gBoQZTeEia/c\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 335,
     "path": "../public/_nuxt/in-the-news.B09aBegM.css"
   },
   "/_nuxt/index.BTEzwJiC.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"26b-EBdIXuYRxmUgt34a7c2/SSO8M6g\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 619,
     "path": "../public/_nuxt/index.BTEzwJiC.css"
   },
   "/_nuxt/index.C7Gy98hj.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"9d9-gilj9CZgeUa3NL4Uo65/LbF2/Uc\"",
-    "mtime": "2024-12-16T10:02:34.918Z",
+    "mtime": "2024-12-16T10:14:47.267Z",
     "size": 2521,
     "path": "../public/_nuxt/index.C7Gy98hj.css"
   },
   "/_nuxt/index.CFa6obeS.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"d64a-FOMSwCggnwy2tTAvBb3Vf6TXCUg\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 54858,
     "path": "../public/_nuxt/index.CFa6obeS.css"
   },
   "/_nuxt/index.DibC_ZJq.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"912-+dnYic8vAaWt7pU4Lljyl+5WT3k\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 2322,
     "path": "../public/_nuxt/index.DibC_ZJq.css"
   },
   "/_nuxt/index.DVWD0wev.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"670b-XMeuh9+1dL8J0xY0lltVF0UtC+8\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.265Z",
     "size": 26379,
     "path": "../public/_nuxt/index.DVWD0wev.css"
   },
   "/_nuxt/index.J7d1F9mt.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"c6c-fSL/FU8kJefe3rpPgx6PCea6DhM\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3180,
     "path": "../public/_nuxt/index.J7d1F9mt.css"
   },
   "/_nuxt/LoadingData.q-EsD9hS.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"1e9-O4MblkOVP6P+9qoeiTm3oUpWeHY\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 489,
     "path": "../public/_nuxt/LoadingData.q-EsD9hS.css"
   },
   "/_nuxt/mtbzO7iE.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"d24-8uWQ1PgWVyugD6hJdbrdwq1H760\"",
-    "mtime": "2024-12-16T10:02:34.926Z",
+    "mtime": "2024-12-16T10:14:47.275Z",
     "size": 3364,
     "path": "../public/_nuxt/mtbzO7iE.js"
   },
   "/_nuxt/newsletters.DAr2NRmG.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"295-CjxjrvwnMFRQlM6L7FL8GTTQWTQ\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.269Z",
     "size": 661,
     "path": "../public/_nuxt/newsletters.DAr2NRmG.css"
   },
   "/_nuxt/QiFWiJNv.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"dd9-RXZN+RKwD0fC4+gdIPWRgTN6QXI\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3545,
     "path": "../public/_nuxt/QiFWiJNv.js"
   },
   "/_nuxt/request-for-quote.BBs9DdE-.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"1d1f7-S1G82+LsphXSiGFQGphWj8L8mkY\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 119287,
     "path": "../public/_nuxt/request-for-quote.BBs9DdE-.css"
   },
   "/_nuxt/sheffield-advantage.CCU3QVIC.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"77a-Rxxw4Sp1YE/OSwUfFhjvKv/yBkM\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 1914,
     "path": "../public/_nuxt/sheffield-advantage.CCU3QVIC.css"
   },
   "/_nuxt/SrY_pFK_.js": {
     "type": "text/javascript; charset=utf-8",
     "etag": "\"cfc-twflkR+qPRUewJ7WOnM/QTurVlg\"",
-    "mtime": "2024-12-16T10:02:34.932Z",
+    "mtime": "2024-12-16T10:14:47.281Z",
     "size": 3324,
     "path": "../public/_nuxt/SrY_pFK_.js"
   },
   "/_nuxt/terms-and-conditions.4v-Iwixn.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"103-DXzBiei/aBCpCP3vf36a4zmloGs\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 259,
     "path": "../public/_nuxt/terms-and-conditions.4v-Iwixn.css"
   },
   "/_nuxt/videos.Cp7kQkRe.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"6f-YlUICePmoth2343o7OxCj9K6TPE\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.269Z",
     "size": 111,
     "path": "../public/_nuxt/videos.Cp7kQkRe.css"
   },
   "/_nuxt/_...B3-7j9sk.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"642-7s/N82TsUa8ylqt/IEKduci/coI\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 1602,
     "path": "../public/_nuxt/_...B3-7j9sk.css"
   },
   "/_nuxt/_...Cn_uPCym.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"d5e-p9rhNAyvAhLORV/yGM/wrUyaAa0\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 3422,
     "path": "../public/_nuxt/_...Cn_uPCym.css"
   },
   "/_nuxt/_...f-6c5nKE.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"d5e-vUN8KOAIbaSN2bdH8eil9OWaCho\"",
-    "mtime": "2024-12-16T10:02:34.920Z",
+    "mtime": "2024-12-16T10:14:47.270Z",
     "size": 3422,
     "path": "../public/_nuxt/_...f-6c5nKE.css"
   },
   "/_nuxt/_...kgnTapkZ.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"188-Aya7NNMDqlcJ2hKFmKoOhCJkx+E\"",
-    "mtime": "2024-12-16T10:02:34.916Z",
+    "mtime": "2024-12-16T10:14:47.264Z",
     "size": 392,
     "path": "../public/_nuxt/_...kgnTapkZ.css"
   },
-  "/assets/fonts/molla.eot": {
-    "type": "application/vnd.ms-fontobject",
-    "etag": "\"3e800-2+ga2/86zfgEbUiOgXTfokCYUg4\"",
-    "mtime": "2024-12-02T12:49:17.924Z",
-    "size": 256000,
-    "path": "../public/assets/fonts/molla.eot"
-  },
-  "/assets/fonts/molla.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"51712-f1j3M1i+OGgtDxjUrkhax+1GCGk\"",
-    "mtime": "2024-12-02T12:49:17.925Z",
-    "size": 333586,
-    "path": "../public/assets/fonts/molla.svg"
-  },
-  "/assets/fonts/molla.ttf": {
-    "type": "font/ttf",
-    "etag": "\"3e764-eNJP/KIsEboT1hwzgNnMhiq1JQ4\"",
-    "mtime": "2024-12-02T12:49:17.926Z",
-    "size": 255844,
-    "path": "../public/assets/fonts/molla.ttf"
-  },
-  "/assets/fonts/molla.woff": {
-    "type": "font/woff",
-    "etag": "\"276fc-bwYQL0YIanD8XRYwoAtMrlhcbqA\"",
-    "mtime": "2024-12-02T12:49:17.928Z",
-    "size": 161532,
-    "path": "../public/assets/fonts/molla.woff"
-  },
-  "/assets/fonts/molla.woff2": {
-    "type": "font/woff2",
-    "etag": "\"20f00-XlbN8mhpZeYcH/rf61KeHIWV9Ro\"",
-    "mtime": "2024-12-02T12:49:17.930Z",
-    "size": 134912,
-    "path": "../public/assets/fonts/molla.woff2"
+  "/dearflip/examples/basic-example.html": {
+    "type": "text/html; charset=utf-8",
+    "etag": "\"527-F8dwZrxmKHy1i3jzXlxMOUqBQRs\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 1319,
+    "path": "../public/dearflip/examples/basic-example.html"
   },
   "/assets/css/.DS_Store": {
     "type": "text/plain; charset=utf-8",
@@ -5170,6 +5300,41 @@ const assets$1 = {
     "mtime": "2024-12-02T12:49:17.916Z",
     "size": 1586,
     "path": "../public/assets/css/X_Logo_black_background.svg"
+  },
+  "/assets/fonts/molla.eot": {
+    "type": "application/vnd.ms-fontobject",
+    "etag": "\"3e800-2+ga2/86zfgEbUiOgXTfokCYUg4\"",
+    "mtime": "2024-12-02T12:49:17.924Z",
+    "size": 256000,
+    "path": "../public/assets/fonts/molla.eot"
+  },
+  "/assets/fonts/molla.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"51712-f1j3M1i+OGgtDxjUrkhax+1GCGk\"",
+    "mtime": "2024-12-02T12:49:17.925Z",
+    "size": 333586,
+    "path": "../public/assets/fonts/molla.svg"
+  },
+  "/assets/fonts/molla.ttf": {
+    "type": "font/ttf",
+    "etag": "\"3e764-eNJP/KIsEboT1hwzgNnMhiq1JQ4\"",
+    "mtime": "2024-12-02T12:49:17.926Z",
+    "size": 255844,
+    "path": "../public/assets/fonts/molla.ttf"
+  },
+  "/assets/fonts/molla.woff": {
+    "type": "font/woff",
+    "etag": "\"276fc-bwYQL0YIanD8XRYwoAtMrlhcbqA\"",
+    "mtime": "2024-12-02T12:49:17.928Z",
+    "size": 161532,
+    "path": "../public/assets/fonts/molla.woff"
+  },
+  "/assets/fonts/molla.woff2": {
+    "type": "font/woff2",
+    "etag": "\"20f00-XlbN8mhpZeYcH/rf61KeHIWV9Ro\"",
+    "mtime": "2024-12-02T12:49:17.930Z",
+    "size": 134912,
+    "path": "../public/assets/fonts/molla.woff2"
   },
   "/assets/js/.DS_Store": {
     "type": "text/plain; charset=utf-8",
@@ -5331,6 +5496,13 @@ const assets$1 = {
     "mtime": "2024-12-02T12:49:20.811Z",
     "size": 6148,
     "path": "../public/assets/vendor/.DS_Store"
+  },
+  "/_nuxt/builds/latest.json": {
+    "type": "application/json",
+    "etag": "\"47-4W6zpk3aNJl4AyZzcn6sEahPeSg\"",
+    "mtime": "2024-12-16T10:14:55.816Z",
+    "size": 71,
+    "path": "../public/_nuxt/builds/latest.json"
   },
   "/assets/images/.DS_Store": {
     "type": "text/plain; charset=utf-8",
@@ -7425,33 +7597,96 @@ const assets$1 = {
     "size": 201626,
     "path": "../public/assets/images/workshop_sheffield.jpg"
   },
-  "/dearflip/examples/basic-example.html": {
-    "type": "text/html; charset=utf-8",
-    "etag": "\"527-F8dwZrxmKHy1i3jzXlxMOUqBQRs\"",
+  "/dearflip/dflip/css/dflip.min.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"f060-oRu9Zkll8J4P/v8NBw89ab8wkuQ\"",
+    "mtime": "2024-11-20T05:38:15.224Z",
+    "size": 61536,
+    "path": "../public/dearflip/dflip/css/dflip.min.css"
+  },
+  "/dearflip/dflip/css/themify-icons.min.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"361b-ogaFvSMZpVefZQajbHfoDA4Ke5Q\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 1319,
-    "path": "../public/dearflip/examples/basic-example.html"
+    "size": 13851,
+    "path": "../public/dearflip/dflip/css/themify-icons.min.css"
   },
-  "/_nuxt/builds/latest.json": {
-    "type": "application/json",
-    "etag": "\"47-zAFm+E9sWq0Y9fGi4idAgHs2OeY\"",
-    "mtime": "2024-12-16T10:03:20.996Z",
-    "size": 71,
-    "path": "../public/_nuxt/builds/latest.json"
+  "/dearflip/dflip/images/chrome-extension.png": {
+    "type": "image/png",
+    "etag": "\"3456-xPalYfoX+HiOLMjehgo+WShJ1lU\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 13398,
+    "path": "../public/dearflip/dflip/images/chrome-extension.png"
   },
-  "/assets/fonts/flaming/flaming-webfont.woff": {
+  "/dearflip/dflip/images/loading.gif": {
+    "type": "image/gif",
+    "etag": "\"acf-vVTbkbgfqKnsN8k7EJSN2LaQ5MQ\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 2767,
+    "path": "../public/dearflip/dflip/images/loading.gif"
+  },
+  "/dearflip/dflip/js/dflip.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"755de-JPNBjbur8rpSjd4BuSn53nc/LAE\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 480734,
+    "path": "../public/dearflip/dflip/js/dflip.min.js"
+  },
+  "/dearflip/dflip/fonts/themify.eot": {
+    "type": "application/vnd.ms-fontobject",
+    "etag": "\"1339c-3xKglCzxkz8JFf49kQ+iN58JLYM\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 78748,
+    "path": "../public/dearflip/dflip/fonts/themify.eot"
+  },
+  "/dearflip/dflip/fonts/themify.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"3931d-9a8RL7WqfE9mWswho4sDW7tiMnw\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 234269,
+    "path": "../public/dearflip/dflip/fonts/themify.svg"
+  },
+  "/dearflip/dflip/fonts/themify.ttf": {
+    "type": "font/ttf",
+    "etag": "\"132f8-W7H+aUUqSEVmqBB2r3Vnco/n5Ds\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 78584,
+    "path": "../public/dearflip/dflip/fonts/themify.ttf"
+  },
+  "/dearflip/dflip/fonts/themify.woff": {
     "type": "font/woff",
-    "etag": "\"8764-zARGlzPiyhnC2l0oV5ZBhtxPaiQ\"",
-    "mtime": "2024-12-02T12:49:17.919Z",
-    "size": 34660,
-    "path": "../public/assets/fonts/flaming/flaming-webfont.woff"
+    "etag": "\"db2c-k5TzW9Kt3SRma3m/w21PnSR8sB0\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 56108,
+    "path": "../public/dearflip/dflip/fonts/themify.woff"
   },
-  "/assets/fonts/flaming/flaming-webfont.woff2": {
-    "type": "font/woff2",
-    "etag": "\"6b08-9WTaUKloPCCLK2pOJ4hYsvc5pLo\"",
-    "mtime": "2024-12-02T12:49:17.923Z",
-    "size": 27400,
-    "path": "../public/assets/fonts/flaming/flaming-webfont.woff2"
+  "/dearflip/dflip/sound/turn.mp3": {
+    "type": "audio/mpeg",
+    "etag": "\"1d62-P9fqVMVdAu2kDTfAVqfcu6FAyps\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 7522,
+    "path": "../public/dearflip/dflip/sound/turn.mp3"
+  },
+  "/dearflip/dflip/sound/turn2.mp3": {
+    "type": "audio/mpeg",
+    "etag": "\"7557-8ZB09wyRzHa/lDXA3gm7F6gYsls\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 30039,
+    "path": "../public/dearflip/dflip/sound/turn2.mp3"
+  },
+  "/dearflip/dflip/sound/turn2a.mp3": {
+    "type": "audio/mpeg",
+    "etag": "\"1c08-A6+pp6EbfA/jS9HdBHe04OkGP0c\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 7176,
+    "path": "../public/dearflip/dflip/sound/turn2a.mp3"
+  },
+  "/dearflip/dflip/sound/turn3.mp3": {
+    "type": "audio/mpeg",
+    "etag": "\"eb0-V5vzv6nCkKJrQtmoAfSBLWiBi3w\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 3760,
+    "path": "../public/dearflip/dflip/sound/turn3.mp3"
   },
   "/assets/css/demos/carousel-layout.css": {
     "type": "text/css; charset=utf-8",
@@ -7670,6 +7905,174 @@ const assets$1 = {
     "size": 12975,
     "path": "../public/assets/css/demos/demo-9.css"
   },
+  "/assets/css/skins/skin-demo-10.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-vf5adL99t054okhffWay0rS0CRI\"",
+    "mtime": "2024-12-02T12:49:17.868Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-10.css"
+  },
+  "/assets/css/skins/skin-demo-13.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-kq8mgW26l4wh7GuPKHg58ib5INU\"",
+    "mtime": "2024-12-02T12:49:17.874Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-13.css"
+  },
+  "/assets/css/skins/skin-demo-14.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7b11-LNMejz6+H4pg9RD9oDx3/4KJFyw\"",
+    "mtime": "2024-12-02T12:49:17.875Z",
+    "size": 31505,
+    "path": "../public/assets/css/skins/skin-demo-14.css"
+  },
+  "/assets/css/skins/skin-demo-17.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-vzxoW8wu+raqkLhgbOOcp6EH3qc\"",
+    "mtime": "2024-12-02T12:49:17.876Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-17.css"
+  },
+  "/assets/css/skins/skin-demo-19.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-Ef7Byi7cXUaHNJ9J3a/UrYJuadQ\"",
+    "mtime": "2024-12-02T12:49:17.877Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-19.css"
+  },
+  "/assets/css/skins/skin-demo-2.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a26-VkCogx4Gqon1f9oHApeAMDfsp/o\"",
+    "mtime": "2024-12-02T12:49:17.877Z",
+    "size": 31270,
+    "path": "../public/assets/css/skins/skin-demo-2.css"
+  },
+  "/assets/css/skins/skin-demo-20.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-0GP8fO7FEu80oLXsscWaRGCBWgw\"",
+    "mtime": "2024-12-02T12:49:17.879Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-20.css"
+  },
+  "/assets/css/skins/skin-demo-21.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a27-tRqniIEgH3yAeuomnxrAWzmPp4I\"",
+    "mtime": "2024-12-02T12:49:17.880Z",
+    "size": 31271,
+    "path": "../public/assets/css/skins/skin-demo-21.css"
+  },
+  "/assets/css/skins/skin-demo-22.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7ac9-5XYy9n6hZ2ywBz+1VUZon34Immc\"",
+    "mtime": "2024-12-02T12:49:17.881Z",
+    "size": 31433,
+    "path": "../public/assets/css/skins/skin-demo-22.css"
+  },
+  "/assets/css/skins/skin-demo-23.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-jEz5w54vkOJ7+swJbOrO7K84ktk\"",
+    "mtime": "2024-12-02T12:49:17.882Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-23.css"
+  },
+  "/assets/css/skins/skin-demo-24.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7ac8-aFewFBjV9Qw9pPTqWYTHmn23+xE\"",
+    "mtime": "2024-12-02T12:49:17.883Z",
+    "size": 31432,
+    "path": "../public/assets/css/skins/skin-demo-24.css"
+  },
+  "/assets/css/skins/skin-demo-25.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"79fc-mYN6EJQA1n/DtfJcV+wGhwdLIzU\"",
+    "mtime": "2024-12-02T12:49:17.883Z",
+    "size": 31228,
+    "path": "../public/assets/css/skins/skin-demo-25.css"
+  },
+  "/assets/css/skins/skin-demo-26.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7b02-6CUw/ltK57GyRgDCrfGVubm9Q70\"",
+    "mtime": "2024-12-02T12:49:17.884Z",
+    "size": 31490,
+    "path": "../public/assets/css/skins/skin-demo-26.css"
+  },
+  "/assets/css/skins/skin-demo-27.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"769f-3Vh2x4OqGdXWYcmGSHKku0Oxyu8\"",
+    "mtime": "2024-12-02T12:49:17.884Z",
+    "size": 30367,
+    "path": "../public/assets/css/skins/skin-demo-27.css"
+  },
+  "/assets/css/skins/skin-demo-28.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a29-BvdyEppTM1i8iUF+fOEtbwKWCR4\"",
+    "mtime": "2024-12-02T12:49:17.886Z",
+    "size": 31273,
+    "path": "../public/assets/css/skins/skin-demo-28.css"
+  },
+  "/assets/css/skins/skin-demo-29.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"769f-h0wPSMzBoGK/dgHUf/lUmCCfwLA\"",
+    "mtime": "2024-12-02T12:49:17.889Z",
+    "size": 30367,
+    "path": "../public/assets/css/skins/skin-demo-29.css"
+  },
+  "/assets/css/skins/skin-demo-3.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7ac6-jYy5unVWmXhI17Stws3eD/jB9hc\"",
+    "mtime": "2024-12-02T12:49:17.891Z",
+    "size": 31430,
+    "path": "../public/assets/css/skins/skin-demo-3.css"
+  },
+  "/assets/css/skins/skin-demo-30.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a27-MhQ2d7FzBN5Zd8CYr4oi0FL4uws\"",
+    "mtime": "2024-12-02T12:49:17.897Z",
+    "size": 31271,
+    "path": "../public/assets/css/skins/skin-demo-30.css"
+  },
+  "/assets/css/skins/skin-demo-4.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a26-56GNNRJo+YH+YZhYxcVwm592Mh0\"",
+    "mtime": "2024-12-02T12:49:17.898Z",
+    "size": 31270,
+    "path": "../public/assets/css/skins/skin-demo-4.css"
+  },
+  "/assets/css/skins/skin-demo-5.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a26-jekPkHi4tCkxRIGjomfLxIxiJZI\"",
+    "mtime": "2024-12-02T12:49:17.899Z",
+    "size": 31270,
+    "path": "../public/assets/css/skins/skin-demo-5.css"
+  },
+  "/assets/css/skins/skin-demo-6.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a26-5Sdr7kae1zcDyo8qlavddWHBFZ4\"",
+    "mtime": "2024-12-02T12:49:17.901Z",
+    "size": 31270,
+    "path": "../public/assets/css/skins/skin-demo-6.css"
+  },
+  "/assets/css/skins/skin-demo-7.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7ac6-YpLuSw4pkbx46x1eR8pSO/OgA6o\"",
+    "mtime": "2024-12-02T12:49:17.903Z",
+    "size": 31430,
+    "path": "../public/assets/css/skins/skin-demo-7.css"
+  },
+  "/assets/css/skins/skin-demo-8.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a24-YF+T4tmwsICqwhKtS086GUtQOXM\"",
+    "mtime": "2024-12-02T12:49:17.906Z",
+    "size": 31268,
+    "path": "../public/assets/css/skins/skin-demo-8.css"
+  },
+  "/assets/css/skins/skin-demo-9.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"7a26-R/QtNF18jzF9GKcTOMnsgis6rTM\"",
+    "mtime": "2024-12-02T12:49:17.908Z",
+    "size": 31270,
+    "path": "../public/assets/css/skins/skin-demo-9.css"
+  },
   "/assets/css/plugins/.DS_Store": {
     "type": "text/plain; charset=utf-8",
     "etag": "\"1804-vm15+oM+9PN4uQOkMA6sC7/DMBU\"",
@@ -7683,6 +8086,55 @@ const assets$1 = {
     "mtime": "2024-12-02T12:49:17.861Z",
     "size": 1440,
     "path": "../public/assets/css/plugins/jquery.countdown.css"
+  },
+  "/assets/fonts/flaming/flaming-webfont.woff": {
+    "type": "font/woff",
+    "etag": "\"8764-zARGlzPiyhnC2l0oV5ZBhtxPaiQ\"",
+    "mtime": "2024-12-02T12:49:17.919Z",
+    "size": 34660,
+    "path": "../public/assets/fonts/flaming/flaming-webfont.woff"
+  },
+  "/assets/fonts/flaming/flaming-webfont.woff2": {
+    "type": "font/woff2",
+    "etag": "\"6b08-9WTaUKloPCCLK2pOJ4hYsvc5pLo\"",
+    "mtime": "2024-12-02T12:49:17.923Z",
+    "size": 27400,
+    "path": "../public/assets/fonts/flaming/flaming-webfont.woff2"
+  },
+  "/assets/landing-assets/css/style.min.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"f859-g34Zi34fgMFgkW+I6lNdEh4KYxs\"",
+    "mtime": "2024-12-02T12:49:20.714Z",
+    "size": 63577,
+    "path": "../public/assets/landing-assets/css/style.min.css"
+  },
+  "/assets/landing-assets/images/lazy.png": {
+    "type": "image/png",
+    "etag": "\"43-Mq/ln+XYOHpMRDYoJetHATeejU8\"",
+    "mtime": "2024-12-02T12:49:20.715Z",
+    "size": 67,
+    "path": "../public/assets/landing-assets/images/lazy.png"
+  },
+  "/assets/landing-assets/images/logo.png": {
+    "type": "image/png",
+    "etag": "\"ed7-2MBhM01K1MCCece0YdoR6KC5TYY\"",
+    "mtime": "2024-12-02T12:49:20.716Z",
+    "size": 3799,
+    "path": "../public/assets/landing-assets/images/logo.png"
+  },
+  "/assets/landing-assets/js/main.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"2a3c-34UOpCmZvJmqpbi3Vr98FFC62G8\"",
+    "mtime": "2024-12-02T12:49:20.717Z",
+    "size": 10812,
+    "path": "../public/assets/landing-assets/js/main.min.js"
+  },
+  "/assets/landing-assets/js/word-rotator.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"1348-sJeQGTJXvrsLtBEHKBCQUIqxZyA\"",
+    "mtime": "2024-12-02T12:49:20.721Z",
+    "size": 4936,
+    "path": "../public/assets/landing-assets/js/word-rotator.js"
   },
   "/assets/js/demos/demo-10.js": {
     "type": "text/javascript; charset=utf-8",
@@ -7852,209 +8304,6 @@ const assets$1 = {
     "size": 74,
     "path": "../public/assets/js/demos/demo-9.js"
   },
-  "/assets/css/skins/skin-demo-10.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-vf5adL99t054okhffWay0rS0CRI\"",
-    "mtime": "2024-12-02T12:49:17.868Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-10.css"
-  },
-  "/assets/css/skins/skin-demo-13.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-kq8mgW26l4wh7GuPKHg58ib5INU\"",
-    "mtime": "2024-12-02T12:49:17.874Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-13.css"
-  },
-  "/assets/css/skins/skin-demo-14.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7b11-LNMejz6+H4pg9RD9oDx3/4KJFyw\"",
-    "mtime": "2024-12-02T12:49:17.875Z",
-    "size": 31505,
-    "path": "../public/assets/css/skins/skin-demo-14.css"
-  },
-  "/assets/css/skins/skin-demo-17.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-vzxoW8wu+raqkLhgbOOcp6EH3qc\"",
-    "mtime": "2024-12-02T12:49:17.876Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-17.css"
-  },
-  "/assets/css/skins/skin-demo-19.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-Ef7Byi7cXUaHNJ9J3a/UrYJuadQ\"",
-    "mtime": "2024-12-02T12:49:17.877Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-19.css"
-  },
-  "/assets/css/skins/skin-demo-2.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a26-VkCogx4Gqon1f9oHApeAMDfsp/o\"",
-    "mtime": "2024-12-02T12:49:17.877Z",
-    "size": 31270,
-    "path": "../public/assets/css/skins/skin-demo-2.css"
-  },
-  "/assets/css/skins/skin-demo-20.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-0GP8fO7FEu80oLXsscWaRGCBWgw\"",
-    "mtime": "2024-12-02T12:49:17.879Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-20.css"
-  },
-  "/assets/css/skins/skin-demo-21.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a27-tRqniIEgH3yAeuomnxrAWzmPp4I\"",
-    "mtime": "2024-12-02T12:49:17.880Z",
-    "size": 31271,
-    "path": "../public/assets/css/skins/skin-demo-21.css"
-  },
-  "/assets/css/skins/skin-demo-22.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7ac9-5XYy9n6hZ2ywBz+1VUZon34Immc\"",
-    "mtime": "2024-12-02T12:49:17.881Z",
-    "size": 31433,
-    "path": "../public/assets/css/skins/skin-demo-22.css"
-  },
-  "/assets/css/skins/skin-demo-23.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-jEz5w54vkOJ7+swJbOrO7K84ktk\"",
-    "mtime": "2024-12-02T12:49:17.882Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-23.css"
-  },
-  "/assets/css/skins/skin-demo-24.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7ac8-aFewFBjV9Qw9pPTqWYTHmn23+xE\"",
-    "mtime": "2024-12-02T12:49:17.883Z",
-    "size": 31432,
-    "path": "../public/assets/css/skins/skin-demo-24.css"
-  },
-  "/assets/css/skins/skin-demo-25.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"79fc-mYN6EJQA1n/DtfJcV+wGhwdLIzU\"",
-    "mtime": "2024-12-02T12:49:17.883Z",
-    "size": 31228,
-    "path": "../public/assets/css/skins/skin-demo-25.css"
-  },
-  "/assets/css/skins/skin-demo-26.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7b02-6CUw/ltK57GyRgDCrfGVubm9Q70\"",
-    "mtime": "2024-12-02T12:49:17.884Z",
-    "size": 31490,
-    "path": "../public/assets/css/skins/skin-demo-26.css"
-  },
-  "/assets/css/skins/skin-demo-27.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"769f-3Vh2x4OqGdXWYcmGSHKku0Oxyu8\"",
-    "mtime": "2024-12-02T12:49:17.884Z",
-    "size": 30367,
-    "path": "../public/assets/css/skins/skin-demo-27.css"
-  },
-  "/assets/css/skins/skin-demo-28.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a29-BvdyEppTM1i8iUF+fOEtbwKWCR4\"",
-    "mtime": "2024-12-02T12:49:17.886Z",
-    "size": 31273,
-    "path": "../public/assets/css/skins/skin-demo-28.css"
-  },
-  "/assets/css/skins/skin-demo-29.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"769f-h0wPSMzBoGK/dgHUf/lUmCCfwLA\"",
-    "mtime": "2024-12-02T12:49:17.889Z",
-    "size": 30367,
-    "path": "../public/assets/css/skins/skin-demo-29.css"
-  },
-  "/assets/css/skins/skin-demo-3.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7ac6-jYy5unVWmXhI17Stws3eD/jB9hc\"",
-    "mtime": "2024-12-02T12:49:17.891Z",
-    "size": 31430,
-    "path": "../public/assets/css/skins/skin-demo-3.css"
-  },
-  "/assets/css/skins/skin-demo-30.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a27-MhQ2d7FzBN5Zd8CYr4oi0FL4uws\"",
-    "mtime": "2024-12-02T12:49:17.897Z",
-    "size": 31271,
-    "path": "../public/assets/css/skins/skin-demo-30.css"
-  },
-  "/assets/css/skins/skin-demo-4.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a26-56GNNRJo+YH+YZhYxcVwm592Mh0\"",
-    "mtime": "2024-12-02T12:49:17.898Z",
-    "size": 31270,
-    "path": "../public/assets/css/skins/skin-demo-4.css"
-  },
-  "/assets/css/skins/skin-demo-5.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a26-jekPkHi4tCkxRIGjomfLxIxiJZI\"",
-    "mtime": "2024-12-02T12:49:17.899Z",
-    "size": 31270,
-    "path": "../public/assets/css/skins/skin-demo-5.css"
-  },
-  "/assets/css/skins/skin-demo-6.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a26-5Sdr7kae1zcDyo8qlavddWHBFZ4\"",
-    "mtime": "2024-12-02T12:49:17.901Z",
-    "size": 31270,
-    "path": "../public/assets/css/skins/skin-demo-6.css"
-  },
-  "/assets/css/skins/skin-demo-7.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7ac6-YpLuSw4pkbx46x1eR8pSO/OgA6o\"",
-    "mtime": "2024-12-02T12:49:17.903Z",
-    "size": 31430,
-    "path": "../public/assets/css/skins/skin-demo-7.css"
-  },
-  "/assets/css/skins/skin-demo-8.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a24-YF+T4tmwsICqwhKtS086GUtQOXM\"",
-    "mtime": "2024-12-02T12:49:17.906Z",
-    "size": 31268,
-    "path": "../public/assets/css/skins/skin-demo-8.css"
-  },
-  "/assets/css/skins/skin-demo-9.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"7a26-R/QtNF18jzF9GKcTOMnsgis6rTM\"",
-    "mtime": "2024-12-02T12:49:17.908Z",
-    "size": 31270,
-    "path": "../public/assets/css/skins/skin-demo-9.css"
-  },
-  "/assets/landing-assets/css/style.min.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"f859-g34Zi34fgMFgkW+I6lNdEh4KYxs\"",
-    "mtime": "2024-12-02T12:49:20.714Z",
-    "size": 63577,
-    "path": "../public/assets/landing-assets/css/style.min.css"
-  },
-  "/assets/landing-assets/images/lazy.png": {
-    "type": "image/png",
-    "etag": "\"43-Mq/ln+XYOHpMRDYoJetHATeejU8\"",
-    "mtime": "2024-12-02T12:49:20.715Z",
-    "size": 67,
-    "path": "../public/assets/landing-assets/images/lazy.png"
-  },
-  "/assets/landing-assets/images/logo.png": {
-    "type": "image/png",
-    "etag": "\"ed7-2MBhM01K1MCCece0YdoR6KC5TYY\"",
-    "mtime": "2024-12-02T12:49:20.716Z",
-    "size": 3799,
-    "path": "../public/assets/landing-assets/images/logo.png"
-  },
-  "/assets/landing-assets/js/main.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"2a3c-34UOpCmZvJmqpbi3Vr98FFC62G8\"",
-    "mtime": "2024-12-02T12:49:20.717Z",
-    "size": 10812,
-    "path": "../public/assets/landing-assets/js/main.min.js"
-  },
-  "/assets/landing-assets/js/word-rotator.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"1348-sJeQGTJXvrsLtBEHKBCQUIqxZyA\"",
-    "mtime": "2024-12-02T12:49:20.721Z",
-    "size": 4936,
-    "path": "../public/assets/landing-assets/js/word-rotator.js"
-  },
   "/assets/vendor/line-awesome/.DS_Store": {
     "type": "text/plain; charset=utf-8",
     "etag": "\"1804-iGB1NNV7INIAyLbJBd9V2hBR5LE\"",
@@ -8062,75 +8311,19 @@ const assets$1 = {
     "size": 6148,
     "path": "../public/assets/vendor/line-awesome/.DS_Store"
   },
-  "/cold-storage/302/chiller-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f42-OvG7StT7ORKIuTypRzX4SU67sbA\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81730,
-    "path": "../public/cold-storage/302/chiller-rooms/index.html"
+  "/_nuxt/builds/meta/44160105-eb76-4319-830d-e8eff6e130ce.json": {
+    "type": "application/json",
+    "etag": "\"e7-K1iyLNkemJ5n3SMuQi8ZpBxMkHs\"",
+    "mtime": "2024-12-16T10:14:55.816Z",
+    "size": 231,
+    "path": "../public/_nuxt/builds/meta/44160105-eb76-4319-830d-e8eff6e130ce.json"
   },
-  "/cold-storage/302/chiller-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4665I0HJLj34WvlUpKT0Lz5zF3k\"",
-    "mtime": "2024-12-16T10:03:13.103Z",
-    "size": 69,
-    "path": "../public/cold-storage/302/chiller-rooms/_payload.json"
-  },
-  "/cold-storage/303/freezer-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f42-vWSMbD23CQG8GVOPatmkl0LKA8w\"",
-    "mtime": "2024-12-16T10:03:09.889Z",
-    "size": 81730,
-    "path": "../public/cold-storage/303/freezer-rooms/index.html"
-  },
-  "/cold-storage/303/freezer-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jcAqT3sfrGT/mW5HAS5+zLB07T0\"",
-    "mtime": "2024-12-16T10:03:13.129Z",
-    "size": 69,
-    "path": "../public/cold-storage/303/freezer-rooms/_payload.json"
-  },
-  "/cold-storage/304/blast-chillers--freezers/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f84-fqGu8nfIPOwQBVhO8mUhEwOJC2c\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81796,
-    "path": "../public/cold-storage/304/blast-chillers--freezers/index.html"
-  },
-  "/cold-storage/304/blast-chillers--freezers/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D7R5DOgRuSWzN26rwUOrZpVkHR4\"",
-    "mtime": "2024-12-16T10:03:13.116Z",
-    "size": 69,
-    "path": "../public/cold-storage/304/blast-chillers--freezers/_payload.json"
-  },
-  "/cold-storage/305/mini-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f4e-PhEKC0ymAktRZ4myH6cUmmw4aBE\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81742,
-    "path": "../public/cold-storage/305/mini-cold-rooms/index.html"
-  },
-  "/cold-storage/305/mini-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-e8UqOdJjb1G+Ad7T4Pa4clD+9D4\"",
-    "mtime": "2024-12-16T10:03:13.116Z",
-    "size": 69,
-    "path": "../public/cold-storage/305/mini-cold-rooms/_payload.json"
-  },
-  "/cold-storage/306/display-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f60-JN7GW9jNtGCxcmmSV/TkPvDeJic\"",
-    "mtime": "2024-12-16T10:03:09.889Z",
-    "size": 81760,
-    "path": "../public/cold-storage/306/display-cold-rooms/index.html"
-  },
-  "/cold-storage/306/display-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-B8l4dmWLdU+lRVjKh6XWircTW6k\"",
-    "mtime": "2024-12-16T10:03:13.129Z",
-    "size": 69,
-    "path": "../public/cold-storage/306/display-cold-rooms/_payload.json"
+  "/_nuxt/builds/meta/dev.json": {
+    "type": "application/json",
+    "etag": "\"c6-4gE6lPbevBg6WISqz4Bw38/hofk\"",
+    "mtime": "2024-12-16T10:14:50.648Z",
+    "size": 198,
+    "path": "../public/_nuxt/builds/meta/dev.json"
   },
   "/assets/images/about/company-culture.jpg": {
     "type": "image/jpeg",
@@ -8384,34 +8577,6 @@ const assets$1 = {
     "size": 19521,
     "path": "../public/assets/images/events/training.png"
   },
-  "/assets/images/footer-icons/footer_email.png": {
-    "type": "image/png",
-    "etag": "\"2a0b-JiyVdC6qY621tWKHLa1k1+IbFbg\"",
-    "mtime": "2024-11-06T08:15:39.701Z",
-    "size": 10763,
-    "path": "../public/assets/images/footer-icons/footer_email.png"
-  },
-  "/assets/images/footer-icons/footer_location.png": {
-    "type": "image/png",
-    "etag": "\"437c-/COvCLKIGC+XFUmnJG/BhuERa98\"",
-    "mtime": "2024-11-06T08:15:39.701Z",
-    "size": 17276,
-    "path": "../public/assets/images/footer-icons/footer_location.png"
-  },
-  "/assets/images/footer-icons/footer_phone.png": {
-    "type": "image/png",
-    "etag": "\"20b3-p4hsVVKPbhl3iaS31kfdY83CUNI\"",
-    "mtime": "2024-11-06T08:15:39.702Z",
-    "size": 8371,
-    "path": "../public/assets/images/footer-icons/footer_phone.png"
-  },
-  "/assets/images/footer-icons/footer_postbox.png": {
-    "type": "image/png",
-    "etag": "\"1a24-/Tluhooi9wL9wvrQHqRI2vie5e4\"",
-    "mtime": "2024-11-06T08:15:39.702Z",
-    "size": 6692,
-    "path": "../public/assets/images/footer-icons/footer_postbox.png"
-  },
   "/assets/images/flags/brl.png": {
     "type": "image/png",
     "etag": "\"600-RwKuUbpO/48CriZkzIj/TDHdGjE\"",
@@ -8552,47 +8717,33 @@ const assets$1 = {
     "size": 1205,
     "path": "../public/assets/images/flags/zh.png"
   },
-  "/assets/images/media/media_blogs.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1e30b-mVtbEfiCgOSO1vfvPfBaAn4d7X0\"",
-    "mtime": "2024-11-06T08:15:39.763Z",
-    "size": 123659,
-    "path": "../public/assets/images/media/media_blogs.jpg"
+  "/assets/images/footer-icons/footer_email.png": {
+    "type": "image/png",
+    "etag": "\"2a0b-JiyVdC6qY621tWKHLa1k1+IbFbg\"",
+    "mtime": "2024-11-06T08:15:39.701Z",
+    "size": 10763,
+    "path": "../public/assets/images/footer-icons/footer_email.png"
   },
-  "/assets/images/media/media_documents.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"9c49-a+hOSYld9lu5ePY0HGQ3RHzUzF0\"",
-    "mtime": "2024-11-06T08:15:39.765Z",
-    "size": 40009,
-    "path": "../public/assets/images/media/media_documents.jpg"
+  "/assets/images/footer-icons/footer_location.png": {
+    "type": "image/png",
+    "etag": "\"437c-/COvCLKIGC+XFUmnJG/BhuERa98\"",
+    "mtime": "2024-11-06T08:15:39.701Z",
+    "size": 17276,
+    "path": "../public/assets/images/footer-icons/footer_location.png"
   },
-  "/assets/images/media/media_gallery.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1fa91-UifmCyIFzVF6Spcoc+pjPDdsaoU\"",
-    "mtime": "2024-11-06T08:15:39.766Z",
-    "size": 129681,
-    "path": "../public/assets/images/media/media_gallery.jpg"
+  "/assets/images/footer-icons/footer_phone.png": {
+    "type": "image/png",
+    "etag": "\"20b3-p4hsVVKPbhl3iaS31kfdY83CUNI\"",
+    "mtime": "2024-11-06T08:15:39.702Z",
+    "size": 8371,
+    "path": "../public/assets/images/footer-icons/footer_phone.png"
   },
-  "/assets/images/media/media_in_the_news.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"2011e-WSXBzgnndkxoyYaqObmdZG3YFJI\"",
-    "mtime": "2024-11-06T08:15:39.766Z",
-    "size": 131358,
-    "path": "../public/assets/images/media/media_in_the_news.jpg"
-  },
-  "/assets/images/media/media_newsletters.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"16a53-XTwY3RB9Xef5DP7TEpEF1/P2sz8\"",
-    "mtime": "2024-11-06T08:15:39.767Z",
-    "size": 92755,
-    "path": "../public/assets/images/media/media_newsletters.jpg"
-  },
-  "/assets/images/media/media_video.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"15f05-wCfp0R7N9qlaFyeWRkVETLbpxCA\"",
-    "mtime": "2024-11-06T08:15:39.768Z",
-    "size": 89861,
-    "path": "../public/assets/images/media/media_video.jpg"
+  "/assets/images/footer-icons/footer_postbox.png": {
+    "type": "image/png",
+    "etag": "\"1a24-/Tluhooi9wL9wvrQHqRI2vie5e4\"",
+    "mtime": "2024-11-06T08:15:39.702Z",
+    "size": 6692,
+    "path": "../public/assets/images/footer-icons/footer_postbox.png"
   },
   "/assets/images/homepage/.DS_Store": {
     "type": "text/plain; charset=utf-8",
@@ -8733,6 +8884,48 @@ const assets$1 = {
     "mtime": "2024-11-06T08:15:39.729Z",
     "size": 41016,
     "path": "../public/assets/images/homepage/test.gif"
+  },
+  "/assets/images/media/media_blogs.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1e30b-mVtbEfiCgOSO1vfvPfBaAn4d7X0\"",
+    "mtime": "2024-11-06T08:15:39.763Z",
+    "size": 123659,
+    "path": "../public/assets/images/media/media_blogs.jpg"
+  },
+  "/assets/images/media/media_documents.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"9c49-a+hOSYld9lu5ePY0HGQ3RHzUzF0\"",
+    "mtime": "2024-11-06T08:15:39.765Z",
+    "size": 40009,
+    "path": "../public/assets/images/media/media_documents.jpg"
+  },
+  "/assets/images/media/media_gallery.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1fa91-UifmCyIFzVF6Spcoc+pjPDdsaoU\"",
+    "mtime": "2024-11-06T08:15:39.766Z",
+    "size": 129681,
+    "path": "../public/assets/images/media/media_gallery.jpg"
+  },
+  "/assets/images/media/media_in_the_news.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"2011e-WSXBzgnndkxoyYaqObmdZG3YFJI\"",
+    "mtime": "2024-11-06T08:15:39.766Z",
+    "size": 131358,
+    "path": "../public/assets/images/media/media_in_the_news.jpg"
+  },
+  "/assets/images/media/media_newsletters.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"16a53-XTwY3RB9Xef5DP7TEpEF1/P2sz8\"",
+    "mtime": "2024-11-06T08:15:39.767Z",
+    "size": 92755,
+    "path": "../public/assets/images/media/media_newsletters.jpg"
+  },
+  "/assets/images/media/media_video.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"15f05-wCfp0R7N9qlaFyeWRkVETLbpxCA\"",
+    "mtime": "2024-11-06T08:15:39.768Z",
+    "size": 89861,
+    "path": "../public/assets/images/media/media_video.jpg"
   },
   "/assets/images/menu-icons/.DS_Store": {
     "type": "text/plain; charset=utf-8",
@@ -9672,684 +9865,145 @@ const assets$1 = {
     "size": 44241,
     "path": "../public/assets/images/team/Vikas-removebg-preview.jpg"
   },
-  "/cold-storage/307/ripening-chambers/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f5a-IXKdxYxH1tGUvarklH1oIIb6dFM\"",
-    "mtime": "2024-12-16T10:03:09.889Z",
-    "size": 81754,
-    "path": "../public/cold-storage/307/ripening-chambers/index.html"
-  },
-  "/cold-storage/307/ripening-chambers/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kz8pUm/qG/STQZWUnSDclq6oSa0\"",
-    "mtime": "2024-12-16T10:03:13.122Z",
-    "size": 69,
-    "path": "../public/cold-storage/307/ripening-chambers/_payload.json"
-  },
-  "/cold-storage/308/heat-pump-dehydrators/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f72-n8WWtSZdJoY2oBFcSyREvNxUhZQ\"",
-    "mtime": "2024-12-16T10:03:09.971Z",
-    "size": 81778,
-    "path": "../public/cold-storage/308/heat-pump-dehydrators/index.html"
-  },
-  "/cold-storage/308/heat-pump-dehydrators/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JdtXImguHv49QwjlOPhzeQQwf4E\"",
-    "mtime": "2024-12-16T10:03:13.129Z",
-    "size": 69,
-    "path": "../public/cold-storage/308/heat-pump-dehydrators/_payload.json"
-  },
-  "/cold-storage/309/solar-powered-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f84-8i72IbgN+1l56ADwOtK4Cpwlj/w\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81796,
-    "path": "../public/cold-storage/309/solar-powered-cold-rooms/index.html"
-  },
-  "/cold-storage/309/solar-powered-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ckg+g5+yR+jBZ6c77X+QXb6go40\"",
-    "mtime": "2024-12-16T10:03:13.116Z",
-    "size": 69,
-    "path": "../public/cold-storage/309/solar-powered-cold-rooms/_payload.json"
-  },
-  "/cold-storage/310/containerized-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f84-dqIaRSkdwTZjnfrEnQA3Dju33/0\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81796,
-    "path": "../public/cold-storage/310/containerized-cold-rooms/index.html"
-  },
-  "/cold-storage/310/containerized-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-palyxPNPnb5g/YxHwaBQnauGMFs\"",
-    "mtime": "2024-12-16T10:03:13.111Z",
-    "size": 69,
-    "path": "../public/cold-storage/310/containerized-cold-rooms/_payload.json"
-  },
-  "/cold-storage/311/retail-panels/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f42-tkb4iaAv7Fr6XvoDjDoKxnr1R8E\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81730,
-    "path": "../public/cold-storage/311/retail-panels/index.html"
-  },
-  "/cold-storage/311/retail-panels/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dNRTqY+CjWrWB2XU8XExFCiHvj4\"",
-    "mtime": "2024-12-16T10:03:13.103Z",
-    "size": 69,
-    "path": "../public/cold-storage/311/retail-panels/_payload.json"
-  },
-  "/cold-storage/312/packhouse-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f6c-zA5pa29RECfF29ODxhDspfTXmtk\"",
-    "mtime": "2024-12-16T10:03:09.889Z",
-    "size": 81772,
-    "path": "../public/cold-storage/312/packhouse-cold-rooms/index.html"
-  },
-  "/cold-storage/312/packhouse-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/b/zNB4sAmJvfh0eEvfir+JhpGM\"",
-    "mtime": "2024-12-16T10:03:13.129Z",
-    "size": 69,
-    "path": "../public/cold-storage/312/packhouse-cold-rooms/_payload.json"
-  },
-  "/cold-storage/313/hospital-cold-rooms/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13f66-hoSWXAGRg+l6oWqkiN/j+z9183A\"",
-    "mtime": "2024-12-16T10:03:09.888Z",
-    "size": 81766,
-    "path": "../public/cold-storage/313/hospital-cold-rooms/index.html"
-  },
-  "/cold-storage/313/hospital-cold-rooms/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-n3c5w2gg1T3Fwj+Zs5wvhFL9mJU\"",
-    "mtime": "2024-12-16T10:03:13.103Z",
-    "size": 69,
-    "path": "../public/cold-storage/313/hospital-cold-rooms/_payload.json"
-  },
-  "/commercial-kitchen/100/dishwashers/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fe8-a/NQkmLO+MVbj4ZrwOXpvV41ZG4\"",
-    "mtime": "2024-12-16T10:03:10.380Z",
-    "size": 81896,
-    "path": "../public/commercial-kitchen/100/dishwashers/index.html"
-  },
-  "/commercial-kitchen/100/dishwashers/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mh01cBGK4pqIGSsr2JSKq2n/Rn0\"",
-    "mtime": "2024-12-16T10:03:13.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/100/dishwashers/_payload.json"
-  },
-  "/commercial-kitchen/107/buffet--servery/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14000-pa8DwbWWqd4iaxljcz/RcqljTqk\"",
-    "mtime": "2024-12-16T10:03:10.153Z",
-    "size": 81920,
-    "path": "../public/commercial-kitchen/107/buffet--servery/index.html"
-  },
-  "/commercial-kitchen/107/buffet--servery/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Slm4OeC070M1ECG37PJYo21ZkxM\"",
-    "mtime": "2024-12-16T10:03:13.140Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/107/buffet--servery/_payload.json"
-  },
-  "/commercial-kitchen/121/fire-suppression/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14006-r96juJeD9jyBkQ1W8Udr8ryu5ok\"",
-    "mtime": "2024-12-16T10:03:10.371Z",
-    "size": 81926,
-    "path": "../public/commercial-kitchen/121/fire-suppression/index.html"
-  },
-  "/commercial-kitchen/121/fire-suppression/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-33qVUrFBGXJqmO88h1uOlEMSog8\"",
-    "mtime": "2024-12-16T10:03:13.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/121/fire-suppression/_payload.json"
-  },
-  "/commercial-kitchen/130/ice-cream-machines/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14012-rlCbi/DeNiV/NRpzYZBbJGhnugI\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 81938,
-    "path": "../public/commercial-kitchen/130/ice-cream-machines/index.html"
-  },
-  "/commercial-kitchen/130/ice-cream-machines/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VgxlcDuKIktUlTREjroWiKKr4KE\"",
-    "mtime": "2024-12-16T10:03:13.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/130/ice-cream-machines/_payload.json"
-  },
-  "/commercial-kitchen/141/displays/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fd6-C7bMzbIgkUpPi2t9l5bUxJfmk1A\"",
-    "mtime": "2024-12-16T10:03:10.350Z",
-    "size": 81878,
-    "path": "../public/commercial-kitchen/141/displays/index.html"
-  },
-  "/commercial-kitchen/141/displays/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ee12X3idkpc3MXzNczagNYK+diE\"",
-    "mtime": "2024-12-16T10:03:13.151Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/141/displays/_payload.json"
-  },
-  "/commercial-kitchen/151/bulk-cooking/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fee-OlfZczqggaQzG9QUbBj79p2rD80\"",
-    "mtime": "2024-12-16T10:03:10.358Z",
-    "size": 81902,
-    "path": "../public/commercial-kitchen/151/bulk-cooking/index.html"
-  },
-  "/commercial-kitchen/151/bulk-cooking/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-u7oS3+tMeW3JyTXHu7SlekgftJI\"",
-    "mtime": "2024-12-16T10:03:13.151Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/151/bulk-cooking/_payload.json"
-  },
-  "/commercial-kitchen/160/hvac/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fbe-MjS3d3Yew4Np7GIpHolJ29JRrks\"",
-    "mtime": "2024-12-16T10:03:10.147Z",
-    "size": 81854,
-    "path": "../public/commercial-kitchen/160/hvac/index.html"
-  },
-  "/commercial-kitchen/160/hvac/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ee6z1GxCx2zJWprq2nfkM6+m+00\"",
-    "mtime": "2024-12-16T10:03:13.140Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/160/hvac/_payload.json"
-  },
-  "/commercial-kitchen/170/food-transportation/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14018-kn5gt0zK7auJ6fSpGcjT7EJBk64\"",
-    "mtime": "2024-12-16T10:03:10.545Z",
-    "size": 81944,
-    "path": "../public/commercial-kitchen/170/food-transportation/index.html"
-  },
-  "/commercial-kitchen/170/food-transportation/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mqYNlz+vtA6IZKF0XWo9O4IIGQQ\"",
-    "mtime": "2024-12-16T10:03:13.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/170/food-transportation/_payload.json"
-  },
-  "/commercial-kitchen/175/storage/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fd0-vrMxdwhXo+vvOzWuIPpA4L3ejvI\"",
-    "mtime": "2024-12-16T10:03:10.156Z",
-    "size": 81872,
-    "path": "../public/commercial-kitchen/175/storage/index.html"
-  },
-  "/commercial-kitchen/175/storage/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-96PN6hE6MgEk45InF0biR4reYNE\"",
-    "mtime": "2024-12-16T10:03:13.144Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/175/storage/_payload.json"
-  },
-  "/commercial-kitchen/180/juice-processors/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14006-l25aqqQoRlJN2Rt5UX1xPJhn3Js\"",
-    "mtime": "2024-12-16T10:03:10.531Z",
-    "size": 81926,
-    "path": "../public/commercial-kitchen/180/juice-processors/index.html"
-  },
-  "/commercial-kitchen/180/juice-processors/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xNG4KRDkPpjb2OL3JndT6NlNp3A\"",
-    "mtime": "2024-12-16T10:03:13.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/180/juice-processors/_payload.json"
-  },
-  "/commercial-kitchen/187/vegetable-preparation/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14024-BezNKD089byiCygGpW1GVMIPeVY\"",
-    "mtime": "2024-12-16T10:03:10.325Z",
-    "size": 81956,
-    "path": "../public/commercial-kitchen/187/vegetable-preparation/index.html"
-  },
-  "/commercial-kitchen/187/vegetable-preparation/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+b7j6YZF6yyfI//mgRGuEncB+44\"",
-    "mtime": "2024-12-16T10:03:13.151Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/187/vegetable-preparation/_payload.json"
-  },
-  "/commercial-kitchen/188/bakery-preparation/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14012-dcB/IF0QAWx2sWbGeF6nnJ8ONGw\"",
-    "mtime": "2024-12-16T10:03:10.512Z",
-    "size": 81938,
-    "path": "../public/commercial-kitchen/188/bakery-preparation/index.html"
-  },
-  "/commercial-kitchen/188/bakery-preparation/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rff377q0+vhZFMYboNpZ0VOXKr0\"",
-    "mtime": "2024-12-16T10:03:13.168Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/188/bakery-preparation/_payload.json"
-  },
-  "/commercial-kitchen/191/beverage-machines/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1400c-xZhegZlKUF2W9Mj7/BEd/xz49AQ\"",
-    "mtime": "2024-12-16T10:03:10.424Z",
-    "size": 81932,
-    "path": "../public/commercial-kitchen/191/beverage-machines/index.html"
-  },
-  "/commercial-kitchen/191/beverage-machines/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QBgphLxsTged4i9tpAJ8XrZPe4Y\"",
-    "mtime": "2024-12-16T10:03:13.168Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/191/beverage-machines/_payload.json"
-  },
-  "/commercial-kitchen/198/mobile-concepts/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14000-yCeNaP/NR0vyUvTNWyrit+zo0Hc\"",
-    "mtime": "2024-12-16T10:03:10.440Z",
-    "size": 81920,
-    "path": "../public/commercial-kitchen/198/mobile-concepts/index.html"
-  },
-  "/commercial-kitchen/198/mobile-concepts/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gNOKZSjVHItn4NwIh/UjD9b28n8\"",
-    "mtime": "2024-12-16T10:03:13.168Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/198/mobile-concepts/_payload.json"
-  },
-  "/commercial-kitchen/209/hygiene-products/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14006-08BJRnoG+3GawQi0IDySlPzI0Ns\"",
-    "mtime": "2024-12-16T10:03:10.414Z",
-    "size": 81926,
-    "path": "../public/commercial-kitchen/209/hygiene-products/index.html"
-  },
-  "/commercial-kitchen/209/hygiene-products/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KqUpXygsq02Qlm3jBP7yH/yiRmM\"",
-    "mtime": "2024-12-16T10:03:13.168Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/209/hygiene-products/_payload.json"
-  },
-  "/commercial-kitchen/22/refrigeration/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fed-AB37SaEXk9C39owW5azkKHgrOO4\"",
-    "mtime": "2024-12-16T10:03:10.126Z",
-    "size": 81901,
-    "path": "../public/commercial-kitchen/22/refrigeration/index.html"
-  },
-  "/commercial-kitchen/22/refrigeration/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xLxpD+EI5+msQ5BzUqnXObMkD6Y\"",
-    "mtime": "2024-12-16T10:03:13.140Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/22/refrigeration/_payload.json"
-  },
-  "/commercial-kitchen/221/kitchen-smalls/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13ffa-ngis41LAgiN3pJAarOAzYgYKevk\"",
-    "mtime": "2024-12-16T10:03:10.371Z",
-    "size": 81914,
-    "path": "../public/commercial-kitchen/221/kitchen-smalls/index.html"
-  },
-  "/commercial-kitchen/221/kitchen-smalls/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-85FimosDD63oPgcsaEupoQ4VTH4\"",
-    "mtime": "2024-12-16T10:03:13.161Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/221/kitchen-smalls/_payload.json"
-  },
-  "/commercial-kitchen/226/stainless-steel-fabrication/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14048-q3EEHV/Zz9D+CFTLbDca3aNr1P4\"",
-    "mtime": "2024-12-16T10:03:14.595Z",
-    "size": 81992,
-    "path": "../public/commercial-kitchen/226/stainless-steel-fabrication/index.html"
-  },
-  "/commercial-kitchen/226/stainless-steel-fabrication/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sbyYQ2ICCSIAKNesz9FzuFCbq8o\"",
-    "mtime": "2024-12-16T10:03:14.636Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/226/stainless-steel-fabrication/_payload.json"
-  },
-  "/commercial-kitchen/43/meat-preparation/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fff-yidGUFrtlYam0nVAvr/mlhN4Vn0\"",
-    "mtime": "2024-12-16T10:03:10.388Z",
-    "size": 81919,
-    "path": "../public/commercial-kitchen/43/meat-preparation/index.html"
-  },
-  "/commercial-kitchen/43/meat-preparation/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7BbI1QINonOO0QtmPLDo02tkFzY\"",
-    "mtime": "2024-12-16T10:03:13.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/43/meat-preparation/_payload.json"
-  },
-  "/commercial-kitchen/68/hot-cooking/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fe1-Qn6yF9VnFvmN8Jef1RKqDes5NQc\"",
-    "mtime": "2024-12-16T10:03:10.146Z",
-    "size": 81889,
-    "path": "../public/commercial-kitchen/68/hot-cooking/index.html"
-  },
-  "/commercial-kitchen/68/hot-cooking/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AN4L93VZ+lv2Aft3pU9gCNVK/yM\"",
-    "mtime": "2024-12-16T10:03:13.129Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/68/hot-cooking/_payload.json"
-  },
-  "/commercial-kitchen/88/ovens/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13fbd-9Vu8sqpwillsTqdrogNu8HV+tBg\"",
-    "mtime": "2024-12-16T10:03:10.406Z",
-    "size": 81853,
-    "path": "../public/commercial-kitchen/88/ovens/index.html"
-  },
-  "/commercial-kitchen/88/ovens/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3ELpZFaAvLJmnmC/CFOB3wTokSo\"",
-    "mtime": "2024-12-16T10:03:13.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/88/ovens/_payload.json"
-  },
-  "/commercial-kitchen/89/rational-combi-steamer/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"14023-e+xWcpZ0tKR0AFZJlXj7Wdhvsm0\"",
-    "mtime": "2024-12-16T10:03:10.535Z",
-    "size": 81955,
-    "path": "../public/commercial-kitchen/89/rational-combi-steamer/index.html"
-  },
-  "/commercial-kitchen/89/rational-combi-steamer/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4/KFKj/xX6ZphHpOxhF/8qGqaaI\"",
-    "mtime": "2024-12-16T10:03:13.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/89/rational-combi-steamer/_payload.json"
-  },
-  "/commercial-kitchen/95/coffee-machines/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13ff9-lJEN3zl5fi8hvaOxGhR502T8hYQ\"",
-    "mtime": "2024-12-16T10:03:10.401Z",
-    "size": 81913,
-    "path": "../public/commercial-kitchen/95/coffee-machines/index.html"
-  },
-  "/commercial-kitchen/95/coffee-machines/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4H3ocozOrmEqxuZL1+HaCpbW6Fg\"",
-    "mtime": "2024-12-16T10:03:13.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/95/coffee-machines/_payload.json"
-  },
-  "/dearflip/dflip/css/dflip.min.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"f060-oRu9Zkll8J4P/v8NBw89ab8wkuQ\"",
-    "mtime": "2024-11-20T05:38:15.224Z",
-    "size": 61536,
-    "path": "../public/dearflip/dflip/css/dflip.min.css"
-  },
-  "/dearflip/dflip/css/themify-icons.min.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"361b-ogaFvSMZpVefZQajbHfoDA4Ke5Q\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 13851,
-    "path": "../public/dearflip/dflip/css/themify-icons.min.css"
-  },
-  "/dearflip/dflip/fonts/themify.eot": {
-    "type": "application/vnd.ms-fontobject",
-    "etag": "\"1339c-3xKglCzxkz8JFf49kQ+iN58JLYM\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 78748,
-    "path": "../public/dearflip/dflip/fonts/themify.eot"
-  },
-  "/dearflip/dflip/fonts/themify.svg": {
+  "/dearflip/dflip/images/pdfjs/annotation-check.svg": {
     "type": "image/svg+xml",
-    "etag": "\"3931d-9a8RL7WqfE9mWswho4sDW7tiMnw\"",
+    "etag": "\"19f-AV0D/6agzpO0Htk6Jih55PjPcv0\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 234269,
-    "path": "../public/dearflip/dflip/fonts/themify.svg"
+    "size": 415,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-check.svg"
   },
-  "/dearflip/dflip/fonts/themify.ttf": {
-    "type": "font/ttf",
-    "etag": "\"132f8-W7H+aUUqSEVmqBB2r3Vnco/n5Ds\"",
+  "/dearflip/dflip/images/pdfjs/annotation-comment.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"373-Xsh1FT1QRlBwUKNTFCLKabRGgMc\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 78584,
-    "path": "../public/dearflip/dflip/fonts/themify.ttf"
+    "size": 883,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-comment.svg"
   },
-  "/dearflip/dflip/fonts/themify.woff": {
-    "type": "font/woff",
-    "etag": "\"db2c-k5TzW9Kt3SRma3m/w21PnSR8sB0\"",
+  "/dearflip/dflip/images/pdfjs/annotation-help.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"878-Lz2I9OjO+vwtdpMhBPayUXA0ry8\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 56108,
-    "path": "../public/dearflip/dflip/fonts/themify.woff"
+    "size": 2168,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-help.svg"
   },
-  "/dearflip/dflip/images/chrome-extension.png": {
-    "type": "image/png",
-    "etag": "\"3456-xPalYfoX+HiOLMjehgo+WShJ1lU\"",
+  "/dearflip/dflip/images/pdfjs/annotation-insert.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"198-ehKvdO8g1SSaDDMNmSvREyMIy6w\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 13398,
-    "path": "../public/dearflip/dflip/images/chrome-extension.png"
+    "size": 408,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-insert.svg"
   },
-  "/dearflip/dflip/images/loading.gif": {
-    "type": "image/gif",
-    "etag": "\"acf-vVTbkbgfqKnsN8k7EJSN2LaQ5MQ\"",
+  "/dearflip/dflip/images/pdfjs/annotation-key.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"5ac-2SJNOu93TW7MlzW0QIEK2kOEvhE\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 2767,
-    "path": "../public/dearflip/dflip/images/loading.gif"
+    "size": 1452,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-key.svg"
   },
-  "/dearflip/dflip/js/dflip.min.js": {
+  "/dearflip/dflip/images/pdfjs/annotation-newparagraph.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"1aa-RTukeqELb8+EWVaeClULT5EmDsc\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 426,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-newparagraph.svg"
+  },
+  "/dearflip/dflip/images/pdfjs/annotation-noicon.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"9e-WlRH5cOc98p0iFOhXb2DXdqjtd8\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 158,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-noicon.svg"
+  },
+  "/dearflip/dflip/images/pdfjs/annotation-note.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"411-YQDe62Eh+Yx+Ak7BonMXEgfITH8\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 1041,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-note.svg"
+  },
+  "/dearflip/dflip/images/pdfjs/annotation-paragraph.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"477-cFkaOybFaBXG5asrrpWeipUcQ/s\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 1143,
+    "path": "../public/dearflip/dflip/images/pdfjs/annotation-paragraph.svg"
+  },
+  "/dearflip/dflip/images/textures/white.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"763-kpi5AI3FoZTo0DMHoTkDzyszndg\"",
+    "mtime": "2024-10-01T03:28:00.000Z",
+    "size": 1891,
+    "path": "../public/dearflip/dflip/images/textures/white.jpg"
+  },
+  "/dearflip/dflip/js/libs/compatibility.js": {
     "type": "text/javascript; charset=utf-8",
-    "etag": "\"755de-JPNBjbur8rpSjd4BuSn53nc/LAE\"",
+    "etag": "\"4b88-T/vnjEpXjEj+xwk2yJaJymGOxCI\"",
     "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 480734,
-    "path": "../public/dearflip/dflip/js/dflip.min.js"
+    "size": 19336,
+    "path": "../public/dearflip/dflip/js/libs/compatibility.js"
   },
-  "/dearflip/dflip/sound/turn.mp3": {
-    "type": "audio/mpeg",
-    "etag": "\"1d62-P9fqVMVdAu2kDTfAVqfcu6FAyps\"",
+  "/dearflip/dflip/js/libs/imagesloaded.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"15c0-fH3dLae5udl8+Nv87pp/Q0BvVBI\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 5568,
+    "path": "../public/dearflip/dflip/js/libs/imagesloaded.min.js"
+  },
+  "/dearflip/dflip/js/libs/jquery-migrate.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"3567-YIKlKtA/HayMD/gV7BhAKzhjFho\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 13671,
+    "path": "../public/dearflip/dflip/js/libs/jquery-migrate.min.js"
+  },
+  "/dearflip/dflip/js/libs/jquery.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"158b5-GLl2X9sKJhIoDQjeraT5eouiyh8\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 88245,
+    "path": "../public/dearflip/dflip/js/libs/jquery.min.js"
+  },
+  "/dearflip/dflip/js/libs/masonry.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"5f0a-k88BKAc3A3hmvkzG6WZpT/1BhC4\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 24330,
+    "path": "../public/dearflip/dflip/js/libs/masonry.min.js"
+  },
+  "/dearflip/dflip/js/libs/mockup.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"a0ea-Zouhyx2/Y4QufW2AIoiOPFWUzN0\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 41194,
+    "path": "../public/dearflip/dflip/js/libs/mockup.min.js"
+  },
+  "/dearflip/dflip/js/libs/pdf.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"5a155-CAcDo4Cy1NG1OEAn9ss7TMZ34YA\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 368981,
+    "path": "../public/dearflip/dflip/js/libs/pdf.min.js"
+  },
+  "/dearflip/dflip/js/libs/pdf.worker.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"d009d-8sMX+SL4mzHuGlvH0ev1VjApcxA\"",
+    "mtime": "2024-11-26T10:04:30.058Z",
+    "size": 852125,
+    "path": "../public/dearflip/dflip/js/libs/pdf.worker.min.js"
+  },
+  "/dearflip/dflip/js/libs/three.min.js": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"3e55d-NsnZyTvLb2y2H+jHczr3/o6Wj60\"",
+    "mtime": "2024-11-26T10:04:30.027Z",
+    "size": 255325,
+    "path": "../public/dearflip/dflip/js/libs/three.min.js"
+  },
+  "/dearflip/examples/example-assets/books/intro.pdf": {
+    "type": "application/pdf",
+    "etag": "\"b3494-XvipbbW0DBbQCoG66PQHeKMO3dE\"",
     "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 7522,
-    "path": "../public/dearflip/dflip/sound/turn.mp3"
-  },
-  "/dearflip/dflip/sound/turn2.mp3": {
-    "type": "audio/mpeg",
-    "etag": "\"7557-8ZB09wyRzHa/lDXA3gm7F6gYsls\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 30039,
-    "path": "../public/dearflip/dflip/sound/turn2.mp3"
-  },
-  "/dearflip/dflip/sound/turn2a.mp3": {
-    "type": "audio/mpeg",
-    "etag": "\"1c08-A6+pp6EbfA/jS9HdBHe04OkGP0c\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 7176,
-    "path": "../public/dearflip/dflip/sound/turn2a.mp3"
-  },
-  "/dearflip/dflip/sound/turn3.mp3": {
-    "type": "audio/mpeg",
-    "etag": "\"eb0-V5vzv6nCkKJrQtmoAfSBLWiBi3w\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 3760,
-    "path": "../public/dearflip/dflip/sound/turn3.mp3"
-  },
-  "/laundry/248/washer-extractors/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e88-BZfB3YYnhLk0VZZEdyTdIN2DdyE\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 81544,
-    "path": "../public/laundry/248/washer-extractors/index.html"
-  },
-  "/laundry/248/washer-extractors/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-t22Oh04D7C+j0wpndYVWNBjxlLs\"",
-    "mtime": "2024-12-16T10:03:14.655Z",
-    "size": 69,
-    "path": "../public/laundry/248/washer-extractors/_payload.json"
-  },
-  "/laundry/254/dryers/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e46-p5WPf5xKSCYS1VorJhC0hC95zIY\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 81478,
-    "path": "../public/laundry/254/dryers/index.html"
-  },
-  "/laundry/254/dryers/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hHmgXSFpb6e57B5UZV3QBMXL3ls\"",
-    "mtime": "2024-12-16T10:03:14.655Z",
-    "size": 69,
-    "path": "../public/laundry/254/dryers/_payload.json"
-  },
-  "/laundry/258/flatwork-ironers/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e82-KYORV6/PaX4hqdrtcTn+8ettl9o\"",
-    "mtime": "2024-12-16T10:03:14.635Z",
-    "size": 81538,
-    "path": "../public/laundry/258/flatwork-ironers/index.html"
-  },
-  "/laundry/258/flatwork-ironers/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d+rS5rOG7dVWeCLqh+0jKYFoiUg\"",
-    "mtime": "2024-12-16T10:03:14.656Z",
-    "size": 69,
-    "path": "../public/laundry/258/flatwork-ironers/_payload.json"
-  },
-  "/laundry/261/finishing-equipments/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e9a-i1LoaCpV2Z0wab4NmRb09kGY1W0\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 81562,
-    "path": "../public/laundry/261/finishing-equipments/index.html"
-  },
-  "/laundry/261/finishing-equipments/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-LzDqQppjhuIIlTV1N4kAMVW1dC0\"",
-    "mtime": "2024-12-16T10:03:14.655Z",
-    "size": 69,
-    "path": "../public/laundry/261/finishing-equipments/_payload.json"
-  },
-  "/laundry/266/logistics--accessories/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13ea6-scjh1jX8hWwCTpU0gR7BqV3GWlE\"",
-    "mtime": "2024-12-16T10:03:14.634Z",
-    "size": 81574,
-    "path": "../public/laundry/266/logistics--accessories/index.html"
-  },
-  "/laundry/266/logistics--accessories/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-waXGCv+NkctimdF5+XIk1pjZkRo\"",
-    "mtime": "2024-12-16T10:03:14.656Z",
-    "size": 69,
-    "path": "../public/laundry/266/logistics--accessories/_payload.json"
-  },
-  "/laundry/269/wet--dry-cleaning/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e88-x+Fdp2/GqJD9koMOPjpuXLlPHgw\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 81544,
-    "path": "../public/laundry/269/wet--dry-cleaning/index.html"
-  },
-  "/laundry/269/wet--dry-cleaning/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-38+xtLAZDetLYdsVFXka42Fk/CE\"",
-    "mtime": "2024-12-16T10:03:14.656Z",
-    "size": 69,
-    "path": "../public/laundry/269/wet--dry-cleaning/_payload.json"
-  },
-  "/laundry/272/semi-commercial-range/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13ea0-yxEHZDyq5NS7A9Vm40vKkWFZBgk\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 81568,
-    "path": "../public/laundry/272/semi-commercial-range/index.html"
-  },
-  "/laundry/272/semi-commercial-range/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ci47DmgWCsJ/8bTgAwBybiqbj54\"",
-    "mtime": "2024-12-16T10:03:14.655Z",
-    "size": 69,
-    "path": "../public/laundry/272/semi-commercial-range/_payload.json"
-  },
-  "/laundry/276/floor-cleaning/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e76-CuDpFv0KyHOTXFWm90qnflUWZQA\"",
-    "mtime": "2024-12-16T10:03:14.636Z",
-    "size": 81526,
-    "path": "../public/laundry/276/floor-cleaning/index.html"
-  },
-  "/laundry/276/floor-cleaning/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JZr4LbXQGsSqy2M3RjuapUC1cvs\"",
-    "mtime": "2024-12-16T10:03:14.656Z",
-    "size": 69,
-    "path": "../public/laundry/276/floor-cleaning/_payload.json"
-  },
-  "/laundry/363/carpet-cleaning/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e7c-8xrLongipKGYQICjI+aboNLNaqc\"",
-    "mtime": "2024-12-16T10:03:14.575Z",
-    "size": 81532,
-    "path": "../public/laundry/363/carpet-cleaning/index.html"
-  },
-  "/laundry/363/carpet-cleaning/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-a9TO5GnseKufrDPoa6bCMbObGms\"",
-    "mtime": "2024-12-16T10:03:14.632Z",
-    "size": 69,
-    "path": "../public/laundry/363/carpet-cleaning/_payload.json"
-  },
-  "/laundry/368/car-wash/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13e52-OUVOfvDXxIXrku9E37emLdzJTHY\"",
-    "mtime": "2024-12-16T10:03:14.587Z",
-    "size": 81490,
-    "path": "../public/laundry/368/car-wash/index.html"
-  },
-  "/laundry/368/car-wash/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+9VkHyPE82DsbWA6VjrdtoHxQ+o\"",
-    "mtime": "2024-12-16T10:03:14.633Z",
-    "size": 69,
-    "path": "../public/laundry/368/car-wash/_payload.json"
-  },
-  "/product/1105/c-80-electric-conveyor-pizza-oven-c-80/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329b-KeFdgqEjMxAdFG4akwB96WQFdOQ\"",
-    "mtime": "2024-12-16T10:03:09.698Z",
-    "size": 78491,
-    "path": "../public/product/1105/c-80-electric-conveyor-pizza-oven-c-80/index.html"
-  },
-  "/product/1105/c-80-electric-conveyor-pizza-oven-c-80/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-p1nCNDB9xtjmxnlktpTYlY2mpAA\"",
-    "mtime": "2024-12-16T10:03:13.093Z",
-    "size": 69,
-    "path": "../public/product/1105/c-80-electric-conveyor-pizza-oven-c-80/_payload.json"
-  },
-  "/_nuxt/builds/meta/2cb4fc9e-9d4f-475b-a090-8cbc5ec3df71.json": {
-    "type": "application/json",
-    "etag": "\"10b42-Rpt0YTGzZQ6CBHKJqimJF3ho/5I\"",
-    "mtime": "2024-12-16T10:03:20.996Z",
-    "size": 68418,
-    "path": "../public/_nuxt/builds/meta/2cb4fc9e-9d4f-475b-a090-8cbc5ec3df71.json"
-  },
-  "/_nuxt/builds/meta/dev.json": {
-    "type": "application/json",
-    "etag": "\"c6-BdRZyS2Ezxgi+++/x7uEDsC+ZBI\"",
-    "mtime": "2024-12-16T10:02:54.538Z",
-    "size": 198,
-    "path": "../public/_nuxt/builds/meta/dev.json"
+    "size": 734356,
+    "path": "../public/dearflip/examples/example-assets/books/intro.pdf"
   },
   "/assets/css/assets/css/style.css": {
     "type": "text/css; charset=utf-8",
@@ -10603,125 +10257,6 @@ const assets$1 = {
     "size": 4778,
     "path": "../public/assets/images/about-us/icons/who-we-are.png"
   },
-  "/assets/images/about-us/slider/.DS_Store": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"1804-DS85FiP/kiVgOhaQuYSKHEn0ewg\"",
-    "mtime": "2024-11-06T08:15:39.043Z",
-    "size": 6148,
-    "path": "../public/assets/images/about-us/slider/.DS_Store"
-  },
-  "/assets/images/about-us/slider/history1.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"287b7-MvgfadKUcArDU8EE5alVycsCuy4\"",
-    "mtime": "2024-11-06T08:15:39.045Z",
-    "size": 165815,
-    "path": "../public/assets/images/about-us/slider/history1.jpg"
-  },
-  "/assets/images/about-us/slider/history1.old.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"22ce2-5jIBe9Ruhclp4BVh2IZbEYdi3DU\"",
-    "mtime": "2024-11-06T08:15:39.045Z",
-    "size": 142562,
-    "path": "../public/assets/images/about-us/slider/history1.old.jpg"
-  },
-  "/assets/images/about-us/slider/history2.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"23b39-MngZvqd/DqtKs5Nfb2ewutwInvw\"",
-    "mtime": "2024-11-06T08:15:39.046Z",
-    "size": 146233,
-    "path": "../public/assets/images/about-us/slider/history2.jpg"
-  },
-  "/assets/images/about-us/slider/history2.old.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"23b5c-J3ne71+YdDP9tlLxMb0GlScRNoQ\"",
-    "mtime": "2024-11-06T08:15:39.048Z",
-    "size": 146268,
-    "path": "../public/assets/images/about-us/slider/history2.old.jpg"
-  },
-  "/assets/images/about-us/slider/history3.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"4196b-UT7Be74AukmEQ9iWX9ZX4zl6F4Y\"",
-    "mtime": "2024-11-06T08:15:39.049Z",
-    "size": 268651,
-    "path": "../public/assets/images/about-us/slider/history3.jpg"
-  },
-  "/assets/images/about-us/slider/history3.old.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"2578b-Z58fiDPAzQTBgZdPghnZn2jP/9s\"",
-    "mtime": "2024-11-06T08:15:39.050Z",
-    "size": 153483,
-    "path": "../public/assets/images/about-us/slider/history3.old.jpg"
-  },
-  "/assets/images/about-us/slider/history3OLD.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"25138-kPPTHHDGFtq7j2TuPpznzAKGr+Q\"",
-    "mtime": "2024-11-06T08:15:39.051Z",
-    "size": 151864,
-    "path": "../public/assets/images/about-us/slider/history3OLD.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider1.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1c7f8-dqUsykFvBBbfnGGj0huR9r1X0Xw\"",
-    "mtime": "2024-11-06T08:15:39.052Z",
-    "size": 116728,
-    "path": "../public/assets/images/about-us/slider/mob-slider1.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider2.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1b296-groAweXhQNJF0YhRx18MgxzoTEQ\"",
-    "mtime": "2024-11-06T08:15:39.053Z",
-    "size": 111254,
-    "path": "../public/assets/images/about-us/slider/mob-slider2.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider3.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1d4df-4Eurs4gxyPzmIsI44x2pgLHyMV0\"",
-    "mtime": "2024-11-06T08:15:39.054Z",
-    "size": 120031,
-    "path": "../public/assets/images/about-us/slider/mob-slider3.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider4.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1acef-d5MjvK6C9AUjQk6N0eSKLa5S+MY\"",
-    "mtime": "2024-11-06T08:15:39.055Z",
-    "size": 109807,
-    "path": "../public/assets/images/about-us/slider/mob-slider4.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider5.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"19c4c-ZU/yrikHnYbXLfjABeRpY0vqf/4\"",
-    "mtime": "2024-11-06T08:15:39.056Z",
-    "size": 105548,
-    "path": "../public/assets/images/about-us/slider/mob-slider5.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider6.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"15628-+JkCEanrqJE2qTKBreK7O9iHogE\"",
-    "mtime": "2024-11-06T08:15:39.056Z",
-    "size": 87592,
-    "path": "../public/assets/images/about-us/slider/mob-slider6.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider7.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"19531-4vZjkYwEKDEcQJi7YLqxBA12+zI\"",
-    "mtime": "2024-11-06T08:15:39.057Z",
-    "size": 103729,
-    "path": "../public/assets/images/about-us/slider/mob-slider7.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider8.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"16eef-UYKeTRrbQTRM8TY9mtoQmqkJY54\"",
-    "mtime": "2024-11-06T08:15:39.058Z",
-    "size": 93935,
-    "path": "../public/assets/images/about-us/slider/mob-slider8.jpg"
-  },
-  "/assets/images/about-us/slider/mob-slider9.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"1a604-W6Lta8OyfVuyyxiPyoORe1YTOtg\"",
-    "mtime": "2024-11-06T08:15:39.058Z",
-    "size": 108036,
-    "path": "../public/assets/images/about-us/slider/mob-slider9.jpg"
-  },
   "/assets/images/about-us/video/.DS_Store": {
     "type": "text/plain; charset=utf-8",
     "etag": "\"1804-+bc3u5hBgES9rg9uJe5B8UnFxPQ\"",
@@ -10869,6 +10404,125 @@ const assets$1 = {
     "size": 49421,
     "path": "../public/assets/images/about-us/video/Tecnodom.jpg"
   },
+  "/assets/images/about-us/slider/.DS_Store": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"1804-DS85FiP/kiVgOhaQuYSKHEn0ewg\"",
+    "mtime": "2024-11-06T08:15:39.043Z",
+    "size": 6148,
+    "path": "../public/assets/images/about-us/slider/.DS_Store"
+  },
+  "/assets/images/about-us/slider/history1.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"287b7-MvgfadKUcArDU8EE5alVycsCuy4\"",
+    "mtime": "2024-11-06T08:15:39.045Z",
+    "size": 165815,
+    "path": "../public/assets/images/about-us/slider/history1.jpg"
+  },
+  "/assets/images/about-us/slider/history1.old.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"22ce2-5jIBe9Ruhclp4BVh2IZbEYdi3DU\"",
+    "mtime": "2024-11-06T08:15:39.045Z",
+    "size": 142562,
+    "path": "../public/assets/images/about-us/slider/history1.old.jpg"
+  },
+  "/assets/images/about-us/slider/history2.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"23b39-MngZvqd/DqtKs5Nfb2ewutwInvw\"",
+    "mtime": "2024-11-06T08:15:39.046Z",
+    "size": 146233,
+    "path": "../public/assets/images/about-us/slider/history2.jpg"
+  },
+  "/assets/images/about-us/slider/history2.old.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"23b5c-J3ne71+YdDP9tlLxMb0GlScRNoQ\"",
+    "mtime": "2024-11-06T08:15:39.048Z",
+    "size": 146268,
+    "path": "../public/assets/images/about-us/slider/history2.old.jpg"
+  },
+  "/assets/images/about-us/slider/history3.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"4196b-UT7Be74AukmEQ9iWX9ZX4zl6F4Y\"",
+    "mtime": "2024-11-06T08:15:39.049Z",
+    "size": 268651,
+    "path": "../public/assets/images/about-us/slider/history3.jpg"
+  },
+  "/assets/images/about-us/slider/history3.old.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"2578b-Z58fiDPAzQTBgZdPghnZn2jP/9s\"",
+    "mtime": "2024-11-06T08:15:39.050Z",
+    "size": 153483,
+    "path": "../public/assets/images/about-us/slider/history3.old.jpg"
+  },
+  "/assets/images/about-us/slider/history3OLD.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"25138-kPPTHHDGFtq7j2TuPpznzAKGr+Q\"",
+    "mtime": "2024-11-06T08:15:39.051Z",
+    "size": 151864,
+    "path": "../public/assets/images/about-us/slider/history3OLD.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider1.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1c7f8-dqUsykFvBBbfnGGj0huR9r1X0Xw\"",
+    "mtime": "2024-11-06T08:15:39.052Z",
+    "size": 116728,
+    "path": "../public/assets/images/about-us/slider/mob-slider1.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider2.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1b296-groAweXhQNJF0YhRx18MgxzoTEQ\"",
+    "mtime": "2024-11-06T08:15:39.053Z",
+    "size": 111254,
+    "path": "../public/assets/images/about-us/slider/mob-slider2.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider3.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1d4df-4Eurs4gxyPzmIsI44x2pgLHyMV0\"",
+    "mtime": "2024-11-06T08:15:39.054Z",
+    "size": 120031,
+    "path": "../public/assets/images/about-us/slider/mob-slider3.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider4.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1acef-d5MjvK6C9AUjQk6N0eSKLa5S+MY\"",
+    "mtime": "2024-11-06T08:15:39.055Z",
+    "size": 109807,
+    "path": "../public/assets/images/about-us/slider/mob-slider4.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider5.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"19c4c-ZU/yrikHnYbXLfjABeRpY0vqf/4\"",
+    "mtime": "2024-11-06T08:15:39.056Z",
+    "size": 105548,
+    "path": "../public/assets/images/about-us/slider/mob-slider5.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider6.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"15628-+JkCEanrqJE2qTKBreK7O9iHogE\"",
+    "mtime": "2024-11-06T08:15:39.056Z",
+    "size": 87592,
+    "path": "../public/assets/images/about-us/slider/mob-slider6.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider7.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"19531-4vZjkYwEKDEcQJi7YLqxBA12+zI\"",
+    "mtime": "2024-11-06T08:15:39.057Z",
+    "size": 103729,
+    "path": "../public/assets/images/about-us/slider/mob-slider7.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider8.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"16eef-UYKeTRrbQTRM8TY9mtoQmqkJY54\"",
+    "mtime": "2024-11-06T08:15:39.058Z",
+    "size": 93935,
+    "path": "../public/assets/images/about-us/slider/mob-slider8.jpg"
+  },
+  "/assets/images/about-us/slider/mob-slider9.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"1a604-W6Lta8OyfVuyyxiPyoORe1YTOtg\"",
+    "mtime": "2024-11-06T08:15:39.058Z",
+    "size": 108036,
+    "path": "../public/assets/images/about-us/slider/mob-slider9.jpg"
+  },
   "/assets/images/about-us/who-we-are/.DS_Store": {
     "type": "text/plain; charset=utf-8",
     "etag": "\"1804-3y++sUAKzaCQmjLBz2v0kvESHgc\"",
@@ -10946,13382 +10600,12 @@ const assets$1 = {
     "size": 21721,
     "path": "../public/assets/images/menu-icons/top-menu/laundry.png"
   },
-  "/cold-storage/product/265/chiller-1820-x-1820-x-2400-sheffield1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-OkQFgfrErj5RGDlf/Ti6xEE5BEc\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78545,
-    "path": "../public/cold-storage/product/265/chiller-1820-x-1820-x-2400-sheffield1/index.html"
-  },
-  "/cold-storage/product/265/chiller-1820-x-1820-x-2400-sheffield1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.153Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/265/chiller-1820-x-1820-x-2400-sheffield1/_payload.json"
-  },
-  "/cold-storage/product/266/chiller-3040-x-1820-x-2400-sheffieldcr2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-abesD8zKfCtajIlCegQ9Fu0hjhg\"",
-    "mtime": "2024-12-16T10:02:56.094Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/266/chiller-3040-x-1820-x-2400-sheffieldcr2/index.html"
-  },
-  "/cold-storage/product/266/chiller-3040-x-1820-x-2400-sheffieldcr2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.666Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/266/chiller-3040-x-1820-x-2400-sheffieldcr2/_payload.json"
-  },
-  "/cold-storage/product/267/chiller-3040-x-3040-x-2400-sheffieldcr3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-nBaHSCmrFKeK4EGsXphXHZY8dYw\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/267/chiller-3040-x-3040-x-2400-sheffieldcr3/index.html"
-  },
-  "/cold-storage/product/267/chiller-3040-x-3040-x-2400-sheffieldcr3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.142Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/267/chiller-3040-x-3040-x-2400-sheffieldcr3/_payload.json"
-  },
-  "/cold-storage/product/268/chiller-4260-x-1820-x-2400-sheffieldcr4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-XL+ytnAPuHsSeaZYnbhJbPLiUV0\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/268/chiller-4260-x-1820-x-2400-sheffieldcr4/index.html"
-  },
-  "/cold-storage/product/268/chiller-4260-x-1820-x-2400-sheffieldcr4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.156Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/268/chiller-4260-x-1820-x-2400-sheffieldcr4/_payload.json"
-  },
-  "/cold-storage/product/269/chiller-4260-x-3040-x-2400-sheffieldcr5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-bPfIKR5LtvyuIxQFwAJYnmn6Ujk\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/269/chiller-4260-x-3040-x-2400-sheffieldcr5/index.html"
-  },
-  "/cold-storage/product/269/chiller-4260-x-3040-x-2400-sheffieldcr5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R9LCTEhAWJw+oB6j56k8pQ6W7TM\"",
-    "mtime": "2024-12-16T10:03:10.126Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/269/chiller-4260-x-3040-x-2400-sheffieldcr5/_payload.json"
-  },
-  "/cold-storage/product/270/chiller-4260-x-4260-x-2400-sheffieldcr6/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-syuHy5YSpr1BC10XTllj0eBMFco\"",
-    "mtime": "2024-12-16T10:02:53.830Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/270/chiller-4260-x-4260-x-2400-sheffieldcr6/index.html"
-  },
-  "/cold-storage/product/270/chiller-4260-x-4260-x-2400-sheffieldcr6/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.192Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/270/chiller-4260-x-4260-x-2400-sheffieldcr6/_payload.json"
-  },
-  "/cold-storage/product/271/chiller-5480-x-1820-x-2400-sheffieldcr7/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-8EqlPPMrmvqxOCg46d5BqvtYgBA\"",
-    "mtime": "2024-12-16T10:02:57.138Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/271/chiller-5480-x-1820-x-2400-sheffieldcr7/index.html"
-  },
-  "/cold-storage/product/271/chiller-5480-x-1820-x-2400-sheffieldcr7/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.963Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/271/chiller-5480-x-1820-x-2400-sheffieldcr7/_payload.json"
-  },
-  "/cold-storage/product/272/chiller-5480-x-3040-x-2400-sheffieldcr8/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-KBWOQB75lDJ7DuKLtVhX0H3jFXw\"",
-    "mtime": "2024-12-16T10:02:58.406Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/272/chiller-5480-x-3040-x-2400-sheffieldcr8/index.html"
-  },
-  "/cold-storage/product/272/chiller-5480-x-3040-x-2400-sheffieldcr8/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.223Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/272/chiller-5480-x-3040-x-2400-sheffieldcr8/_payload.json"
-  },
-  "/cold-storage/product/273/chiller-5480-x-3040-x-3000-sheffieldcr9/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-b7RImN03k7hw8yDNO6UfV9r8kTg\"",
-    "mtime": "2024-12-16T10:02:53.830Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/273/chiller-5480-x-3040-x-3000-sheffieldcr9/index.html"
-  },
-  "/cold-storage/product/273/chiller-5480-x-3040-x-3000-sheffieldcr9/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.182Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/273/chiller-5480-x-3040-x-3000-sheffieldcr9/_payload.json"
-  },
-  "/cold-storage/product/274/chiller-5480-x-5480-x-3000-sheffieldcr10/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-QFMgVgfSffBip6R+7BwmuRVE2/8\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78560,
-    "path": "../public/cold-storage/product/274/chiller-5480-x-5480-x-3000-sheffieldcr10/index.html"
-  },
-  "/cold-storage/product/274/chiller-5480-x-5480-x-3000-sheffieldcr10/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.160Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/274/chiller-5480-x-5480-x-3000-sheffieldcr10/_payload.json"
-  },
-  "/cold-storage/product/275/freezer-1820-x-1820-x-2400-sheffieldfr1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-m+fqcEe2v827QQFNGZDXwUUH1Wk\"",
-    "mtime": "2024-12-16T10:02:53.830Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/275/freezer-1820-x-1820-x-2400-sheffieldfr1/index.html"
-  },
-  "/cold-storage/product/275/freezer-1820-x-1820-x-2400-sheffieldfr1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.186Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/275/freezer-1820-x-1820-x-2400-sheffieldfr1/_payload.json"
-  },
-  "/cold-storage/product/276/freezer-3040-x-1820-x-2400-sheffieldfr2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-hRSZrEzP3Np/2Ov/bVMVwlUoR8E\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/276/freezer-3040-x-1820-x-2400-sheffieldfr2/index.html"
-  },
-  "/cold-storage/product/276/freezer-3040-x-1820-x-2400-sheffieldfr2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.126Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/276/freezer-3040-x-1820-x-2400-sheffieldfr2/_payload.json"
-  },
-  "/cold-storage/product/277/freezer-3040-x-3040-x-2400-sheffieldfr3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-99nQlgAjwcS6LkedOJQS8TF4Kqs\"",
-    "mtime": "2024-12-16T10:02:53.820Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/277/freezer-3040-x-3040-x-2400-sheffieldfr3/index.html"
-  },
-  "/cold-storage/product/277/freezer-3040-x-3040-x-2400-sheffieldfr3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.155Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/277/freezer-3040-x-3040-x-2400-sheffieldfr3/_payload.json"
-  },
-  "/cold-storage/product/278/freezer-4260-x-1820-x-2400-sheffieldfr4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-0Aex+Vmuf9EdCPisrBoNM5JyGos\"",
-    "mtime": "2024-12-16T10:02:58.404Z",
-    "size": 78555,
-    "path": "../public/cold-storage/product/278/freezer-4260-x-1820-x-2400-sheffieldfr4/index.html"
-  },
-  "/cold-storage/product/278/freezer-4260-x-1820-x-2400-sheffieldfr4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.223Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/278/freezer-4260-x-1820-x-2400-sheffieldfr4/_payload.json"
-  },
-  "/cold-storage/product/279/freezer-4260-x-3040-x-2400-shefieldfr5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-tEBb6qB5e1I7TJ23v8JPGof3sqo\"",
-    "mtime": "2024-12-16T10:02:58.340Z",
-    "size": 78550,
-    "path": "../public/cold-storage/product/279/freezer-4260-x-3040-x-2400-shefieldfr5/index.html"
-  },
-  "/cold-storage/product/279/freezer-4260-x-3040-x-2400-shefieldfr5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.222Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/279/freezer-4260-x-3040-x-2400-shefieldfr5/_payload.json"
-  },
-  "/cold-storage/product/280/20-foot-containerized-cold-room-ccr1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-z7lIuGV5bQ5zC+jaDVraysdn1NI\"",
-    "mtime": "2024-12-16T10:02:58.339Z",
-    "size": 78540,
-    "path": "../public/cold-storage/product/280/20-foot-containerized-cold-room-ccr1/index.html"
-  },
-  "/cold-storage/product/280/20-foot-containerized-cold-room-ccr1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.222Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/280/20-foot-containerized-cold-room-ccr1/_payload.json"
-  },
-  "/cold-storage/product/282/40-foot-containerized-cold-room-ccr3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-+rC1ldTBNI2mtruVBikCbZnoM1I\"",
-    "mtime": "2024-12-16T10:02:57.143Z",
-    "size": 78540,
-    "path": "../public/cold-storage/product/282/40-foot-containerized-cold-room-ccr3/index.html"
-  },
-  "/cold-storage/product/282/40-foot-containerized-cold-room-ccr3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.971Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/282/40-foot-containerized-cold-room-ccr3/_payload.json"
-  },
-  "/cold-storage/product/284/display-cold-room-dcrsup/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-jMsFMi6EXFtZfKbE2Ez7+AFhQhI\"",
-    "mtime": "2024-12-16T10:02:56.055Z",
-    "size": 78480,
-    "path": "../public/cold-storage/product/284/display-cold-room-dcrsup/index.html"
-  },
-  "/cold-storage/product/284/display-cold-room-dcrsup/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.634Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/284/display-cold-room-dcrsup/_payload.json"
-  },
-  "/cold-storage/product/348/2-body-mortuary-chamber-mch-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-PqQXQa2/KiWcx8D0K9DVEFE3ySw\"",
-    "mtime": "2024-12-16T10:02:57.081Z",
-    "size": 78505,
-    "path": "../public/cold-storage/product/348/2-body-mortuary-chamber-mch-2/index.html"
-  },
-  "/cold-storage/product/348/2-body-mortuary-chamber-mch-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.960Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/348/2-body-mortuary-chamber-mch-2/_payload.json"
-  },
-  "/cold-storage/product/349/blast-chillers--freezers-bcf-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-Q3O4RdPV7GCzaK1Yo3J1EA+hakY\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78510,
-    "path": "../public/cold-storage/product/349/blast-chillers--freezers-bcf-1/index.html"
-  },
-  "/cold-storage/product/349/blast-chillers--freezers-bcf-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.442Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/349/blast-chillers--freezers-bcf-1/_payload.json"
-  },
-  "/cold-storage/product/350/ripening-chambers-rc-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-6M7Dx2/O9/+HdjT4FIA1ah35xF4\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78470,
-    "path": "../public/cold-storage/product/350/ripening-chambers-rc-1/index.html"
-  },
-  "/cold-storage/product/350/ripening-chambers-rc-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.435Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/350/ripening-chambers-rc-1/_payload.json"
-  },
-  "/cold-storage/product/351/solar-powered-cold-room-spcr-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-dM2ByhOe6hwjmAIJwspDgpLU36A\"",
-    "mtime": "2024-12-16T10:02:54.014Z",
-    "size": 78510,
-    "path": "../public/cold-storage/product/351/solar-powered-cold-room-spcr-1/index.html"
-  },
-  "/cold-storage/product/351/solar-powered-cold-room-spcr-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.197Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/351/solar-powered-cold-room-spcr-1/_payload.json"
-  },
-  "/cold-storage/product/352/retail-panels-rp-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13272-ibC2zcvZuEFMDxD3kZU4qnYaCds\"",
-    "mtime": "2024-12-16T10:02:56.039Z",
-    "size": 78450,
-    "path": "../public/cold-storage/product/352/retail-panels-rp-1/index.html"
-  },
-  "/cold-storage/product/352/retail-panels-rp-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.633Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/352/retail-panels-rp-1/_payload.json"
-  },
-  "/cold-storage/product/353/packhouse-cold-rooms-pcr-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329a-uacOJqL/fzxfq7A5bwEUDf+HhF8\"",
-    "mtime": "2024-12-16T10:02:58.404Z",
-    "size": 78490,
-    "path": "../public/cold-storage/product/353/packhouse-cold-rooms-pcr-1/index.html"
-  },
-  "/cold-storage/product/353/packhouse-cold-rooms-pcr-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:11.222Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/353/packhouse-cold-rooms-pcr-1/_payload.json"
-  },
-  "/cold-storage/product/537/mini-cold-room-mcr1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13277-LbYS0YtsoMkOlq0wVT4ZcAGjvW8\"",
-    "mtime": "2024-12-16T10:02:55.006Z",
-    "size": 78455,
-    "path": "../public/cold-storage/product/537/mini-cold-room-mcr1/index.html"
-  },
-  "/cold-storage/product/537/mini-cold-room-mcr1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.475Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/537/mini-cold-room-mcr1/_payload.json"
-  },
-  "/cold-storage/product/539/heat-pump-dehydrator-hpd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-RwFb+ru/7Bdk4qyJpgnDan/ylqY\"",
-    "mtime": "2024-12-16T10:02:58.312Z",
-    "size": 78480,
-    "path": "../public/cold-storage/product/539/heat-pump-dehydrator-hpd/index.html"
-  },
-  "/cold-storage/product/539/heat-pump-dehydrator-hpd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.151Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/539/heat-pump-dehydrator-hpd/_payload.json"
-  },
-  "/cold-storage/product/701/3-body-mortuary-chamber-3bmc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-+UGSWletNCRSk0qfO4sbf5xWPQs\"",
-    "mtime": "2024-12-16T10:02:55.019Z",
-    "size": 78500,
-    "path": "../public/cold-storage/product/701/3-body-mortuary-chamber-3bmc/index.html"
-  },
-  "/cold-storage/product/701/3-body-mortuary-chamber-3bmc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.485Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/701/3-body-mortuary-chamber-3bmc/_payload.json"
-  },
-  "/cold-storage/product/702/6-body-mortuary-chamber-6bmc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-JWsxE9h7c+/OFECNNoysHoolivo\"",
-    "mtime": "2024-12-16T10:02:56.094Z",
-    "size": 78500,
-    "path": "../public/cold-storage/product/702/6-body-mortuary-chamber-6bmc/index.html"
-  },
-  "/cold-storage/product/702/6-body-mortuary-chamber-6bmc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5bEOFwPhfneLx2aEJ28cVKI53Fk\"",
-    "mtime": "2024-12-16T10:03:10.666Z",
-    "size": 69,
-    "path": "../public/cold-storage/product/702/6-body-mortuary-chamber-6bmc/_payload.json"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-check.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"19f-AV0D/6agzpO0Htk6Jih55PjPcv0\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 415,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-check.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-comment.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"373-Xsh1FT1QRlBwUKNTFCLKabRGgMc\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 883,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-comment.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-help.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"878-Lz2I9OjO+vwtdpMhBPayUXA0ry8\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 2168,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-help.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-insert.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"198-ehKvdO8g1SSaDDMNmSvREyMIy6w\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 408,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-insert.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-key.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"5ac-2SJNOu93TW7MlzW0QIEK2kOEvhE\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 1452,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-key.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-newparagraph.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"1aa-RTukeqELb8+EWVaeClULT5EmDsc\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 426,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-newparagraph.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-noicon.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"9e-WlRH5cOc98p0iFOhXb2DXdqjtd8\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 158,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-noicon.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-note.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"411-YQDe62Eh+Yx+Ak7BonMXEgfITH8\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 1041,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-note.svg"
-  },
-  "/dearflip/dflip/images/pdfjs/annotation-paragraph.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"477-cFkaOybFaBXG5asrrpWeipUcQ/s\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 1143,
-    "path": "../public/dearflip/dflip/images/pdfjs/annotation-paragraph.svg"
-  },
-  "/dearflip/dflip/images/textures/white.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"763-kpi5AI3FoZTo0DMHoTkDzyszndg\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 1891,
-    "path": "../public/dearflip/dflip/images/textures/white.jpg"
-  },
-  "/dearflip/dflip/js/libs/compatibility.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"4b88-T/vnjEpXjEj+xwk2yJaJymGOxCI\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 19336,
-    "path": "../public/dearflip/dflip/js/libs/compatibility.js"
-  },
-  "/dearflip/dflip/js/libs/imagesloaded.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"15c0-fH3dLae5udl8+Nv87pp/Q0BvVBI\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 5568,
-    "path": "../public/dearflip/dflip/js/libs/imagesloaded.min.js"
-  },
-  "/dearflip/dflip/js/libs/jquery-migrate.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"3567-YIKlKtA/HayMD/gV7BhAKzhjFho\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 13671,
-    "path": "../public/dearflip/dflip/js/libs/jquery-migrate.min.js"
-  },
-  "/dearflip/dflip/js/libs/jquery.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"158b5-GLl2X9sKJhIoDQjeraT5eouiyh8\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 88245,
-    "path": "../public/dearflip/dflip/js/libs/jquery.min.js"
-  },
-  "/dearflip/dflip/js/libs/masonry.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"5f0a-k88BKAc3A3hmvkzG6WZpT/1BhC4\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 24330,
-    "path": "../public/dearflip/dflip/js/libs/masonry.min.js"
-  },
-  "/dearflip/dflip/js/libs/mockup.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"a0ea-Zouhyx2/Y4QufW2AIoiOPFWUzN0\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 41194,
-    "path": "../public/dearflip/dflip/js/libs/mockup.min.js"
-  },
-  "/dearflip/dflip/js/libs/pdf.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"5a155-CAcDo4Cy1NG1OEAn9ss7TMZ34YA\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 368981,
-    "path": "../public/dearflip/dflip/js/libs/pdf.min.js"
-  },
-  "/dearflip/dflip/js/libs/pdf.worker.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"d009d-8sMX+SL4mzHuGlvH0ev1VjApcxA\"",
-    "mtime": "2024-11-26T10:04:30.058Z",
-    "size": 852125,
-    "path": "../public/dearflip/dflip/js/libs/pdf.worker.min.js"
-  },
-  "/dearflip/dflip/js/libs/three.min.js": {
-    "type": "text/javascript; charset=utf-8",
-    "etag": "\"3e55d-NsnZyTvLb2y2H+jHczr3/o6Wj60\"",
-    "mtime": "2024-11-26T10:04:30.027Z",
-    "size": 255325,
-    "path": "../public/dearflip/dflip/js/libs/three.min.js"
-  },
-  "/dearflip/examples/example-assets/books/intro.pdf": {
-    "type": "application/pdf",
-    "etag": "\"b3494-XvipbbW0DBbQCoG66PQHeKMO3dE\"",
-    "mtime": "2024-10-01T03:28:00.000Z",
-    "size": 734356,
-    "path": "../public/dearflip/examples/example-assets/books/intro.pdf"
-  },
-  "/commercial-kitchen/product/100/ice-cream-machine-pasto-master-pasto-master/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-f8EXTJYkfJLKrHbk7VnJZGue7Bs\"",
-    "mtime": "2024-12-16T10:03:07.455Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/100/ice-cream-machine-pasto-master-pasto-master/index.html"
-  },
-  "/commercial-kitchen/product/100/ice-cream-machine-pasto-master-pasto-master/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ndpQvNZDtN/mWLdCzj90YbpcV9I\"",
-    "mtime": "2024-12-16T10:03:12.768Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/100/ice-cream-machine-pasto-master-pasto-master/_payload.json"
-  },
-  "/commercial-kitchen/product/1000/counter-chiller-engineering-version-1200700-plr-12n2fhb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334f-bS6WthZsYKvtGNKytoynD4hAMjk\"",
-    "mtime": "2024-12-16T10:03:03.436Z",
-    "size": 78671,
-    "path": "../public/commercial-kitchen/product/1000/counter-chiller-engineering-version-1200700-plr-12n2fhb/index.html"
-  },
-  "/commercial-kitchen/product/1000/counter-chiller-engineering-version-1200700-plr-12n2fhb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3jGhUly3WX485GAkB96iGqXcOyY\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1000/counter-chiller-engineering-version-1200700-plr-12n2fhb/_payload.json"
-  },
-  "/commercial-kitchen/product/1002/vertical-display-cabinet-double-door-chiller-aluminum-frame-lc-1200t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13390-H2ujXaXN7+HPS2WydhrI5K+qb1w\"",
-    "mtime": "2024-12-16T10:02:58.339Z",
-    "size": 78736,
-    "path": "../public/commercial-kitchen/product/1002/vertical-display-cabinet-double-door-chiller-aluminum-frame-lc-1200t/index.html"
-  },
-  "/commercial-kitchen/product/1002/vertical-display-cabinet-double-door-chiller-aluminum-frame-lc-1200t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6bPvcmxmh5SDDLWK9mcNs3gotUI\"",
-    "mtime": "2024-12-16T10:03:11.175Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1002/vertical-display-cabinet-double-door-chiller-aluminum-frame-lc-1200t/_payload.json"
-  },
-  "/commercial-kitchen/product/1003/vertical-display-cabinet-single-door-chiller-aluminum-frame-lc-298b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1338b-HM0nuBcxtSf/MiUUB+SHZnYqu7Y\"",
-    "mtime": "2024-12-16T10:02:58.307Z",
-    "size": 78731,
-    "path": "../public/commercial-kitchen/product/1003/vertical-display-cabinet-single-door-chiller-aluminum-frame-lc-298b/index.html"
-  },
-  "/commercial-kitchen/product/1003/vertical-display-cabinet-single-door-chiller-aluminum-frame-lc-298b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ro2oeiubpyvy3zikkJWIaj4ish8\"",
-    "mtime": "2024-12-16T10:03:11.151Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1003/vertical-display-cabinet-single-door-chiller-aluminum-frame-lc-298b/_payload.json"
-  },
-  "/commercial-kitchen/product/1004/cake-cabinet-square-900fz-dg-900fz/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-7+YXaWlQMTe4Lfu3VWQMM6vGNZM\"",
-    "mtime": "2024-12-16T10:02:57.761Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1004/cake-cabinet-square-900fz-dg-900fz/index.html"
-  },
-  "/commercial-kitchen/product/1004/cake-cabinet-square-900fz-dg-900fz/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D0/37f45DYLj58z1259aDJwXO+0\"",
-    "mtime": "2024-12-16T10:03:11.051Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1004/cake-cabinet-square-900fz-dg-900fz/_payload.json"
-  },
-  "/commercial-kitchen/product/1006/table-top-cake-cabinet-square-dg-tz700-dg-tz700/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-fHRgZLeYLKdfA/sqccU/fDjQ+rQ\"",
-    "mtime": "2024-12-16T10:02:57.703Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1006/table-top-cake-cabinet-square-dg-tz700-dg-tz700/index.html"
-  },
-  "/commercial-kitchen/product/1006/table-top-cake-cabinet-square-dg-tz700-dg-tz700/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-X4U6vdozU8mmNgnqn5EffALEyLo\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1006/table-top-cake-cabinet-square-dg-tz700-dg-tz700/_payload.json"
-  },
-  "/commercial-kitchen/product/1005/table-top-cake-cabinet-curved-dg-ty700-dg-ty700/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-NL23csfGDLPo/A7gA5y/vUao6y4\"",
-    "mtime": "2024-12-16T10:02:57.737Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1005/table-top-cake-cabinet-curved-dg-ty700-dg-ty700/index.html"
-  },
-  "/commercial-kitchen/product/1005/table-top-cake-cabinet-curved-dg-ty700-dg-ty700/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eVYE1iyEckM1W7bCcH7iOVZDIxw\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1005/table-top-cake-cabinet-curved-dg-ty700-dg-ty700/_payload.json"
-  },
-  "/commercial-kitchen/product/1007/single-temperature-trippe-top-freezer-bc-bd-1780/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332c-LMrHbiYONqbSi6V9+h+70M/NuxU\"",
-    "mtime": "2024-12-16T10:03:07.539Z",
-    "size": 78636,
-    "path": "../public/commercial-kitchen/product/1007/single-temperature-trippe-top-freezer-bc-bd-1780/index.html"
-  },
-  "/commercial-kitchen/product/1007/single-temperature-trippe-top-freezer-bc-bd-1780/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-b97Is5C/mfu8UgaKlCJ3Me0PxBo\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1007/single-temperature-trippe-top-freezer-bc-bd-1780/_payload.json"
-  },
-  "/commercial-kitchen/product/1008/widened-island-freezer-with-thickened-foam-layer-sd-sc-2000k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13368-nAj1UQGCtGVPdR/Jox78X1hY2Do\"",
-    "mtime": "2024-12-16T10:03:07.536Z",
-    "size": 78696,
-    "path": "../public/commercial-kitchen/product/1008/widened-island-freezer-with-thickened-foam-layer-sd-sc-2000k/index.html"
-  },
-  "/commercial-kitchen/product/1008/widened-island-freezer-with-thickened-foam-layer-sd-sc-2000k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0XH6A1G8LTu2kwnUrpooTjj0Iwc\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1008/widened-island-freezer-with-thickened-foam-layer-sd-sc-2000k/_payload.json"
-  },
-  "/commercial-kitchen/product/1009/cake-cabinet-square-dg1500fz-dg-1500fz/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-Fufk0bjGs1GbTYBaJy9zyfS7zG0\"",
-    "mtime": "2024-12-16T10:02:57.764Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1009/cake-cabinet-square-dg1500fz-dg-1500fz/index.html"
-  },
-  "/commercial-kitchen/product/1009/cake-cabinet-square-dg1500fz-dg-1500fz/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AvsDNsUchZm6KMG/FZF0ABjgVhk\"",
-    "mtime": "2024-12-16T10:03:11.057Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1009/cake-cabinet-square-dg1500fz-dg-1500fz/_payload.json"
-  },
-  "/commercial-kitchen/product/101/ice-cream-machine-single-flavour-counter-top-191-steel-191-steel/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13376-vInALMtWpBuCcxtAO0t7eMwCzFk\"",
-    "mtime": "2024-12-16T10:03:07.439Z",
-    "size": 78710,
-    "path": "../public/commercial-kitchen/product/101/ice-cream-machine-single-flavour-counter-top-191-steel-191-steel/index.html"
-  },
-  "/commercial-kitchen/product/101/ice-cream-machine-single-flavour-counter-top-191-steel-191-steel/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-E6sk0AJC9xuf1VJfLM19t6x7tK8\"",
-    "mtime": "2024-12-16T10:03:12.759Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/101/ice-cream-machine-single-flavour-counter-top-191-steel-191-steel/_payload.json"
-  },
-  "/commercial-kitchen/product/1010/cake-cabinet-square-dg1200fz-dg-1200fz/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-yEUo+oUUUvpfzGIKNlWKy+Rf580\"",
-    "mtime": "2024-12-16T10:02:57.761Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1010/cake-cabinet-square-dg1200fz-dg-1200fz/index.html"
-  },
-  "/commercial-kitchen/product/1010/cake-cabinet-square-dg1200fz-dg-1200fz/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9vTkJ8X5R5xegSagOi80DSjc+gY\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1010/cake-cabinet-square-dg1200fz-dg-1200fz/_payload.json"
-  },
-  "/commercial-kitchen/product/103/juice-dispenser-2-tank-lsp-18x2-lsp-18x2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-SugsbQkRVTrKqyXOm7v1fn+vW+w\"",
-    "mtime": "2024-12-16T10:02:57.591Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/103/juice-dispenser-2-tank-lsp-18x2-lsp-18x2/index.html"
-  },
-  "/commercial-kitchen/product/103/juice-dispenser-2-tank-lsp-18x2-lsp-18x2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-roaOsJfFkpXXneNA0fhnWt+OAq0\"",
-    "mtime": "2024-12-16T10:03:11.036Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/103/juice-dispenser-2-tank-lsp-18x2-lsp-18x2/_payload.json"
-  },
-  "/commercial-kitchen/product/102/juice-dispenser-3-tank-lsp-18x3-lsp-18x3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-/BoCwmQEcqlQBe5gvP3JW2iBTL0\"",
-    "mtime": "2024-12-16T10:02:57.610Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/102/juice-dispenser-3-tank-lsp-18x3-lsp-18x3/index.html"
-  },
-  "/commercial-kitchen/product/102/juice-dispenser-3-tank-lsp-18x3-lsp-18x3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7ALagFKySRiIzpU0ZtoM0ExIqhU\"",
-    "mtime": "2024-12-16T10:03:11.036Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/102/juice-dispenser-3-tank-lsp-18x3-lsp-18x3/_payload.json"
-  },
-  "/commercial-kitchen/product/1030/g-paniz-oven-fte-ftg-480-16-trays-fte480/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13304-WXa083GMidaknFb0yAyKEouNnRY\"",
-    "mtime": "2024-12-16T10:02:58.609Z",
-    "size": 78596,
-    "path": "../public/commercial-kitchen/product/1030/g-paniz-oven-fte-ftg-480-16-trays-fte480/index.html"
-  },
-  "/commercial-kitchen/product/1030/g-paniz-oven-fte-ftg-480-16-trays-fte480/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KIpJH2TyRzkbbEDLGlBIzVtg+lQ\"",
-    "mtime": "2024-12-16T10:03:11.291Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1030/g-paniz-oven-fte-ftg-480-16-trays-fte480/_payload.json"
-  },
-  "/commercial-kitchen/product/1031/robot-coupe-immersion-blender-cmp-300-vv-cmp-300-vv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333b-74azDUwwZ5qbkD67I2TcYSNc/jw\"",
-    "mtime": "2024-12-16T10:02:56.951Z",
-    "size": 78651,
-    "path": "../public/commercial-kitchen/product/1031/robot-coupe-immersion-blender-cmp-300-vv-cmp-300-vv/index.html"
-  },
-  "/commercial-kitchen/product/1031/robot-coupe-immersion-blender-cmp-300-vv-cmp-300-vv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-K6aSNf+R4oQuS7iHeZq9uZsJcFg\"",
-    "mtime": "2024-12-16T10:03:10.927Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1031/robot-coupe-immersion-blender-cmp-300-vv-cmp-300-vv/_payload.json"
-  },
-  "/commercial-kitchen/product/1032/robot-coupe-immersion-blender-cmp-400-vv-cmp-400-vv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333b-vncw/xkJhpXgQFEpuW61OC4RD2c\"",
-    "mtime": "2024-12-16T10:02:56.965Z",
-    "size": 78651,
-    "path": "../public/commercial-kitchen/product/1032/robot-coupe-immersion-blender-cmp-400-vv-cmp-400-vv/index.html"
-  },
-  "/commercial-kitchen/product/1032/robot-coupe-immersion-blender-cmp-400-vv-cmp-400-vv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sW/R5C3ASwpbkn0s38QcKpy55yg\"",
-    "mtime": "2024-12-16T10:03:10.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1032/robot-coupe-immersion-blender-cmp-400-vv-cmp-400-vv/_payload.json"
-  },
-  "/commercial-kitchen/product/1035/easyline-microwave-oven-34-litres-ema34gtq/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-8pKZjZMs+OF8C3ZZiWdzVKwgH3Q\"",
-    "mtime": "2024-12-16T10:03:03.015Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1035/easyline-microwave-oven-34-litres-ema34gtq/index.html"
-  },
-  "/commercial-kitchen/product/1035/easyline-microwave-oven-34-litres-ema34gtq/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vW5GxgrQAWjlyvO9TZKLQe5Ms0s\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1035/easyline-microwave-oven-34-litres-ema34gtq/_payload.json"
-  },
-  "/commercial-kitchen/product/1033/robot-coupe-combination-processor-r-301-r-301/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331d-ATOt1yQaWNf/cuhub1DOMo+Bcc0\"",
-    "mtime": "2024-12-16T10:03:07.916Z",
-    "size": 78621,
-    "path": "../public/commercial-kitchen/product/1033/robot-coupe-combination-processor-r-301-r-301/index.html"
-  },
-  "/commercial-kitchen/product/1033/robot-coupe-combination-processor-r-301-r-301/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZLhMdD5CItZOhOovzU1fmhFLK5o\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1033/robot-coupe-combination-processor-r-301-r-301/_payload.json"
-  },
-  "/commercial-kitchen/product/1034/robot-coupe-combination-processor-r301-r301/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13313-Y8lin2S8e5BL3WP/mwerarfkMDg\"",
-    "mtime": "2024-12-16T10:03:07.905Z",
-    "size": 78611,
-    "path": "../public/commercial-kitchen/product/1034/robot-coupe-combination-processor-r301-r301/index.html"
-  },
-  "/commercial-kitchen/product/1034/robot-coupe-combination-processor-r301-r301/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pKenWJ/MsKXhnVSXE/gXc9PcxWs\"",
-    "mtime": "2024-12-16T10:03:12.860Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1034/robot-coupe-combination-processor-r301-r301/_payload.json"
-  },
-  "/commercial-kitchen/product/1036/easyline-microwave-oven-25-litres-em025fjt/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-iBJfgAyL7vLkMhq3YxwfiH/0oAo\"",
-    "mtime": "2024-12-16T10:03:03.015Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1036/easyline-microwave-oven-25-litres-em025fjt/index.html"
-  },
-  "/commercial-kitchen/product/1036/easyline-microwave-oven-25-litres-em025fjt/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NjwIe+PP19rAMFNAfnKpYXn5jCk\"",
-    "mtime": "2024-12-16T10:03:12.019Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1036/easyline-microwave-oven-25-litres-em025fjt/_payload.json"
-  },
-  "/commercial-kitchen/product/1037/digital-ss-square-chaffing-dish-65-litres-rh002/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-pSZjE9SXA8zoYNheYdyE/wCQd1A\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1037/digital-ss-square-chaffing-dish-65-litres-rh002/index.html"
-  },
-  "/commercial-kitchen/product/1037/digital-ss-square-chaffing-dish-65-litres-rh002/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WiluPdSAPQT04x+SzVo6sW4FrSk\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1037/digital-ss-square-chaffing-dish-65-litres-rh002/_payload.json"
-  },
-  "/commercial-kitchen/product/1038/digital-ss-square-chafing-dish-9-litres-rh002/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331d-V7ofSYknLY7qsQRZMnzo6f4dbx4\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78621,
-    "path": "../public/commercial-kitchen/product/1038/digital-ss-square-chafing-dish-9-litres-rh002/index.html"
-  },
-  "/commercial-kitchen/product/1038/digital-ss-square-chafing-dish-9-litres-rh002/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UhSmEtX9l06KqBU5OaZAlWtB1Ic\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1038/digital-ss-square-chafing-dish-9-litres-rh002/_payload.json"
-  },
-  "/commercial-kitchen/product/1039/spiral-mixer-130-litres-50kg-bm-50/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-p/s4jALBs0UCYENHw5XCokIa7LU\"",
-    "mtime": "2024-12-16T10:02:59.127Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1039/spiral-mixer-130-litres-50kg-bm-50/index.html"
-  },
-  "/commercial-kitchen/product/1039/spiral-mixer-130-litres-50kg-bm-50/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZaDqxw/bp3T7U3FuufvitY6IIk8\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1039/spiral-mixer-130-litres-50kg-bm-50/_payload.json"
-  },
-  "/commercial-kitchen/product/104/juice-dispenser-1-tank-34-1a-santos-34-1a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-WbWVxEkCz1mw8KJSZuYG8mWxjWs\"",
-    "mtime": "2024-12-16T10:02:57.535Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/104/juice-dispenser-1-tank-34-1a-santos-34-1a/index.html"
-  },
-  "/commercial-kitchen/product/104/juice-dispenser-1-tank-34-1a-santos-34-1a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2HO8stNRgvkJXllGBzca5026WEk\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/104/juice-dispenser-1-tank-34-1a-santos-34-1a/_payload.json"
-  },
-  "/commercial-kitchen/product/1040/spiral-mixer-200-litres-50kg-bm-75/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-mP+lJbTD4uYjyHvCQ9UNuc2m86E\"",
-    "mtime": "2024-12-16T10:02:59.135Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1040/spiral-mixer-200-litres-50kg-bm-75/index.html"
-  },
-  "/commercial-kitchen/product/1040/spiral-mixer-200-litres-50kg-bm-75/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-60m+2cmEaAsBlkhJuNeHUxFiCqw\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1040/spiral-mixer-200-litres-50kg-bm-75/_payload.json"
-  },
-  "/commercial-kitchen/product/1043/vegetable-and-salad-dryer-40-ltr-sy40-09/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13304-8zccfh0bk/D14dLD/a5Cxa7D1lA\"",
-    "mtime": "2024-12-16T10:03:05.890Z",
-    "size": 78596,
-    "path": "../public/commercial-kitchen/product/1043/vegetable-and-salad-dryer-40-ltr-sy40-09/index.html"
-  },
-  "/commercial-kitchen/product/1043/vegetable-and-salad-dryer-40-ltr-sy40-09/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TTjdSaRqJyxZTFYcH25HkQvhg1A\"",
-    "mtime": "2024-12-16T10:03:12.503Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1043/vegetable-and-salad-dryer-40-ltr-sy40-09/_payload.json"
-  },
-  "/commercial-kitchen/product/1044/professional-charcoal-oven---black-emppkf-40-s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13322-Qk4pC6irQQIgwSWzrzUMUZliqKw\"",
-    "mtime": "2024-12-16T10:03:09.305Z",
-    "size": 78626,
-    "path": "../public/commercial-kitchen/product/1044/professional-charcoal-oven---black-emppkf-40-s/index.html"
-  },
-  "/commercial-kitchen/product/1044/professional-charcoal-oven---black-emppkf-40-s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9fNE19V5yhDkkVGuMkNKpuq8MG4\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1044/professional-charcoal-oven---black-emppkf-40-s/_payload.json"
-  },
-  "/commercial-kitchen/product/1045/lifted-charcoal-grill-empbtg01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d2-vo7KqW4SwKTNm+Ifg546xehJats\"",
-    "mtime": "2024-12-16T10:03:02.845Z",
-    "size": 78546,
-    "path": "../public/commercial-kitchen/product/1045/lifted-charcoal-grill-empbtg01/index.html"
-  },
-  "/commercial-kitchen/product/1045/lifted-charcoal-grill-empbtg01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PHBAA7dtkYSzyXcuj1pleUOqGiE\"",
-    "mtime": "2024-12-16T10:03:11.975Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1045/lifted-charcoal-grill-empbtg01/_payload.json"
-  },
-  "/commercial-kitchen/product/1047/electric-hot-dog-roller-cz-9/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c8-o0WzZuRjCNz7gPuVuZ9QE6u+l1s\"",
-    "mtime": "2024-12-16T10:03:02.865Z",
-    "size": 78536,
-    "path": "../public/commercial-kitchen/product/1047/electric-hot-dog-roller-cz-9/index.html"
-  },
-  "/commercial-kitchen/product/1047/electric-hot-dog-roller-cz-9/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qWFnoxeUc1iv+NwXYkLe7u9gVm0\"",
-    "mtime": "2024-12-16T10:03:11.996Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1047/electric-hot-dog-roller-cz-9/_payload.json"
-  },
-  "/commercial-kitchen/product/1048/double-cone-maker-sc-x33c-sc-x33c/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e1-bs/y18ok5Iqj7NbiVCrS8/BPaYY\"",
-    "mtime": "2024-12-16T10:03:06.120Z",
-    "size": 78561,
-    "path": "../public/commercial-kitchen/product/1048/double-cone-maker-sc-x33c-sc-x33c/index.html"
-  },
-  "/commercial-kitchen/product/1048/double-cone-maker-sc-x33c-sc-x33c/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tXHMpEjjrNXM5GTVzUSO9Es1xzU\"",
-    "mtime": "2024-12-16T10:03:12.542Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1048/double-cone-maker-sc-x33c-sc-x33c/_payload.json"
-  },
-  "/commercial-kitchen/product/1046/gas-stone-base-pizza-oven-empspoh-70-w/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-pkiJYH0i8obpJLDNf0gSAXDI4zQ\"",
-    "mtime": "2024-12-16T10:02:58.961Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1046/gas-stone-base-pizza-oven-empspoh-70-w/index.html"
-  },
-  "/commercial-kitchen/product/1046/gas-stone-base-pizza-oven-empspoh-70-w/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tEsPVVSiav5Jtt2IVr5Ploq4Cnc\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1046/gas-stone-base-pizza-oven-empspoh-70-w/_payload.json"
-  },
-  "/commercial-kitchen/product/105/juice-dispenser-2-tank-34-2a-santos-34-2a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-ZFWtbd75m6k0vD6pW4PJR3pZ1L0\"",
-    "mtime": "2024-12-16T10:02:57.545Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/105/juice-dispenser-2-tank-34-2a-santos-34-2a/index.html"
-  },
-  "/commercial-kitchen/product/105/juice-dispenser-2-tank-34-2a-santos-34-2a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+Fmhdt28BJI4837yt4NtgPrfH7k\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/105/juice-dispenser-2-tank-34-2a-santos-34-2a/_payload.json"
-  },
-  "/commercial-kitchen/product/1050/3-gn-thermobox-cpwk090-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b4-JIEsS10Jm9/fgVy+hDw4I3QOaXA\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78516,
-    "path": "../public/commercial-kitchen/product/1050/3-gn-thermobox-cpwk090-1/index.html"
-  },
-  "/commercial-kitchen/product/1050/3-gn-thermobox-cpwk090-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Xt15lNMhkKL2oViXt+eA+nJWw7c\"",
-    "mtime": "2024-12-16T10:03:13.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1050/3-gn-thermobox-cpwk090-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1058/induction-fryer-23l-sl-fr1c23a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d2-8xTLFCMXgSqeOE5grH75AT1rUC4\"",
-    "mtime": "2024-12-16T10:03:02.697Z",
-    "size": 78546,
-    "path": "../public/commercial-kitchen/product/1058/induction-fryer-23l-sl-fr1c23a/index.html"
-  },
-  "/commercial-kitchen/product/1058/induction-fryer-23l-sl-fr1c23a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dDnucvHvEK537W9yaokorYlutdA\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1058/induction-fryer-23l-sl-fr1c23a/_payload.json"
-  },
-  "/commercial-kitchen/product/106/juice-dispenser-3-tank-34-3a-santos-34-3a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-Ch8yp5MvAj1ZX/M12oxChU24TlA\"",
-    "mtime": "2024-12-16T10:02:57.574Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/106/juice-dispenser-3-tank-34-3a-santos-34-3a/index.html"
-  },
-  "/commercial-kitchen/product/106/juice-dispenser-3-tank-34-3a-santos-34-3a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ptSxWVtt6lEP54UOkl3a6im5c9w\"",
-    "mtime": "2024-12-16T10:03:11.036Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/106/juice-dispenser-3-tank-34-3a-santos-34-3a/_payload.json"
-  },
-  "/commercial-kitchen/product/1060/microwave-oven-25ltr-em025fjts0sf00/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-p8Yj5RgRT3hzGfMctIueyEU30bQ\"",
-    "mtime": "2024-12-16T10:03:02.968Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1060/microwave-oven-25ltr-em025fjts0sf00/index.html"
-  },
-  "/commercial-kitchen/product/1060/microwave-oven-25ltr-em025fjts0sf00/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5ZSRra1xUX3Z4fPOM4bp3IXEvBU\"",
-    "mtime": "2024-12-16T10:03:12.019Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1060/microwave-oven-25ltr-em025fjts0sf00/_payload.json"
-  },
-  "/commercial-kitchen/product/1061/microwave-oven-34ltr-ema34gtqs00e00/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-a6FI2SW8ix/WHi7Td8b20m7SnUg\"",
-    "mtime": "2024-12-16T10:03:02.968Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1061/microwave-oven-34ltr-ema34gtqs00e00/index.html"
-  },
-  "/commercial-kitchen/product/1061/microwave-oven-34ltr-ema34gtqs00e00/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pGRqlFV28ogWgBe+TtUtSIGiBiA\"",
-    "mtime": "2024-12-16T10:03:12.019Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1061/microwave-oven-34ltr-ema34gtqs00e00/_payload.json"
-  },
-  "/commercial-kitchen/product/1064/hand-immersion-blender-with-300mm-tube-bld300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331d-K6myBCVhAWIX1ngRYKkdEYVbLUQ\"",
-    "mtime": "2024-12-16T10:02:56.893Z",
-    "size": 78621,
-    "path": "../public/commercial-kitchen/product/1064/hand-immersion-blender-with-300mm-tube-bld300/index.html"
-  },
-  "/commercial-kitchen/product/1064/hand-immersion-blender-with-300mm-tube-bld300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ebI+hgmCiFNVQUtDCWqGCzny3pw\"",
-    "mtime": "2024-12-16T10:03:10.920Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1064/hand-immersion-blender-with-300mm-tube-bld300/_payload.json"
-  },
-  "/commercial-kitchen/product/1065/hand-immersion-blender-tube-with-400-mm-tube-bld400/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333b-XGA/xu1VSaxqbFtWxD8I+e9SBE4\"",
-    "mtime": "2024-12-16T10:02:56.914Z",
-    "size": 78651,
-    "path": "../public/commercial-kitchen/product/1065/hand-immersion-blender-tube-with-400-mm-tube-bld400/index.html"
-  },
-  "/commercial-kitchen/product/1065/hand-immersion-blender-tube-with-400-mm-tube-bld400/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2NGJvQDXxji3y/de2DHX9fzXW8Q\"",
-    "mtime": "2024-12-16T10:03:10.927Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1065/hand-immersion-blender-tube-with-400-mm-tube-bld400/_payload.json"
-  },
-  "/commercial-kitchen/product/1066/hand-immersion-blender-500w-ib500lv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-v51+XOQRMIJqGQMm5YcNtTbmERQ\"",
-    "mtime": "2024-12-16T10:02:56.925Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1066/hand-immersion-blender-500w-ib500lv/index.html"
-  },
-  "/commercial-kitchen/product/1066/hand-immersion-blender-500w-ib500lv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/bSaEbiGQ1RCBzwC3fCs9dR1bL0\"",
-    "mtime": "2024-12-16T10:03:10.927Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1066/hand-immersion-blender-500w-ib500lv/_payload.json"
-  },
-  "/commercial-kitchen/product/1068/vacuum-packing-machine-dz300-qiqiang-dz300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-Y2sMFK+wVcfTZVVvbnyU2k8Vs7c\"",
-    "mtime": "2024-12-16T10:03:05.755Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1068/vacuum-packing-machine-dz300-qiqiang-dz300/index.html"
-  },
-  "/commercial-kitchen/product/1068/vacuum-packing-machine-dz300-qiqiang-dz300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2jhNuHvPSD7Kk+167hPCIBjboYM\"",
-    "mtime": "2024-12-16T10:03:12.480Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1068/vacuum-packing-machine-dz300-qiqiang-dz300/_payload.json"
-  },
-  "/commercial-kitchen/product/1069/vacuum-packing-machine-dz400-qiqiang-dz400/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-GdJBX3xfAoXXLcKzhRhOnreuFeo\"",
-    "mtime": "2024-12-16T10:03:05.764Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1069/vacuum-packing-machine-dz400-qiqiang-dz400/index.html"
-  },
-  "/commercial-kitchen/product/1069/vacuum-packing-machine-dz400-qiqiang-dz400/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6chOqWE19nqMeJAtkg7QrG7NMcs\"",
-    "mtime": "2024-12-16T10:03:12.480Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1069/vacuum-packing-machine-dz400-qiqiang-dz400/_payload.json"
-  },
-  "/commercial-kitchen/product/107/back-bar-cooler-single-door-h-kitchen-hk-bc-01b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-06mXMEE6NvrQmA3vPy10DzP0ZpY\"",
-    "mtime": "2024-12-16T10:03:03.912Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/107/back-bar-cooler-single-door-h-kitchen-hk-bc-01b/index.html"
-  },
-  "/commercial-kitchen/product/107/back-bar-cooler-single-door-h-kitchen-hk-bc-01b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-aicnTOBiDx89yUCyOrqiFDP1LNo\"",
-    "mtime": "2024-12-16T10:03:12.185Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/107/back-bar-cooler-single-door-h-kitchen-hk-bc-01b/_payload.json"
-  },
-  "/commercial-kitchen/product/1070/cold-press-juicer-nutrisantos-65-65a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-nPI/hmIkMfEFbv/kL7ULGXtb3w0\"",
-    "mtime": "2024-12-16T10:02:57.409Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1070/cold-press-juicer-nutrisantos-65-65a/index.html"
-  },
-  "/commercial-kitchen/product/1070/cold-press-juicer-nutrisantos-65-65a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-osZUAehX24wKzNA9kIdpeZUPXE0\"",
-    "mtime": "2024-12-16T10:03:10.998Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1070/cold-press-juicer-nutrisantos-65-65a/_payload.json"
-  },
-  "/commercial-kitchen/product/1071/oven-convection-gas-hds-gco-hdsgco-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-mWzBHB9ASRAYOyEWqBH4VniE1Ko\"",
-    "mtime": "2024-12-16T10:02:58.861Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1071/oven-convection-gas-hds-gco-hdsgco-1/index.html"
-  },
-  "/commercial-kitchen/product/1071/oven-convection-gas-hds-gco-hdsgco-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hSXa4jc+7C3gsZAIpAne/4pORUE\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1071/oven-convection-gas-hds-gco-hdsgco-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1072/electric-sausage-stuffer-tb-10l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d7-Hw6SVby3gZge7AK0Zaxryqj/a/8\"",
-    "mtime": "2024-12-16T10:03:07.645Z",
-    "size": 78551,
-    "path": "../public/commercial-kitchen/product/1072/electric-sausage-stuffer-tb-10l/index.html"
-  },
-  "/commercial-kitchen/product/1072/electric-sausage-stuffer-tb-10l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-K7QblJDWX3E13p8bpCiK6eT4onw\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1072/electric-sausage-stuffer-tb-10l/_payload.json"
-  },
-  "/commercial-kitchen/product/1073/classic-citrus-juicer-11a-11a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cd-9WfZBFqmLYYzwnr/FuHy/2lBUao\"",
-    "mtime": "2024-12-16T10:02:57.414Z",
-    "size": 78541,
-    "path": "../public/commercial-kitchen/product/1073/classic-citrus-juicer-11a-11a/index.html"
-  },
-  "/commercial-kitchen/product/1073/classic-citrus-juicer-11a-11a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eqzwt8/NRwHDhhoqJLHDaSd5zEA\"",
-    "mtime": "2024-12-16T10:03:11.014Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1073/classic-citrus-juicer-11a-11a/_payload.json"
-  },
-  "/commercial-kitchen/product/1074/semi-automatic-dividing--rounding-machine-nfk-30i/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13331-plU8aKKjH7a+C+M99rfBStHR/VU\"",
-    "mtime": "2024-12-16T10:03:06.086Z",
-    "size": 78641,
-    "path": "../public/commercial-kitchen/product/1074/semi-automatic-dividing--rounding-machine-nfk-30i/index.html"
-  },
-  "/commercial-kitchen/product/1074/semi-automatic-dividing--rounding-machine-nfk-30i/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RJCkPF4xkcU4j1CMc5QQHECsGTc\"",
-    "mtime": "2024-12-16T10:03:12.525Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1074/semi-automatic-dividing--rounding-machine-nfk-30i/_payload.json"
-  },
-  "/commercial-kitchen/product/1075/bench-top-bread-slicer-empero-emp3004/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f5-Fl7xO/W6Cat5Tik4Xhjsjn2dvpo\"",
-    "mtime": "2024-12-16T10:02:59.377Z",
-    "size": 78581,
-    "path": "../public/commercial-kitchen/product/1075/bench-top-bread-slicer-empero-emp3004/index.html"
-  },
-  "/commercial-kitchen/product/1075/bench-top-bread-slicer-empero-emp3004/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4LUeI+zmgtwuDbn5ZP1qk8j9lTw\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1075/bench-top-bread-slicer-empero-emp3004/_payload.json"
-  },
-  "/commercial-kitchen/product/1076/pretzel--sandwich-cutter-emp3005/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132dc-3XTIpf5+famB0IUApccSzR5iT4o\"",
-    "mtime": "2024-12-16T10:02:59.358Z",
-    "size": 78556,
-    "path": "../public/commercial-kitchen/product/1076/pretzel--sandwich-cutter-emp3005/index.html"
-  },
-  "/commercial-kitchen/product/1076/pretzel--sandwich-cutter-emp3005/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ccz1s7L7BfJtV1ZMDi8/4V55Iag\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1076/pretzel--sandwich-cutter-emp3005/_payload.json"
-  },
-  "/commercial-kitchen/product/1078/electric-steam-cooker-grill-emp6le010-emp6le010/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-f2enYm5WYhgkOTt5uiZp9Qsc8cU\"",
-    "mtime": "2024-12-16T10:03:02.858Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1078/electric-steam-cooker-grill-emp6le010-emp6le010/index.html"
-  },
-  "/commercial-kitchen/product/1078/electric-steam-cooker-grill-emp6le010-emp6le010/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6zJcKxmCTL0garl+HotZY63N7fQ\"",
-    "mtime": "2024-12-16T10:03:11.978Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1078/electric-steam-cooker-grill-emp6le010-emp6le010/_payload.json"
-  },
-  "/commercial-kitchen/product/1079/electric-steam-cooker-grill-emp6le040-emp6le040/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-LU6jYZZDtA7dJeMOKRPeQuVEWCg\"",
-    "mtime": "2024-12-16T10:03:02.865Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1079/electric-steam-cooker-grill-emp6le040-emp6le040/index.html"
-  },
-  "/commercial-kitchen/product/1079/electric-steam-cooker-grill-emp6le040-emp6le040/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-aDApEd1tuGhaIhPZ3wXJ7WF2GEY\"",
-    "mtime": "2024-12-16T10:03:11.996Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1079/electric-steam-cooker-grill-emp6le040-emp6le040/_payload.json"
-  },
-  "/commercial-kitchen/product/108/back-bar-cooler-double-door-black-h-kitchen-hk-bc-02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-DICKiOTT2L13ebXuK8/CbugdAWg\"",
-    "mtime": "2024-12-16T10:03:03.956Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/108/back-bar-cooler-double-door-black-h-kitchen-hk-bc-02/index.html"
-  },
-  "/commercial-kitchen/product/108/back-bar-cooler-double-door-black-h-kitchen-hk-bc-02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fjXrStHpLy7RrptKdajI9mTk4Ec\"",
-    "mtime": "2024-12-16T10:03:12.185Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/108/back-bar-cooler-double-door-black-h-kitchen-hk-bc-02/_payload.json"
-  },
-  "/commercial-kitchen/product/1080/table-top-electric-cooker-4-hot-plate-round-emp7ke020-2016/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335e-ZTK29SAIGx+DsyWUMXmHcXupuso\"",
-    "mtime": "2024-12-16T10:03:01.319Z",
-    "size": 78686,
-    "path": "../public/commercial-kitchen/product/1080/table-top-electric-cooker-4-hot-plate-round-emp7ke020-2016/index.html"
-  },
-  "/commercial-kitchen/product/1080/table-top-electric-cooker-4-hot-plate-round-emp7ke020-2016/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TL5FCeUsBvanvI/+m+64Mq04ucM\"",
-    "mtime": "2024-12-16T10:03:11.735Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1080/table-top-electric-cooker-4-hot-plate-round-emp7ke020-2016/_payload.json"
-  },
-  "/commercial-kitchen/product/1081/electric-pasta-cooker-emp6me010-2016/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-G94Am18oCHtCwHH0qW0jpS4LMWA\"",
-    "mtime": "2024-12-16T10:03:02.511Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1081/electric-pasta-cooker-emp6me010-2016/index.html"
-  },
-  "/commercial-kitchen/product/1081/electric-pasta-cooker-emp6me010-2016/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PSI9DEEll/o7q8cTCoBwV8VhkP0\"",
-    "mtime": "2024-12-16T10:03:11.933Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1081/electric-pasta-cooker-emp6me010-2016/_payload.json"
-  },
-  "/commercial-kitchen/product/1082/electric-corn-steamer-ecs63ssc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d2-2tdRtCTb67J8LaiNYxvn4jftTAY\"",
-    "mtime": "2024-12-16T10:03:05.892Z",
-    "size": 78546,
-    "path": "../public/commercial-kitchen/product/1082/electric-corn-steamer-ecs63ssc/index.html"
-  },
-  "/commercial-kitchen/product/1082/electric-corn-steamer-ecs63ssc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YjBJlDZ0DxTvhuk/BKAKY33ltcA\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1082/electric-corn-steamer-ecs63ssc/_payload.json"
-  },
-  "/commercial-kitchen/product/1083/pastry-display-four-glass-bjy-4gdc-78l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-SyEd+CvJBY03Bw6XbrIYBeh7Gng\"",
-    "mtime": "2024-12-16T10:02:57.696Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1083/pastry-display-four-glass-bjy-4gdc-78l/index.html"
-  },
-  "/commercial-kitchen/product/1083/pastry-display-four-glass-bjy-4gdc-78l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-a1Ki+UIoAcJMBzA5h0SfGnW0pdE\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1083/pastry-display-four-glass-bjy-4gdc-78l/_payload.json"
-  },
-  "/commercial-kitchen/product/1084/rice-warmer-electric-erw13/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132be-HcKyo7HWjSeWS+O03CtgEIhUcRw\"",
-    "mtime": "2024-12-16T10:03:05.902Z",
-    "size": 78526,
-    "path": "../public/commercial-kitchen/product/1084/rice-warmer-electric-erw13/index.html"
-  },
-  "/commercial-kitchen/product/1084/rice-warmer-electric-erw13/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0sWcG5w9SWyk1nZg68tBFsrGQ4Q\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1084/rice-warmer-electric-erw13/_payload.json"
-  },
-  "/commercial-kitchen/product/1085/tea-urn-30-litres-u-30/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132aa-lF+7ih31YpE/h1pMIp5jDX68IwU\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78506,
-    "path": "../public/commercial-kitchen/product/1085/tea-urn-30-litres-u-30/index.html"
-  },
-  "/commercial-kitchen/product/1085/tea-urn-30-litres-u-30/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HIX+TfyNA9IZm/RTfKgDKafKU+g\"",
-    "mtime": "2024-12-16T10:03:13.063Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1085/tea-urn-30-litres-u-30/_payload.json"
-  },
-  "/commercial-kitchen/product/1086/tea-urn-40-litres-u40/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a5-u1jgOZ1DpkaS+8wjHnAbNxcl9M8\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78501,
-    "path": "../public/commercial-kitchen/product/1086/tea-urn-40-litres-u40/index.html"
-  },
-  "/commercial-kitchen/product/1086/tea-urn-40-litres-u40/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NEM1Rhs+7WUyCpPeBZgbvaC4iOE\"",
-    "mtime": "2024-12-16T10:03:13.066Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1086/tea-urn-40-litres-u40/_payload.json"
-  },
-  "/commercial-kitchen/product/1087/deck-oven-electric-single-bsp-e3kw-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-uC6AlB/CdvmGSruq1TVozTa6UDw\"",
-    "mtime": "2024-12-16T10:03:04.792Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1087/deck-oven-electric-single-bsp-e3kw-1/index.html"
-  },
-  "/commercial-kitchen/product/1087/deck-oven-electric-single-bsp-e3kw-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ye3Yt8EcpVRx2VO5tcxz97hy5Qs\"",
-    "mtime": "2024-12-16T10:03:12.314Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1087/deck-oven-electric-single-bsp-e3kw-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1088/barline-chiller-1506-berjaya-b2d-c5-6-7-sm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-SddSPFU8LjHgh9Ey5c0yMnAn5ww\"",
-    "mtime": "2024-12-16T10:03:03.885Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1088/barline-chiller-1506-berjaya-b2d-c5-6-7-sm/index.html"
-  },
-  "/commercial-kitchen/product/1088/barline-chiller-1506-berjaya-b2d-c5-6-7-sm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-k+tS9czmpx6ZH8Qc920IF5q3QGU\"",
-    "mtime": "2024-12-16T10:03:12.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1088/barline-chiller-1506-berjaya-b2d-c5-6-7-sm/_payload.json"
-  },
-  "/commercial-kitchen/product/1089/barline-chiller-berjaya-2107-b2d-c5-7-sm-c6-c7/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13322-b0xm9Lpha1Y+UwLaXJSfuluqnO0\"",
-    "mtime": "2024-12-16T10:03:03.905Z",
-    "size": 78626,
-    "path": "../public/commercial-kitchen/product/1089/barline-chiller-berjaya-2107-b2d-c5-7-sm-c6-c7/index.html"
-  },
-  "/commercial-kitchen/product/1089/barline-chiller-berjaya-2107-b2d-c5-7-sm-c6-c7/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0zqc35VAIbUFldW2DDd+Gl7Gftc\"",
-    "mtime": "2024-12-16T10:03:12.179Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1089/barline-chiller-berjaya-2107-b2d-c5-7-sm-c6-c7/_payload.json"
-  },
-  "/commercial-kitchen/product/109/back-bar-cooler-double-door-ss-h-kitchen-hk-bc-02b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-d3hfmo3g+33zsXgqNTb6hG6wiJQ\"",
-    "mtime": "2024-12-16T10:03:03.932Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/109/back-bar-cooler-double-door-ss-h-kitchen-hk-bc-02b/index.html"
-  },
-  "/commercial-kitchen/product/109/back-bar-cooler-double-door-ss-h-kitchen-hk-bc-02b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-abQ4ziAlmgi5orPl+fuVTb4ER4M\"",
-    "mtime": "2024-12-16T10:03:12.185Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/109/back-bar-cooler-double-door-ss-h-kitchen-hk-bc-02b/_payload.json"
-  },
-  "/commercial-kitchen/product/1090/counter-chiller-1206-berjaya-bs2d-c4-6-g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13304-r+ZSwFK6xiZMaA4vpSItHmkKU0o\"",
-    "mtime": "2024-12-16T10:03:03.335Z",
-    "size": 78596,
-    "path": "../public/commercial-kitchen/product/1090/counter-chiller-1206-berjaya-bs2d-c4-6-g/index.html"
-  },
-  "/commercial-kitchen/product/1090/counter-chiller-1206-berjaya-bs2d-c4-6-g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+ft3+F8wxLKbBD2JAeUv5b3uKvo\"",
-    "mtime": "2024-12-16T10:03:12.068Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1090/counter-chiller-1206-berjaya-bs2d-c4-6-g/_payload.json"
-  },
-  "/commercial-kitchen/product/1091/counter-chiller-1507-berjaya-bs2d-c5-g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-k4urckWoNPBxoEz/S3wzAiICEQM\"",
-    "mtime": "2024-12-16T10:03:03.335Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1091/counter-chiller-1507-berjaya-bs2d-c5-g/index.html"
-  },
-  "/commercial-kitchen/product/1091/counter-chiller-1507-berjaya-bs2d-c5-g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-w8EOY/7oD/SZDRAOsGzsqrjnRTE\"",
-    "mtime": "2024-12-16T10:03:12.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1091/counter-chiller-1507-berjaya-bs2d-c5-g/_payload.json"
-  },
-  "/commercial-kitchen/product/1092/counter-freezer-2-door-1506-berjaya-bs2d-f5-6-g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13327-nPd0s3ywHMGhmxAspgqvjkqJAvI\"",
-    "mtime": "2024-12-16T10:03:03.335Z",
-    "size": 78631,
-    "path": "../public/commercial-kitchen/product/1092/counter-freezer-2-door-1506-berjaya-bs2d-f5-6-g/index.html"
-  },
-  "/commercial-kitchen/product/1092/counter-freezer-2-door-1506-berjaya-bs2d-f5-6-g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GnN9E2n0Hc691qx/uWD8zB6NW08\"",
-    "mtime": "2024-12-16T10:03:12.084Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1092/counter-freezer-2-door-1506-berjaya-bs2d-f5-6-g/_payload.json"
-  },
-  "/commercial-kitchen/product/1093/portable-electric-single-deck-pizza-oven-cg-p340a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13331-VeoaWOGDcKt4wlPYqswIMNvdyhM\"",
-    "mtime": "2024-12-16T10:02:58.957Z",
-    "size": 78641,
-    "path": "../public/commercial-kitchen/product/1093/portable-electric-single-deck-pizza-oven-cg-p340a/index.html"
-  },
-  "/commercial-kitchen/product/1093/portable-electric-single-deck-pizza-oven-cg-p340a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-04XruRy7jLtri7BaQ0dOAQ38dcA\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1093/portable-electric-single-deck-pizza-oven-cg-p340a/_payload.json"
-  },
-  "/commercial-kitchen/product/1094/portable-gas-single-deck--pizza-oven-cg-p330/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13318-6HhZMCVVYA2bLYEiIuPP7h1lVGw\"",
-    "mtime": "2024-12-16T10:02:58.942Z",
-    "size": 78616,
-    "path": "../public/commercial-kitchen/product/1094/portable-gas-single-deck--pizza-oven-cg-p330/index.html"
-  },
-  "/commercial-kitchen/product/1094/portable-gas-single-deck--pizza-oven-cg-p330/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jPurUJIkD/hN88CxxjCuG5HAH4I\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1094/portable-gas-single-deck--pizza-oven-cg-p330/_payload.json"
-  },
-  "/commercial-kitchen/product/1096/neutral-cupboard-with-double-swing-doors-ncbds150-ncbds150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335e-bbEPebrUNZ3V5IvyWFAPyD75HxI\"",
-    "mtime": "2024-12-16T10:03:00.848Z",
-    "size": 78686,
-    "path": "../public/commercial-kitchen/product/1096/neutral-cupboard-with-double-swing-doors-ncbds150-ncbds150/index.html"
-  },
-  "/commercial-kitchen/product/1096/neutral-cupboard-with-double-swing-doors-ncbds150-ncbds150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Yhu40jvvBsTCA38FCburftpcCw0\"",
-    "mtime": "2024-12-16T10:03:11.645Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1096/neutral-cupboard-with-double-swing-doors-ncbds150-ncbds150/_payload.json"
-  },
-  "/commercial-kitchen/product/1095/neutral-cupboard-with-double-swing-doors-ncbds110-ncbds110/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335e-htTV/hbZHnrbdAF+Etf5unov48E\"",
-    "mtime": "2024-12-16T10:03:00.848Z",
-    "size": 78686,
-    "path": "../public/commercial-kitchen/product/1095/neutral-cupboard-with-double-swing-doors-ncbds110-ncbds110/index.html"
-  },
-  "/commercial-kitchen/product/1095/neutral-cupboard-with-double-swing-doors-ncbds110-ncbds110/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HF1REv7kLggL1jMiDUrypQys6Hc\"",
-    "mtime": "2024-12-16T10:03:11.645Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1095/neutral-cupboard-with-double-swing-doors-ncbds110-ncbds110/_payload.json"
-  },
-  "/commercial-kitchen/product/1097/neutral-cupboard-with-double-swing-doors-ncbds180-ncbds180/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335e-Dg7ik/++OEzkANAEcMuksKZfbFc\"",
-    "mtime": "2024-12-16T10:03:00.848Z",
-    "size": 78686,
-    "path": "../public/commercial-kitchen/product/1097/neutral-cupboard-with-double-swing-doors-ncbds180-ncbds180/index.html"
-  },
-  "/commercial-kitchen/product/1097/neutral-cupboard-with-double-swing-doors-ncbds180-ncbds180/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9RPMDEnAhNQA+kQkCJWaiyxjfjk\"",
-    "mtime": "2024-12-16T10:03:11.645Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1097/neutral-cupboard-with-double-swing-doors-ncbds180-ncbds180/_payload.json"
-  },
-  "/commercial-kitchen/product/1099/wall-mounted-cupboard-wcs150-wcs150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-/Hg9FqXqs5wtTcLD6BopQPULVUw\"",
-    "mtime": "2024-12-16T10:03:00.927Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1099/wall-mounted-cupboard-wcs150-wcs150/index.html"
-  },
-  "/commercial-kitchen/product/1099/wall-mounted-cupboard-wcs150-wcs150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KfDDzlC7p+1ftXPN/Jnf6AJxjLk\"",
-    "mtime": "2024-12-16T10:03:11.661Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1099/wall-mounted-cupboard-wcs150-wcs150/_payload.json"
-  },
-  "/commercial-kitchen/product/1098/wall-mounted-cupboard-wcs110-wcs110/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-Dq8ppt8JsmJaOd3z74b5HxnB3YE\"",
-    "mtime": "2024-12-16T10:03:00.855Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1098/wall-mounted-cupboard-wcs110-wcs110/index.html"
-  },
-  "/commercial-kitchen/product/1098/wall-mounted-cupboard-wcs110-wcs110/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZWjHAQZtYPIdsO+hhSx08dRI7Fk\"",
-    "mtime": "2024-12-16T10:03:11.646Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1098/wall-mounted-cupboard-wcs110-wcs110/_payload.json"
-  },
-  "/commercial-kitchen/product/1100/wall-mounted-cupboard-wcs180-wcs180/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132eb-L7mShhbgoeaSJeLLulwexP52Y30\"",
-    "mtime": "2024-12-16T10:03:00.927Z",
-    "size": 78571,
-    "path": "../public/commercial-kitchen/product/1100/wall-mounted-cupboard-wcs180-wcs180/index.html"
-  },
-  "/commercial-kitchen/product/1100/wall-mounted-cupboard-wcs180-wcs180/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kJAUqqWcxnzGFKIRoKpHJ2fMJH8\"",
-    "mtime": "2024-12-16T10:03:11.661Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1100/wall-mounted-cupboard-wcs180-wcs180/_payload.json"
-  },
-  "/commercial-kitchen/product/110/back-bar-cooler-triple-door-h-kitchen-hk-bc-03b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-UA2Jfv0h//Cq+npRRiq8yitMs0E\"",
-    "mtime": "2024-12-16T10:03:03.957Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/110/back-bar-cooler-triple-door-h-kitchen-hk-bc-03b/index.html"
-  },
-  "/commercial-kitchen/product/110/back-bar-cooler-triple-door-h-kitchen-hk-bc-03b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/p2uFs8+SHPcsHrFF45O/wYFXtQ\"",
-    "mtime": "2024-12-16T10:03:12.205Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/110/back-bar-cooler-triple-door-h-kitchen-hk-bc-03b/_payload.json"
-  },
-  "/commercial-kitchen/product/1106/digital-conveyor-pizza-oven-hx-1sa/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-eEmAoZbLgFekdKVFv0X/t1T6VGM\"",
-    "mtime": "2024-12-16T10:02:59.022Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1106/digital-conveyor-pizza-oven-hx-1sa/index.html"
-  },
-  "/commercial-kitchen/product/1106/digital-conveyor-pizza-oven-hx-1sa/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TEgsc51TvriTnjDiDio23X7lFYQ\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1106/digital-conveyor-pizza-oven-hx-1sa/_payload.json"
-  },
-  "/commercial-kitchen/product/1103/gas-fryer-split-type-15--15-ltrs-h-kitchen-rc-400t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13336-Dr0zq5nCPocp0MWLIZnW5gF/0Ng\"",
-    "mtime": "2024-12-16T10:03:02.580Z",
-    "size": 78646,
-    "path": "../public/commercial-kitchen/product/1103/gas-fryer-split-type-15--15-ltrs-h-kitchen-rc-400t/index.html"
-  },
-  "/commercial-kitchen/product/1103/gas-fryer-split-type-15--15-ltrs-h-kitchen-rc-400t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TNS3ZdZTIOp8oRvyrVDYxC0y5bI\"",
-    "mtime": "2024-12-16T10:03:11.944Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1103/gas-fryer-split-type-15--15-ltrs-h-kitchen-rc-400t/_payload.json"
-  },
-  "/commercial-kitchen/product/1108/general-purpose-3-tier-trolley-gp3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-etsvxp9p0/Od2mzPf6c+yNc0MJM\"",
-    "mtime": "2024-12-16T10:03:01.166Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1108/general-purpose-3-tier-trolley-gp3/index.html"
-  },
-  "/commercial-kitchen/product/1108/general-purpose-3-tier-trolley-gp3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Jt4QrO/oo1N7bukbojiCJwqqkqY\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1108/general-purpose-3-tier-trolley-gp3/_payload.json"
-  },
-  "/commercial-kitchen/product/1107/bone-saw-freestanding-psv-ss2500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132dc-DSv3cgl+Kg44OINySAONfeTcw3U\"",
-    "mtime": "2024-12-16T10:03:06.425Z",
-    "size": 78556,
-    "path": "../public/commercial-kitchen/product/1107/bone-saw-freestanding-psv-ss2500/index.html"
-  },
-  "/commercial-kitchen/product/1107/bone-saw-freestanding-psv-ss2500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5jG/TzoJzQLWGY4Z2Z7Jc2H73N0\"",
-    "mtime": "2024-12-16T10:03:12.592Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1107/bone-saw-freestanding-psv-ss2500/_payload.json"
-  },
-  "/commercial-kitchen/product/111/automatic-coffee-machine-minibar-minibar/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-yQQQjqRcRvJP/ZCYfjMzMEkwRms\"",
-    "mtime": "2024-12-16T10:02:56.453Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/111/automatic-coffee-machine-minibar-minibar/index.html"
-  },
-  "/commercial-kitchen/product/111/automatic-coffee-machine-minibar-minibar/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UZ0MdG7Vx9OcQYrGn/DwQIi/umA\"",
-    "mtime": "2024-12-16T10:03:10.803Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/111/automatic-coffee-machine-minibar-minibar/_payload.json"
-  },
-  "/commercial-kitchen/product/1110/upright-single-solid-door-chiller-cfr-20n1fhb-cfr-20n1fhb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13359-781A/UDBZ3RL0Nh1JUFszG6pb6I\"",
-    "mtime": "2024-12-16T10:03:03.588Z",
-    "size": 78681,
-    "path": "../public/commercial-kitchen/product/1110/upright-single-solid-door-chiller-cfr-20n1fhb-cfr-20n1fhb/index.html"
-  },
-  "/commercial-kitchen/product/1110/upright-single-solid-door-chiller-cfr-20n1fhb-cfr-20n1fhb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oxudRd/RuXmNlnHWX3O9W7gWXI8\"",
-    "mtime": "2024-12-16T10:03:12.130Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1110/upright-single-solid-door-chiller-cfr-20n1fhb-cfr-20n1fhb/_payload.json"
-  },
-  "/commercial-kitchen/product/1113/conveyor-toaster-ct-3-h-kitchen-ct-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-5Rm6bwVAtTwV+Jg7Hw61qfKXbMk\"",
-    "mtime": "2024-12-16T10:03:03.244Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1113/conveyor-toaster-ct-3-h-kitchen-ct-3/index.html"
-  },
-  "/commercial-kitchen/product/1113/conveyor-toaster-ct-3-h-kitchen-ct-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ddHN/Q9jiU+jGo8yWb2vXBQudXU\"",
-    "mtime": "2024-12-16T10:03:12.044Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1113/conveyor-toaster-ct-3-h-kitchen-ct-3/_payload.json"
-  },
-  "/commercial-kitchen/product/1114/meat-slicer--250mm-250es-10/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c3-ExotgICYjyQpT8RG1EqlSWeJtJ0\"",
-    "mtime": "2024-12-16T10:03:05.592Z",
-    "size": 78531,
-    "path": "../public/commercial-kitchen/product/1114/meat-slicer--250mm-250es-10/index.html"
-  },
-  "/commercial-kitchen/product/1114/meat-slicer--250mm-250es-10/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GyqkkI1HAHaGb1zt6FyyWwDIuR4\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1114/meat-slicer--250mm-250es-10/_payload.json"
-  },
-  "/commercial-kitchen/product/1112/upright-double-solid-door-chiller-cfr-40n2fhb-cfr-40n2fhb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13359-JtTCFaTYtdhhqtD79zlNcz0fIa0\"",
-    "mtime": "2024-12-16T10:03:03.595Z",
-    "size": 78681,
-    "path": "../public/commercial-kitchen/product/1112/upright-double-solid-door-chiller-cfr-40n2fhb-cfr-40n2fhb/index.html"
-  },
-  "/commercial-kitchen/product/1112/upright-double-solid-door-chiller-cfr-40n2fhb-cfr-40n2fhb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mmdnMB4DYu24wW1IpM0l5Hk0+sU\"",
-    "mtime": "2024-12-16T10:03:12.130Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1112/upright-double-solid-door-chiller-cfr-40n2fhb-cfr-40n2fhb/_payload.json"
-  },
-  "/commercial-kitchen/product/1116/sushi-fridge-css-180lc-css-180lc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132dc-4glGf2LRWSY/HwoxdrdnNV4qvBs\"",
-    "mtime": "2024-12-16T10:03:07.705Z",
-    "size": 78556,
-    "path": "../public/commercial-kitchen/product/1116/sushi-fridge-css-180lc-css-180lc/index.html"
-  },
-  "/commercial-kitchen/product/1116/sushi-fridge-css-180lc-css-180lc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1KRl576wpaFBgTVb5OV6E4kvGks\"",
-    "mtime": "2024-12-16T10:03:12.805Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1116/sushi-fridge-css-180lc-css-180lc/_payload.json"
-  },
-  "/commercial-kitchen/product/1117/hand-wash-basin-knee-operated-yls42-yls42/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13309-bdZRzQcW3yaH+QbfYeyTXcaSx7o\"",
-    "mtime": "2024-12-16T10:03:00.411Z",
-    "size": 78601,
-    "path": "../public/commercial-kitchen/product/1117/hand-wash-basin-knee-operated-yls42-yls42/index.html"
-  },
-  "/commercial-kitchen/product/1117/hand-wash-basin-knee-operated-yls42-yls42/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V7sfWXyOSLHepvfOGhHFNGYAgyM\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1117/hand-wash-basin-knee-operated-yls42-yls42/_payload.json"
-  },
-  "/commercial-kitchen/product/1118/ice-cream-machine-table-top-pasmo-s230f-s230f/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331d-Z4XWhOp2iKRjLpbtjqZXs6LIxE8\"",
-    "mtime": "2024-12-16T10:03:07.415Z",
-    "size": 78621,
-    "path": "../public/commercial-kitchen/product/1118/ice-cream-machine-table-top-pasmo-s230f-s230f/index.html"
-  },
-  "/commercial-kitchen/product/1118/ice-cream-machine-table-top-pasmo-s230f-s230f/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OknBu1mKTh8e7u/Gd9Hw8BVwYuY\"",
-    "mtime": "2024-12-16T10:03:12.759Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1118/ice-cream-machine-table-top-pasmo-s230f-s230f/_payload.json"
-  },
-  "/commercial-kitchen/product/1120/stainless-steel-vertical-wall-cupboard-rg2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-Ll5FrrCGamT/PyoYxmrJPDZoO5g\"",
-    "mtime": "2024-12-16T10:03:00.930Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1120/stainless-steel-vertical-wall-cupboard-rg2/index.html"
-  },
-  "/commercial-kitchen/product/1120/stainless-steel-vertical-wall-cupboard-rg2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rTrejZmJAP7GXtdVnvnW0F93kkQ\"",
-    "mtime": "2024-12-16T10:03:11.661Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1120/stainless-steel-vertical-wall-cupboard-rg2/_payload.json"
-  },
-  "/commercial-kitchen/product/1115/food-slicer-celme-grp-350-grp-350/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e1-Fhl4elAClq0Uocgw0U9YHSKX47o\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78561,
-    "path": "../public/commercial-kitchen/product/1115/food-slicer-celme-grp-350-grp-350/index.html"
-  },
-  "/commercial-kitchen/product/1115/food-slicer-celme-grp-350-grp-350/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gd302P8occh+8w2qFFkLOjK1B7s\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1115/food-slicer-celme-grp-350-grp-350/_payload.json"
-  },
-  "/commercial-kitchen/product/112/automatic-coffee-machine-f11-big-f11-big/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-du5K8dctZeeKwng+9cHGY2NAgWg\"",
-    "mtime": "2024-12-16T10:02:56.495Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/112/automatic-coffee-machine-f11-big-f11-big/index.html"
-  },
-  "/commercial-kitchen/product/112/automatic-coffee-machine-f11-big-f11-big/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SNYpDBc164lpdFvF3zqVs83mFZU\"",
-    "mtime": "2024-12-16T10:03:10.819Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/112/automatic-coffee-machine-f11-big-f11-big/_payload.json"
-  },
-  "/commercial-kitchen/product/1121/commercial-vegetable-food-processor-qc205a-qc205a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13331-F5AoXqFPB3InX4QCoI+DFuZImOU\"",
-    "mtime": "2024-12-16T10:03:05.955Z",
-    "size": 78641,
-    "path": "../public/commercial-kitchen/product/1121/commercial-vegetable-food-processor-qc205a-qc205a/index.html"
-  },
-  "/commercial-kitchen/product/1121/commercial-vegetable-food-processor-qc205a-qc205a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Fud9gvEt8lvpPXhMbVxjgj83a8w\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1121/commercial-vegetable-food-processor-qc205a-qc205a/_payload.json"
-  },
-  "/commercial-kitchen/product/1122/hand-wash-sink-400x400mm-yls44b-yls44b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fa-GaSRyDIEnqNZACFoGENpJ9D+NO8\"",
-    "mtime": "2024-12-16T10:03:00.391Z",
-    "size": 78586,
-    "path": "../public/commercial-kitchen/product/1122/hand-wash-sink-400x400mm-yls44b-yls44b/index.html"
-  },
-  "/commercial-kitchen/product/1122/hand-wash-sink-400x400mm-yls44b-yls44b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-P3DmjRMD44Qle35Rs02R9v/NSms\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1122/hand-wash-sink-400x400mm-yls44b-yls44b/_payload.json"
-  },
-  "/commercial-kitchen/product/1124/rotobake-single-trolley-oven---150-loaves-img-ove-00176/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334f-tNHlnJxkuwGQ5XcBmw56qABRHsc\"",
-    "mtime": "2024-12-16T10:03:06.036Z",
-    "size": 78671,
-    "path": "../public/commercial-kitchen/product/1124/rotobake-single-trolley-oven---150-loaves-img-ove-00176/index.html"
-  },
-  "/commercial-kitchen/product/1124/rotobake-single-trolley-oven---150-loaves-img-ove-00176/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HuL3tK27F2FL2zY7tg4+NSDb0sY\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1124/rotobake-single-trolley-oven---150-loaves-img-ove-00176/_payload.json"
-  },
-  "/commercial-kitchen/product/1123/rotobake-single-trolley-oven---90-loaves-img-ove-00175/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334a-ycy9yGggyMZdKoZUVZsNPP9wghQ\"",
-    "mtime": "2024-12-16T10:03:06.036Z",
-    "size": 78666,
-    "path": "../public/commercial-kitchen/product/1123/rotobake-single-trolley-oven---90-loaves-img-ove-00175/index.html"
-  },
-  "/commercial-kitchen/product/1123/rotobake-single-trolley-oven---90-loaves-img-ove-00175/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fKbOq1qcEcQzP6OR2lSpXZJtoWc\"",
-    "mtime": "2024-12-16T10:03:12.513Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1123/rotobake-single-trolley-oven---90-loaves-img-ove-00175/_payload.json"
-  },
-  "/commercial-kitchen/product/1125/rotobake-double-trolley-oven---300-loaves-rb-64y/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332c-RpgH+AWPsXyy6s3bFbK0HpVRv9A\"",
-    "mtime": "2024-12-16T10:03:06.053Z",
-    "size": 78636,
-    "path": "../public/commercial-kitchen/product/1125/rotobake-double-trolley-oven---300-loaves-rb-64y/index.html"
-  },
-  "/commercial-kitchen/product/1125/rotobake-double-trolley-oven---300-loaves-rb-64y/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ax/fBq9FgDiszXbwd/J5NCywua8\"",
-    "mtime": "2024-12-16T10:03:12.518Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1125/rotobake-double-trolley-oven---300-loaves-rb-64y/_payload.json"
-  },
-  "/commercial-kitchen/product/1126/thermo-box-6-gn-heated-img-buf-00186/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-5xgnNhLkAfmqrs3BcxFZx4x85JY\"",
-    "mtime": "2024-12-16T10:03:09.356Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1126/thermo-box-6-gn-heated-img-buf-00186/index.html"
-  },
-  "/commercial-kitchen/product/1126/thermo-box-6-gn-heated-img-buf-00186/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9IvaNNxKUoFv1byh7V5rRhRUEc8\"",
-    "mtime": "2024-12-16T10:03:13.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1126/thermo-box-6-gn-heated-img-buf-00186/_payload.json"
-  },
-  "/commercial-kitchen/product/1127/coffee-brewer-with-1-decanter-ftl120-black-ftl120/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13331-MEWiEZK9WoX3AsZw0EW2FraGPoo\"",
-    "mtime": "2024-12-16T10:02:56.509Z",
-    "size": 78641,
-    "path": "../public/commercial-kitchen/product/1127/coffee-brewer-with-1-decanter-ftl120-black-ftl120/index.html"
-  },
-  "/commercial-kitchen/product/1127/coffee-brewer-with-1-decanter-ftl120-black-ftl120/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WgBTRaAWvktktDkImykLfjx3Xj4\"",
-    "mtime": "2024-12-16T10:03:10.819Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1127/coffee-brewer-with-1-decanter-ftl120-black-ftl120/_payload.json"
-  },
-  "/commercial-kitchen/product/1128/coffee-brewer-with-2-decanter-ftl120-2-inox-ftl120-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13340-LAG2Jma9QDEZSV33y/ZkVCU6Ov4\"",
-    "mtime": "2024-12-16T10:02:56.515Z",
-    "size": 78656,
-    "path": "../public/commercial-kitchen/product/1128/coffee-brewer-with-2-decanter-ftl120-2-inox-ftl120-2/index.html"
-  },
-  "/commercial-kitchen/product/1128/coffee-brewer-with-2-decanter-ftl120-2-inox-ftl120-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZM5mwClIdyEQgs9Ff7t6NEMRC7k\"",
-    "mtime": "2024-12-16T10:03:10.825Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1128/coffee-brewer-with-2-decanter-ftl120-2-inox-ftl120-2/_payload.json"
-  },
-  "/commercial-kitchen/product/1129/coffee-brewer-single-cater-flc-250-flc-250/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-+ao58D+dhEClnT2mCz8RQeDssy8\"",
-    "mtime": "2024-12-16T10:02:56.541Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1129/coffee-brewer-single-cater-flc-250-flc-250/index.html"
-  },
-  "/commercial-kitchen/product/1129/coffee-brewer-single-cater-flc-250-flc-250/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-l5EwgdsufaMNZsexvg/+FQs3AsY\"",
-    "mtime": "2024-12-16T10:03:10.854Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1129/coffee-brewer-single-cater-flc-250-flc-250/_payload.json"
-  },
-  "/commercial-kitchen/product/1132/cake-mixer-planetary-30-litres-h-kitchen-b30ga/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13322-fbPYSvpHIlHBiG6ezt9TM/oBbQU\"",
-    "mtime": "2024-12-16T10:02:59.095Z",
-    "size": 78626,
-    "path": "../public/commercial-kitchen/product/1132/cake-mixer-planetary-30-litres-h-kitchen-b30ga/index.html"
-  },
-  "/commercial-kitchen/product/1132/cake-mixer-planetary-30-litres-h-kitchen-b30ga/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GgTtmfmUe7WbGEbzfmem4ByK7RI\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1132/cake-mixer-planetary-30-litres-h-kitchen-b30ga/_payload.json"
-  },
-  "/commercial-kitchen/product/113/milk-fridge-sc15-sc15/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-NU5iIPgRw+rtGr7cx7VBL5noUD0\"",
-    "mtime": "2024-12-16T10:02:56.478Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/113/milk-fridge-sc15-sc15/index.html"
-  },
-  "/commercial-kitchen/product/113/milk-fridge-sc15-sc15/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sqnwOS+rXSsUJvfNlsj/iE9BZa8\"",
-    "mtime": "2024-12-16T10:03:10.819Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/113/milk-fridge-sc15-sc15/_payload.json"
-  },
-  "/commercial-kitchen/product/1130/vacuum-jug-25-litres-t2-5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b9-YhG+z5muIqQNShwX1bSin1oX7Ik\"",
-    "mtime": "2024-12-16T10:02:56.544Z",
-    "size": 78521,
-    "path": "../public/commercial-kitchen/product/1130/vacuum-jug-25-litres-t2-5/index.html"
-  },
-  "/commercial-kitchen/product/1130/vacuum-jug-25-litres-t2-5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ApFXvrIqcH/I4BtAE8G18FMdXnQ\"",
-    "mtime": "2024-12-16T10:03:10.854Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1130/vacuum-jug-25-litres-t2-5/_payload.json"
-  },
-  "/commercial-kitchen/product/1133/double-deck-gas-oven-htr-40q-htr-40q/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f0-vuJ3r2Mr0U4p82bmKXTm2cKr5ig\"",
-    "mtime": "2024-12-16T10:03:04.805Z",
-    "size": 78576,
-    "path": "../public/commercial-kitchen/product/1133/double-deck-gas-oven-htr-40q-htr-40q/index.html"
-  },
-  "/commercial-kitchen/product/1133/double-deck-gas-oven-htr-40q-htr-40q/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-egao24IudFOVjs3jSuT4wbPjAEc\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1133/double-deck-gas-oven-htr-40q-htr-40q/_payload.json"
-  },
-  "/commercial-kitchen/product/1135/wine-cooler-550-dual-temperature-cw-36dt-cw-36dt/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332c-T0RynFfQ83M1MtsXdjxMTSWEG5A\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78636,
-    "path": "../public/commercial-kitchen/product/1135/wine-cooler-550-dual-temperature-cw-36dt-cw-36dt/index.html"
-  },
-  "/commercial-kitchen/product/1135/wine-cooler-550-dual-temperature-cw-36dt-cw-36dt/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cdBi71tQihGf8ymfd2g4stvFFi4\"",
-    "mtime": "2024-12-16T10:03:12.716Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1135/wine-cooler-550-dual-temperature-cw-36dt-cw-36dt/_payload.json"
-  },
-  "/commercial-kitchen/product/1136/wine-cooler-coolhead-rcs-85-rcs-85/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e6-UJVd0fJ8kGJPNk5K8n5hg27Wql8\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78566,
-    "path": "../public/commercial-kitchen/product/1136/wine-cooler-coolhead-rcs-85-rcs-85/index.html"
-  },
-  "/commercial-kitchen/product/1136/wine-cooler-coolhead-rcs-85-rcs-85/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uVXKmz9Ss4uu7eXCV/IeEafd++Q\"",
-    "mtime": "2024-12-16T10:03:12.716Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1136/wine-cooler-coolhead-rcs-85-rcs-85/_payload.json"
-  },
-  "/commercial-kitchen/product/1137/4-burner-gas-range-with-griddle-and-oven-rgr36-g12-redline-rgr36-g12/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13390-NF51koQT167Pt+ZGvmbZ4D4f2Zw\"",
-    "mtime": "2024-12-16T10:03:01.449Z",
-    "size": 78736,
-    "path": "../public/commercial-kitchen/product/1137/4-burner-gas-range-with-griddle-and-oven-rgr36-g12-redline-rgr36-g12/index.html"
-  },
-  "/commercial-kitchen/product/1137/4-burner-gas-range-with-griddle-and-oven-rgr36-g12-redline-rgr36-g12/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BbprQjegQz5EX8XLXuqJRcI8okg\"",
-    "mtime": "2024-12-16T10:03:11.767Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1137/4-burner-gas-range-with-griddle-and-oven-rgr36-g12-redline-rgr36-g12/_payload.json"
-  },
-  "/commercial-kitchen/product/1138/fryer-single-23-litres-gas-gf90-redline-gf90/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13318-Hhn/UqgXVTfT4pYEPzaMo1CpIpc\"",
-    "mtime": "2024-12-16T10:03:02.579Z",
-    "size": 78616,
-    "path": "../public/commercial-kitchen/product/1138/fryer-single-23-litres-gas-gf90-redline-gf90/index.html"
-  },
-  "/commercial-kitchen/product/1138/fryer-single-23-litres-gas-gf90-redline-gf90/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZCkD8FZFP+1K8ARp1XzZ6RRr8Bs\"",
-    "mtime": "2024-12-16T10:03:11.943Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1138/fryer-single-23-litres-gas-gf90-redline-gf90/_payload.json"
-  },
-  "/commercial-kitchen/product/1139/spiral-mixer-80-litres-25kg-bm-25/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e1-K29GJUwmkcL75idmLE8Qg8eePww\"",
-    "mtime": "2024-12-16T10:02:59.127Z",
-    "size": 78561,
-    "path": "../public/commercial-kitchen/product/1139/spiral-mixer-80-litres-25kg-bm-25/index.html"
-  },
-  "/commercial-kitchen/product/1139/spiral-mixer-80-litres-25kg-bm-25/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d4Wn0lv6kDmFnRv+VlphSimLt7g\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1139/spiral-mixer-80-litres-25kg-bm-25/_payload.json"
-  },
-  "/commercial-kitchen/product/114/espresso-machine-class-5s-gr1-class-5s-gr-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-x6xzgm8kA15LflNEGuMMra4CYsU\"",
-    "mtime": "2024-12-16T10:02:56.325Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/114/espresso-machine-class-5s-gr1-class-5s-gr-1/index.html"
-  },
-  "/commercial-kitchen/product/114/espresso-machine-class-5s-gr1-class-5s-gr-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GuSIOREtvS+Wg2/GzZCKLE59kRI\"",
-    "mtime": "2024-12-16T10:03:10.771Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/114/espresso-machine-class-5s-gr1-class-5s-gr-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1140/oven-convection-electric-blodgett-ctb-sgl-ctb-sgl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13331-mMM0yTS+A2Pz2E98pAJ2R+F/uXA\"",
-    "mtime": "2024-12-16T10:02:58.606Z",
-    "size": 78641,
-    "path": "../public/commercial-kitchen/product/1140/oven-convection-electric-blodgett-ctb-sgl-ctb-sgl/index.html"
-  },
-  "/commercial-kitchen/product/1140/oven-convection-electric-blodgett-ctb-sgl-ctb-sgl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OXJXFgVRD5Imj4D3VSHAPCh+FI0\"",
-    "mtime": "2024-12-16T10:03:11.290Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1140/oven-convection-electric-blodgett-ctb-sgl-ctb-sgl/_payload.json"
-  },
-  "/commercial-kitchen/product/1141/gas-fryer-split-type-15--15-ltrs-hds-150s-hds-150s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13336-W6MuLq5zvVJTGK1gzLVF0p+5fuA\"",
-    "mtime": "2024-12-16T10:03:02.556Z",
-    "size": 78646,
-    "path": "../public/commercial-kitchen/product/1141/gas-fryer-split-type-15--15-ltrs-hds-150s-hds-150s/index.html"
-  },
-  "/commercial-kitchen/product/1141/gas-fryer-split-type-15--15-ltrs-hds-150s-hds-150s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4UruxhVWZq8cFNbw7hpCKccLwXY\"",
-    "mtime": "2024-12-16T10:03:11.943Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1141/gas-fryer-split-type-15--15-ltrs-hds-150s-hds-150s/_payload.json"
-  },
-  "/commercial-kitchen/product/1142/gas-fryer-split-type-11--11-ltrs-hds-120s-hds-120s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13336-sqYZqdKsyMaRyuWsa46BNebwZMo\"",
-    "mtime": "2024-12-16T10:03:02.538Z",
-    "size": 78646,
-    "path": "../public/commercial-kitchen/product/1142/gas-fryer-split-type-11--11-ltrs-hds-120s-hds-120s/index.html"
-  },
-  "/commercial-kitchen/product/1142/gas-fryer-split-type-11--11-ltrs-hds-120s-hds-120s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DwfFhtSwndjTgwh1GG38j9s8cVk\"",
-    "mtime": "2024-12-16T10:03:11.935Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1142/gas-fryer-split-type-11--11-ltrs-hds-120s-hds-120s/_payload.json"
-  },
-  "/commercial-kitchen/product/1143/gas-pot-range-with-2-ring-burner-hdsspr-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13309-NDWlWi7s09RBUmmDnIbV8yHJw/A\"",
-    "mtime": "2024-12-16T10:03:01.319Z",
-    "size": 78601,
-    "path": "../public/commercial-kitchen/product/1143/gas-pot-range-with-2-ring-burner-hdsspr-1/index.html"
-  },
-  "/commercial-kitchen/product/1143/gas-pot-range-with-2-ring-burner-hdsspr-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dVyW/vgRRIKJ25J3Zozs5Hs8u3s\"",
-    "mtime": "2024-12-16T10:03:11.735Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1143/gas-pot-range-with-2-ring-burner-hdsspr-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1144/table-top-gas-radiant-broiler-24-hdsctc-24-hdsctc-24/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13340-U5T4rGf4UZLRyoGzRUcOUvEHWGQ\"",
-    "mtime": "2024-12-16T10:03:02.719Z",
-    "size": 78656,
-    "path": "../public/commercial-kitchen/product/1144/table-top-gas-radiant-broiler-24-hdsctc-24-hdsctc-24/index.html"
-  },
-  "/commercial-kitchen/product/1144/table-top-gas-radiant-broiler-24-hdsctc-24-hdsctc-24/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IHc1E+F/qZ9WbVw3FwFASfPpa4o\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1144/table-top-gas-radiant-broiler-24-hdsctc-24-hdsctc-24/_payload.json"
-  },
-  "/commercial-kitchen/product/1145/gas-radiant-broiler-36-hdsctc-36-hdsctc-36/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330e-hZUWJ1Nl6+LjV0N+fd0R7JYdykw\"",
-    "mtime": "2024-12-16T10:03:02.745Z",
-    "size": 78606,
-    "path": "../public/commercial-kitchen/product/1145/gas-radiant-broiler-36-hdsctc-36-hdsctc-36/index.html"
-  },
-  "/commercial-kitchen/product/1145/gas-radiant-broiler-36-hdsctc-36-hdsctc-36/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ERIrs/uNB2C9sA2jM7aKZdrhszE\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1145/gas-radiant-broiler-36-hdsctc-36-hdsctc-36/_payload.json"
-  },
-  "/commercial-kitchen/product/1146/counter-top-heated-display-700mm-hds-hdshdn-26-img-dis-00138/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13368-SwwBO76lpRa50pJQyRD2s/WHtAc\"",
-    "mtime": "2024-12-16T10:02:58.235Z",
-    "size": 78696,
-    "path": "../public/commercial-kitchen/product/1146/counter-top-heated-display-700mm-hds-hdshdn-26-img-dis-00138/index.html"
-  },
-  "/commercial-kitchen/product/1146/counter-top-heated-display-700mm-hds-hdshdn-26-img-dis-00138/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-K4SmqSO/ImrodzZTeoFpnx7RiLQ\"",
-    "mtime": "2024-12-16T10:03:11.141Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1146/counter-top-heated-display-700mm-hds-hdshdn-26-img-dis-00138/_payload.json"
-  },
-  "/commercial-kitchen/product/1147/counter-top-heated-display-900mm-hds-hdshdn-36-img-dis-00139/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13368-9m3ZSUdQtrgWkk8CAbDqBd5gOCs\"",
-    "mtime": "2024-12-16T10:02:58.284Z",
-    "size": 78696,
-    "path": "../public/commercial-kitchen/product/1147/counter-top-heated-display-900mm-hds-hdshdn-36-img-dis-00139/index.html"
-  },
-  "/commercial-kitchen/product/1147/counter-top-heated-display-900mm-hds-hdshdn-36-img-dis-00139/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6OxcwZyjFR2puY794UANsDoiw1w\"",
-    "mtime": "2024-12-16T10:03:11.151Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1147/counter-top-heated-display-900mm-hds-hdshdn-36-img-dis-00139/_payload.json"
-  },
-  "/commercial-kitchen/product/1148/electric-convection-oven-hdseco-4a-hdseco-4a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13318-hOGtHpTlDNcazTcP9rfFSs5d6hA\"",
-    "mtime": "2024-12-16T10:02:58.573Z",
-    "size": 78616,
-    "path": "../public/commercial-kitchen/product/1148/electric-convection-oven-hdseco-4a-hdseco-4a/index.html"
-  },
-  "/commercial-kitchen/product/1148/electric-convection-oven-hdseco-4a-hdseco-4a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QVbPGM+fMpFbMf6xQeTSMej1FJE\"",
-    "mtime": "2024-12-16T10:03:11.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1148/electric-convection-oven-hdseco-4a-hdseco-4a/_payload.json"
-  },
-  "/commercial-kitchen/product/1149/electric-convection-oven-hdseco-8a-hdseco-8a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13318-MIqwNQD4HXa0VSgTklyDn07zNJk\"",
-    "mtime": "2024-12-16T10:02:58.594Z",
-    "size": 78616,
-    "path": "../public/commercial-kitchen/product/1149/electric-convection-oven-hdseco-8a-hdseco-8a/index.html"
-  },
-  "/commercial-kitchen/product/1149/electric-convection-oven-hdseco-8a-hdseco-8a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d/nnDw0ghvpl5lVsWrDKzlc7KKQ\"",
-    "mtime": "2024-12-16T10:03:11.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1149/electric-convection-oven-hdseco-8a-hdseco-8a/_payload.json"
-  },
-  "/commercial-kitchen/product/115/espresso-machine-class-5st-gr1-class-5st-gr-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-SomBb7gBHD/l1L879n8zLVV6+L8\"",
-    "mtime": "2024-12-16T10:02:56.346Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/115/espresso-machine-class-5st-gr1-class-5st-gr-1/index.html"
-  },
-  "/commercial-kitchen/product/115/espresso-machine-class-5st-gr1-class-5st-gr-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qCpYOr04AgGU1hA3486QfvWtnVo\"",
-    "mtime": "2024-12-16T10:03:10.761Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/115/espresso-machine-class-5st-gr1-class-5st-gr-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1150/cone-maker-ot-zu-1-ot-zu-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132be-7bl7bJ/6ghpBMQSbaMxOu/9LdqY\"",
-    "mtime": "2024-12-16T10:03:06.102Z",
-    "size": 78526,
-    "path": "../public/commercial-kitchen/product/1150/cone-maker-ot-zu-1-ot-zu-1/index.html"
-  },
-  "/commercial-kitchen/product/1150/cone-maker-ot-zu-1-ot-zu-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DWwhRk+nU5I4xg3sDoHVVb00k9k\"",
-    "mtime": "2024-12-16T10:03:12.541Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1150/cone-maker-ot-zu-1-ot-zu-1/_payload.json"
-  },
-  "/commercial-kitchen/product/1151/perforated-4-tier-rack-4trs1005/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d7-epnM2MlsWI9hAm7ssnQrkq4vURE\"",
-    "mtime": "2024-12-16T10:03:00.589Z",
-    "size": 78551,
-    "path": "../public/commercial-kitchen/product/1151/perforated-4-tier-rack-4trs1005/index.html"
-  },
-  "/commercial-kitchen/product/1151/perforated-4-tier-rack-4trs1005/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2HxFT5euBQlwZTYcxbQawR+6JrE\"",
-    "mtime": "2024-12-16T10:03:11.617Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1151/perforated-4-tier-rack-4trs1005/_payload.json"
-  },
-  "/commercial-kitchen/product/1152/counter-chiller-with-cutouts-for-salad-toppings--pizzeria-ccco/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13372-isZjfPETtREVvOvF+4qABpdQjdg\"",
-    "mtime": "2024-12-16T10:03:03.265Z",
-    "size": 78706,
-    "path": "../public/commercial-kitchen/product/1152/counter-chiller-with-cutouts-for-salad-toppings--pizzeria-ccco/index.html"
-  },
-  "/commercial-kitchen/product/1152/counter-chiller-with-cutouts-for-salad-toppings--pizzeria-ccco/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1tnnwNCDQdaaIQpUOlgnC1YYy9E\"",
-    "mtime": "2024-12-16T10:03:12.064Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1152/counter-chiller-with-cutouts-for-salad-toppings--pizzeria-ccco/_payload.json"
-  },
-  "/commercial-kitchen/product/1153/care-cartridges-care-cartridges/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d7-yBcho0GOwYNmg7F0zBNOZWmayDE\"",
-    "mtime": "2024-12-16T10:03:08.485Z",
-    "size": 78551,
-    "path": "../public/commercial-kitchen/product/1153/care-cartridges-care-cartridges/index.html"
-  },
-  "/commercial-kitchen/product/1153/care-cartridges-care-cartridges/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-yhSBCRInHZR2Vf0RSLqlEoz+HpU\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1153/care-cartridges-care-cartridges/_payload.json"
-  },
-  "/commercial-kitchen/product/1154/active-green-cleaner-cartridges-green-cartridges/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332c-9NOVfF34LispOADrjW/YT9bjzhE\"",
-    "mtime": "2024-12-16T10:03:08.485Z",
-    "size": 78636,
-    "path": "../public/commercial-kitchen/product/1154/active-green-cleaner-cartridges-green-cartridges/index.html"
-  },
-  "/commercial-kitchen/product/1154/active-green-cleaner-cartridges-green-cartridges/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-LJzCxLkqW4nwMztYsk43nqiAqGw\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/1154/active-green-cleaner-cartridges-green-cartridges/_payload.json"
-  },
-  "/commercial-kitchen/product/116/espresso-machine-class-5s-gr2-black-class-5s-gr-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-njcuDaDeNCPNnX70KpjE00dw5zU\"",
-    "mtime": "2024-12-16T10:02:56.363Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/116/espresso-machine-class-5s-gr2-black-class-5s-gr-2/index.html"
-  },
-  "/commercial-kitchen/product/116/espresso-machine-class-5s-gr2-black-class-5s-gr-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TuKfN3n1Faolc/1HEdXEyU2ubwg\"",
-    "mtime": "2024-12-16T10:03:10.795Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/116/espresso-machine-class-5s-gr2-black-class-5s-gr-2/_payload.json"
-  },
-  "/commercial-kitchen/product/117/espresso-machine-class-5s-gr2-white-class-5s-gr-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-Lq6WvYYN//ChEE+HBpUcLvmK/Ds\"",
-    "mtime": "2024-12-16T10:02:56.381Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/117/espresso-machine-class-5s-gr2-white-class-5s-gr-2/index.html"
-  },
-  "/commercial-kitchen/product/117/espresso-machine-class-5s-gr2-white-class-5s-gr-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SFia1ned/fAf6yldr1W2/R6q1Bo\"",
-    "mtime": "2024-12-16T10:03:10.771Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/117/espresso-machine-class-5s-gr2-white-class-5s-gr-2/_payload.json"
-  },
-  "/commercial-kitchen/product/118/espresso-machine-class-7s-gr3-white-class-7s-gr-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-lXZ6072+n7O5Ye9ijSyqoXfKMuc\"",
-    "mtime": "2024-12-16T10:02:56.395Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/118/espresso-machine-class-7s-gr3-white-class-7s-gr-3/index.html"
-  },
-  "/commercial-kitchen/product/118/espresso-machine-class-7s-gr3-white-class-7s-gr-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Sg+VpvREPnkMjA4rc15F182hvjA\"",
-    "mtime": "2024-12-16T10:03:10.795Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/118/espresso-machine-class-7s-gr3-white-class-7s-gr-3/_payload.json"
-  },
-  "/commercial-kitchen/product/119/cappuccino-machine-silvia-silvia/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-CRlhbsUNhhihboYH2J1YcqHHl/s\"",
-    "mtime": "2024-12-16T10:02:56.259Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/119/cappuccino-machine-silvia-silvia/index.html"
-  },
-  "/commercial-kitchen/product/119/cappuccino-machine-silvia-silvia/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6/ZK+8XnW7kUH8iC0FLx8LRikMs\"",
-    "mtime": "2024-12-16T10:03:10.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/119/cappuccino-machine-silvia-silvia/_payload.json"
-  },
-  "/commercial-kitchen/product/120/cappuccino-machine-silvia-pro-silvia-pro/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-y4SnNSI59sg6lzZVtZ2P50Sqcrs\"",
-    "mtime": "2024-12-16T10:02:56.294Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/120/cappuccino-machine-silvia-pro-silvia-pro/index.html"
-  },
-  "/commercial-kitchen/product/120/cappuccino-machine-silvia-pro-silvia-pro/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7i56n5s44VX3fmg6ym+48Wyd/Hw\"",
-    "mtime": "2024-12-16T10:03:10.703Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/120/cappuccino-machine-silvia-pro-silvia-pro/_payload.json"
-  },
-  "/commercial-kitchen/product/121/coffee-grinder-kryo-65-kryo-65/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-kSgOUnOQ8hAo7D6pktHRW0AOFQc\"",
-    "mtime": "2024-12-16T10:02:56.765Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/121/coffee-grinder-kryo-65-kryo-65/index.html"
-  },
-  "/commercial-kitchen/product/121/coffee-grinder-kryo-65-kryo-65/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uTNpgqkVPy9MqE7iWf5vVeS7oXw\"",
-    "mtime": "2024-12-16T10:03:10.898Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/121/coffee-grinder-kryo-65-kryo-65/_payload.json"
-  },
-  "/commercial-kitchen/product/122/coffee-grinder-rocky-rocky/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-K8ljwsAH0b4Zpz4A+32kd5yygnI\"",
-    "mtime": "2024-12-16T10:02:56.722Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/122/coffee-grinder-rocky-rocky/index.html"
-  },
-  "/commercial-kitchen/product/122/coffee-grinder-rocky-rocky/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZZT2dzaUfy6jbkI5QvFmBots/o\"",
-    "mtime": "2024-12-16T10:03:10.897Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/122/coffee-grinder-rocky-rocky/_payload.json"
-  },
-  "/commercial-kitchen/product/123/water-softeners-dp2-dp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-VjZk9VB16cerRkw5/BSoy9AjUKw\"",
-    "mtime": "2024-12-16T10:02:56.837Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/123/water-softeners-dp2-dp2/index.html"
-  },
-  "/commercial-kitchen/product/123/water-softeners-dp2-dp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AQfd5OzC3zyD6aHoYQPKKDsnDfw\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/123/water-softeners-dp2-dp2/_payload.json"
-  },
-  "/commercial-kitchen/product/124/oven-convection-electric-3-trays-tecnodom-fed03ne02v-fed03ne02v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13371-+7EZoG77U8DKne5ofXVIndpC6ic\"",
-    "mtime": "2024-12-16T10:02:58.701Z",
-    "size": 78705,
-    "path": "../public/commercial-kitchen/product/124/oven-convection-electric-3-trays-tecnodom-fed03ne02v-fed03ne02v/index.html"
-  },
-  "/commercial-kitchen/product/124/oven-convection-electric-3-trays-tecnodom-fed03ne02v-fed03ne02v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GboDUHUcEFDw/WnUPWKWsj/z4og\"",
-    "mtime": "2024-12-16T10:03:11.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/124/oven-convection-electric-3-trays-tecnodom-fed03ne02v-fed03ne02v/_payload.json"
-  },
-  "/commercial-kitchen/product/125/oven-convection-electric-3-trays-600x400-fed03nepsv-fed03nepsv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1336c-fV0XhfmwpE16XuTaJZPwWwNYz68\"",
-    "mtime": "2024-12-16T10:02:58.718Z",
-    "size": 78700,
-    "path": "../public/commercial-kitchen/product/125/oven-convection-electric-3-trays-600x400-fed03nepsv-fed03nepsv/index.html"
-  },
-  "/commercial-kitchen/product/125/oven-convection-electric-3-trays-600x400-fed03nepsv-fed03nepsv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HJ46TYBuSmMD6Mxh3Fmrel94bQE\"",
-    "mtime": "2024-12-16T10:03:11.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/125/oven-convection-electric-3-trays-600x400-fed03nepsv-fed03nepsv/_payload.json"
-  },
-  "/commercial-kitchen/product/126/oven-convection-electric-4-trays-435-x-350-fedg04ne595v-fedg04ne595v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1338a-UxLqE1NTlM97wMUULG2TI5TowdA\"",
-    "mtime": "2024-12-16T10:02:58.743Z",
-    "size": 78730,
-    "path": "../public/commercial-kitchen/product/126/oven-convection-electric-4-trays-435-x-350-fedg04ne595v-fedg04ne595v/index.html"
-  },
-  "/commercial-kitchen/product/126/oven-convection-electric-4-trays-435-x-350-fedg04ne595v-fedg04ne595v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ALbXTljLGmLfd5mu9UH7D7e41fc\"",
-    "mtime": "2024-12-16T10:03:11.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/126/oven-convection-electric-4-trays-435-x-350-fedg04ne595v-fedg04ne595v/_payload.json"
-  },
-  "/commercial-kitchen/product/127/oven-convection-electric-4-trays-600x400-fed04nepsv-fed04nepsv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1336c-bstkH7V7zjMm1MwrVUTl3AkKPVE\"",
-    "mtime": "2024-12-16T10:02:58.732Z",
-    "size": 78700,
-    "path": "../public/commercial-kitchen/product/127/oven-convection-electric-4-trays-600x400-fed04nepsv-fed04nepsv/index.html"
-  },
-  "/commercial-kitchen/product/127/oven-convection-electric-4-trays-600x400-fed04nepsv-fed04nepsv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-lSz6z6BR1AVFB05KJVmFiMtvSds\"",
-    "mtime": "2024-12-16T10:03:11.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/127/oven-convection-electric-4-trays-600x400-fed04nepsv-fed04nepsv/_payload.json"
-  },
-  "/commercial-kitchen/product/128/oven-convection-electric-6-trays-tecnodom-fed06nemidh2od-fed06nemidh2od/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13399-irzZJjbBrVFbxVBd53tbI32BaB0\"",
-    "mtime": "2024-12-16T10:02:58.782Z",
-    "size": 78745,
-    "path": "../public/commercial-kitchen/product/128/oven-convection-electric-6-trays-tecnodom-fed06nemidh2od-fed06nemidh2od/index.html"
-  },
-  "/commercial-kitchen/product/128/oven-convection-electric-6-trays-tecnodom-fed06nemidh2od-fed06nemidh2od/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DxoVpg961IUuPIOh/p74WnVlqbg\"",
-    "mtime": "2024-12-16T10:03:11.294Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/128/oven-convection-electric-6-trays-tecnodom-fed06nemidh2od-fed06nemidh2od/_payload.json"
-  },
-  "/commercial-kitchen/product/129/oven-convection-10-tray-tecnodom-fedl10nemidvh2o-fedl10nemidvh2o/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13376-GvDBN3bFwgPjApgdlA+/76iLnGY\"",
-    "mtime": "2024-12-16T10:02:58.799Z",
-    "size": 78710,
-    "path": "../public/commercial-kitchen/product/129/oven-convection-10-tray-tecnodom-fedl10nemidvh2o-fedl10nemidvh2o/index.html"
-  },
-  "/commercial-kitchen/product/129/oven-convection-10-tray-tecnodom-fedl10nemidvh2o-fedl10nemidvh2o/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-syTn3neTpi8XxVP8EccbCARu7/Y\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/129/oven-convection-10-tray-tecnodom-fedl10nemidvh2o-fedl10nemidvh2o/_payload.json"
-  },
-  "/commercial-kitchen/product/130/oven-convection-electric-4-trays-tecnoeka-ekf-423ud-300x200-ekf-423ud/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1338f-WyOgfPBxkf4W1elj0RUZKO5k7ZU\"",
-    "mtime": "2024-12-16T10:02:58.622Z",
-    "size": 78735,
-    "path": "../public/commercial-kitchen/product/130/oven-convection-electric-4-trays-tecnoeka-ekf-423ud-300x200-ekf-423ud/index.html"
-  },
-  "/commercial-kitchen/product/130/oven-convection-electric-4-trays-tecnoeka-ekf-423ud-300x200-ekf-423ud/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0cMAkEeaAbVFdoXteo1zG2b0vQE\"",
-    "mtime": "2024-12-16T10:03:11.291Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/130/oven-convection-electric-4-trays-tecnoeka-ekf-423ud-300x200-ekf-423ud/_payload.json"
-  },
-  "/commercial-kitchen/product/131/oven-convection-electric-6-trays-tecnoeka-mkf664s-mkf-664-s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335d-KyN39DvY2lnCJODNZoZsP3NSpBc\"",
-    "mtime": "2024-12-16T10:02:58.658Z",
-    "size": 78685,
-    "path": "../public/commercial-kitchen/product/131/oven-convection-electric-6-trays-tecnoeka-mkf664s-mkf-664-s/index.html"
-  },
-  "/commercial-kitchen/product/131/oven-convection-electric-6-trays-tecnoeka-mkf664s-mkf-664-s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zyJGhebUAhgZJ+Memc2tmWihjeU\"",
-    "mtime": "2024-12-16T10:03:11.291Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/131/oven-convection-electric-6-trays-tecnoeka-mkf664s-mkf-664-s/_payload.json"
-  },
-  "/commercial-kitchen/product/136/multi-deck-display-cooler-vb80250slinox-vb80250slinox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-wr1lmQVN2wRfx/CkItubwkWNKUo\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/136/multi-deck-display-cooler-vb80250slinox-vb80250slinox/index.html"
-  },
-  "/commercial-kitchen/product/136/multi-deck-display-cooler-vb80250slinox-vb80250slinox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gPsp7nhGUZawh3ZqRHy35fRCo7g\"",
-    "mtime": "2024-12-16T10:03:12.685Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/136/multi-deck-display-cooler-vb80250slinox-vb80250slinox/_payload.json"
-  },
-  "/commercial-kitchen/product/137/multi-deck-display-cooler-v6060sl-dgd-v6060sl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-erSbiXI2M/weh4cAmuGgj9TP7RU\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/137/multi-deck-display-cooler-v6060sl-dgd-v6060sl/index.html"
-  },
-  "/commercial-kitchen/product/137/multi-deck-display-cooler-v6060sl-dgd-v6060sl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uIdSXqnHPAtlphLKwRALpSShmYY\"",
-    "mtime": "2024-12-16T10:03:12.678Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/137/multi-deck-display-cooler-v6060sl-dgd-v6060sl/_payload.json"
-  },
-  "/commercial-kitchen/product/138/multi-deck-display-cooler-v60187sl-dgd-v60187sl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-nCyXDe8kSAXUVR7OPAskIh8VnBs\"",
-    "mtime": "2024-12-16T10:03:07.075Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/138/multi-deck-display-cooler-v60187sl-dgd-v60187sl/index.html"
-  },
-  "/commercial-kitchen/product/138/multi-deck-display-cooler-v60187sl-dgd-v60187sl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KRUDIAh8FgVpVO73YD0FbJrpe/M\"",
-    "mtime": "2024-12-16T10:03:12.695Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/138/multi-deck-display-cooler-v60187sl-dgd-v60187sl/_payload.json"
-  },
-  "/commercial-kitchen/product/139/multi-deck-display-cooler-v6080slinox-dgd-v6080slinox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-sOI6HnBO8EOsPu+DnXxdrtgYr00\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/139/multi-deck-display-cooler-v6080slinox-dgd-v6080slinox/index.html"
-  },
-  "/commercial-kitchen/product/139/multi-deck-display-cooler-v6080slinox-dgd-v6080slinox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gPQcRVBJbceXos+I68QsBS5vQ2Y\"",
-    "mtime": "2024-12-16T10:03:12.678Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/139/multi-deck-display-cooler-v6080slinox-dgd-v6080slinox/_payload.json"
-  },
-  "/commercial-kitchen/product/140/multi-deck-display-cooler-vs60125slinox-dgd-vs60125slinox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-VMoxIqm2Eb8a5Y5Gv/NA99m14Wg\"",
-    "mtime": "2024-12-16T10:03:07.100Z",
-    "size": 78675,
-    "path": "../public/commercial-kitchen/product/140/multi-deck-display-cooler-vs60125slinox-dgd-vs60125slinox/index.html"
-  },
-  "/commercial-kitchen/product/140/multi-deck-display-cooler-vs60125slinox-dgd-vs60125slinox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pvCM4mBeGtTHpl/GdDSzqKD2vQM\"",
-    "mtime": "2024-12-16T10:03:12.695Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/140/multi-deck-display-cooler-vs60125slinox-dgd-vs60125slinox/_payload.json"
-  },
-  "/commercial-kitchen/product/141/multi-deck-display-cooler-vs60150slinox-dgd-vs60150slinox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-sJEvV7DgUWzyOK6Ne1ZP66lWAec\"",
-    "mtime": "2024-12-16T10:03:07.155Z",
-    "size": 78675,
-    "path": "../public/commercial-kitchen/product/141/multi-deck-display-cooler-vs60150slinox-dgd-vs60150slinox/index.html"
-  },
-  "/commercial-kitchen/product/141/multi-deck-display-cooler-vs60150slinox-dgd-vs60150slinox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jkTkwSQN4oUYQ+ohO/Qz5xSBC/c\"",
-    "mtime": "2024-12-16T10:03:12.696Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/141/multi-deck-display-cooler-vs60150slinox-dgd-vs60150slinox/_payload.json"
-  },
-  "/commercial-kitchen/product/142/multi-deck-display-dgd-vs80187ca-vs80187ca/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-tEgnzBg8Sw8RGacX1jS0eJbSk4g\"",
-    "mtime": "2024-12-16T10:03:07.155Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/142/multi-deck-display-dgd-vs80187ca-vs80187ca/index.html"
-  },
-  "/commercial-kitchen/product/142/multi-deck-display-dgd-vs80187ca-vs80187ca/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YBh4WdUEpO89r7powFaLs7y2B1k\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/142/multi-deck-display-dgd-vs80187ca-vs80187ca/_payload.json"
-  },
-  "/commercial-kitchen/product/143/ice-cream-machine-table-top-pasmo-s121-s121/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-sUbgHebRGEN8Fdo8p4DprVJ+F0I\"",
-    "mtime": "2024-12-16T10:03:07.354Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/143/ice-cream-machine-table-top-pasmo-s121-s121/index.html"
-  },
-  "/commercial-kitchen/product/143/ice-cream-machine-table-top-pasmo-s121-s121/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/d0VeJHMGg95HP3TetbbGB3d9AE\"",
-    "mtime": "2024-12-16T10:03:12.744Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/143/ice-cream-machine-table-top-pasmo-s121-s121/_payload.json"
-  },
-  "/commercial-kitchen/product/144/ice-cream-machine-free-standing-s520f-s520f/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-+yTw+OTtHhPjdZDfc8Ey6yqKRac\"",
-    "mtime": "2024-12-16T10:03:07.409Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/144/ice-cream-machine-free-standing-s520f-s520f/index.html"
-  },
-  "/commercial-kitchen/product/144/ice-cream-machine-free-standing-s520f-s520f/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rgO8OzK1P1FbA5I3R9zZumT8DXw\"",
-    "mtime": "2024-12-16T10:03:12.747Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/144/ice-cream-machine-free-standing-s520f-s520f/_payload.json"
-  },
-  "/commercial-kitchen/product/145/ice-cream-machine-table-top-s110f-s110f/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-5PaomsbAt61XIDEtqBYdSOjbxp0\"",
-    "mtime": "2024-12-16T10:03:07.335Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/145/ice-cream-machine-table-top-s110f-s110f/index.html"
-  },
-  "/commercial-kitchen/product/145/ice-cream-machine-table-top-s110f-s110f/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZWZ6D8gfWTszfAZBjxecYXdoaqM\"",
-    "mtime": "2024-12-16T10:03:12.744Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/145/ice-cream-machine-table-top-s110f-s110f/_payload.json"
-  },
-  "/commercial-kitchen/product/146/chest-freezer-lp1200cf-lp1200cf/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-bPHaK8hY0k84KjqwZlQYM89w3zg\"",
-    "mtime": "2024-12-16T10:03:07.532Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/146/chest-freezer-lp1200cf-lp1200cf/index.html"
-  },
-  "/commercial-kitchen/product/146/chest-freezer-lp1200cf-lp1200cf/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xEyUS15GEC4LB86jQW3WfBnrUs0\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/146/chest-freezer-lp1200cf-lp1200cf/_payload.json"
-  },
-  "/commercial-kitchen/product/147/chest-freezer-lp1500cf-lp1500cf/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-xphJUMM177DpVtWaJ/imtrPOWq8\"",
-    "mtime": "2024-12-16T10:03:07.534Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/147/chest-freezer-lp1500cf-lp1500cf/index.html"
-  },
-  "/commercial-kitchen/product/147/chest-freezer-lp1500cf-lp1500cf/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Egmst0pP0B+FBRdfAB29eNKt8rs\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/147/chest-freezer-lp1500cf-lp1500cf/_payload.json"
-  },
-  "/commercial-kitchen/product/149/rational-i-combi-classic-6-2-1-electric-icc62e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-fugbxTok5MkETu1GY3Q2Otf5Pfg\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/149/rational-i-combi-classic-6-2-1-electric-icc62e/index.html"
-  },
-  "/commercial-kitchen/product/149/rational-i-combi-classic-6-2-1-electric-icc62e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ThBzkc3RiwkbRPGtR/lzk70QpAU\"",
-    "mtime": "2024-12-16T10:03:12.355Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/149/rational-i-combi-classic-6-2-1-electric-icc62e/_payload.json"
-  },
-  "/commercial-kitchen/product/148/rational-i-combi-classic-6-1-1-electric-icc61e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-iyxeX34kLJYlWLRdvPx9pDGLEVo\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/148/rational-i-combi-classic-6-1-1-electric-icc61e/index.html"
-  },
-  "/commercial-kitchen/product/148/rational-i-combi-classic-6-1-1-electric-icc61e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YZSiylS2YkspF3zY2l6jLZW8slE\"",
-    "mtime": "2024-12-16T10:03:12.351Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/148/rational-i-combi-classic-6-1-1-electric-icc61e/_payload.json"
-  },
-  "/commercial-kitchen/product/150/rational-i-combi-classic-10-1-1-electric-icc101e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-eVZCsjHC/QTi09ZSY3NDzEZzSpk\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/150/rational-i-combi-classic-10-1-1-electric-icc101e/index.html"
-  },
-  "/commercial-kitchen/product/150/rational-i-combi-classic-10-1-1-electric-icc101e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ISn3zX99XbKJ5OGAX4z2fI1xDj4\"",
-    "mtime": "2024-12-16T10:03:12.351Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/150/rational-i-combi-classic-10-1-1-electric-icc101e/_payload.json"
-  },
-  "/commercial-kitchen/product/151/rational-i-combi-classic-10-2-1-electric-icc102e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-Tc6gaKdj8J1sc0yhQhiQ9jP2d3s\"",
-    "mtime": "2024-12-16T10:03:05.020Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/151/rational-i-combi-classic-10-2-1-electric-icc102e/index.html"
-  },
-  "/commercial-kitchen/product/151/rational-i-combi-classic-10-2-1-electric-icc102e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0zK3xjLs2dzzh+OObPz3ITuovV0\"",
-    "mtime": "2024-12-16T10:03:12.365Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/151/rational-i-combi-classic-10-2-1-electric-icc102e/_payload.json"
-  },
-  "/commercial-kitchen/product/152/rational-i-combi-classic-20-1-1-electric-icc201e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-9pezjofHtGljnvtl9ku6twLbbDY\"",
-    "mtime": "2024-12-16T10:03:05.020Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/152/rational-i-combi-classic-20-1-1-electric-icc201e/index.html"
-  },
-  "/commercial-kitchen/product/152/rational-i-combi-classic-20-1-1-electric-icc201e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0WJ/deismEVMMpegn4faMrQNyU4\"",
-    "mtime": "2024-12-16T10:03:12.365Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/152/rational-i-combi-classic-20-1-1-electric-icc201e/_payload.json"
-  },
-  "/commercial-kitchen/product/153/rational-i-combi-classic-20-2-1-electric-icc202e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-+zqmxnEjbS/ORXIsh5CxnkkiSRQ\"",
-    "mtime": "2024-12-16T10:03:05.355Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/153/rational-i-combi-classic-20-2-1-electric-icc202e/index.html"
-  },
-  "/commercial-kitchen/product/153/rational-i-combi-classic-20-2-1-electric-icc202e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-f55VbjeqlyjyTNxEJrfkCnsesuA\"",
-    "mtime": "2024-12-16T10:03:12.398Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/153/rational-i-combi-classic-20-2-1-electric-icc202e/_payload.json"
-  },
-  "/commercial-kitchen/product/155/salad-display-1800-blueline-vrx1800-380/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-FpId+BMPguvK72KDRWB1WbLVBhA\"",
-    "mtime": "2024-12-16T10:03:03.335Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/155/salad-display-1800-blueline-vrx1800-380/index.html"
-  },
-  "/commercial-kitchen/product/155/salad-display-1800-blueline-vrx1800-380/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CUC8zySRwb2kxpzfd9sE/S27XlE\"",
-    "mtime": "2024-12-16T10:03:12.074Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/155/salad-display-1800-blueline-vrx1800-380/_payload.json"
-  },
-  "/commercial-kitchen/product/154/salad-display-1500-blueline-vrx1500-380/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-CCV7E7qv08gY1P+XNX2ojHsfzYQ\"",
-    "mtime": "2024-12-16T10:03:03.294Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/154/salad-display-1500-blueline-vrx1500-380/index.html"
-  },
-  "/commercial-kitchen/product/154/salad-display-1500-blueline-vrx1500-380/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WAgRc0qClj/p25Q82C3YTOEOQ68\"",
-    "mtime": "2024-12-16T10:03:12.068Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/154/salad-display-1500-blueline-vrx1500-380/_payload.json"
-  },
-  "/commercial-kitchen/product/156/pastry-display-square-1200-evok-evok120v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-qnoSn7sGnlwMOuTtyMTG0lflNik\"",
-    "mtime": "2024-12-16T10:02:57.988Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/156/pastry-display-square-1200-evok-evok120v/index.html"
-  },
-  "/commercial-kitchen/product/156/pastry-display-square-1200-evok-evok120v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rWzVBo/iSWHL2kv1yyvty4InWLM\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/156/pastry-display-square-1200-evok-evok120v/_payload.json"
-  },
-  "/commercial-kitchen/product/157/glass-washer-undercounter-rb-34-rb-34/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-lS6JUW2JdGmNpleEycuTbNlSfu4\"",
-    "mtime": "2024-12-16T10:03:09.278Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/157/glass-washer-undercounter-rb-34-rb-34/index.html"
-  },
-  "/commercial-kitchen/product/157/glass-washer-undercounter-rb-34-rb-34/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-z19aSyVqj9bQ8pNEcPCEMjLdeFs\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/157/glass-washer-undercounter-rb-34-rb-34/_payload.json"
-  },
-  "/commercial-kitchen/product/158/dish-washer-undercounter-rf-45-1-rf-45-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-kMvfXLhNwu5P/X2UkDspvYKBQYw\"",
-    "mtime": "2024-12-16T10:03:04.145Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/158/dish-washer-undercounter-rf-45-1-rf-45-1/index.html"
-  },
-  "/commercial-kitchen/product/158/dish-washer-undercounter-rf-45-1-rf-45-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3P4ivRKJEN1Yx2qmA4wG4N3q+QQ\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/158/dish-washer-undercounter-rf-45-1-rf-45-1/_payload.json"
-  },
-  "/commercial-kitchen/product/159/dishwasher-hood-type-pc-07-pc-07/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-gXKMKS/x+OHJ0az90FifJ+sPHKU\"",
-    "mtime": "2024-12-16T10:03:05.969Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/159/dishwasher-hood-type-pc-07-pc-07/index.html"
-  },
-  "/commercial-kitchen/product/159/dishwasher-hood-type-pc-07-pc-07/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Tr3ZDcIfnlNNpvjPNTvA4B/fXxQ\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/159/dishwasher-hood-type-pc-07-pc-07/_payload.json"
-  },
-  "/commercial-kitchen/product/160/dishwasher-hood-type-pc-09-pc-09/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-1pJlD9ggSeWHyR4SQUR7lzveI84\"",
-    "mtime": "2024-12-16T10:03:05.955Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/160/dishwasher-hood-type-pc-09-pc-09/index.html"
-  },
-  "/commercial-kitchen/product/160/dishwasher-hood-type-pc-09-pc-09/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WX988tbvc4LfQh0C/tQBkjtuTZk\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/160/dishwasher-hood-type-pc-09-pc-09/_payload.json"
-  },
-  "/commercial-kitchen/product/161/dishwasher-conveyor-type-ac2-ac2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-58sAMrQI1/KLlcnmDqGQK8TFBQc\"",
-    "mtime": "2024-12-16T10:03:08.335Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/161/dishwasher-conveyor-type-ac2-ac2/index.html"
-  },
-  "/commercial-kitchen/product/161/dishwasher-conveyor-type-ac2-ac2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8awdEhLj3/qelNJFukz+UxjR7QQ\"",
-    "mtime": "2024-12-16T10:03:12.915Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/161/dishwasher-conveyor-type-ac2-ac2/_payload.json"
-  },
-  "/commercial-kitchen/product/162/dishwasher-conveyor-type-ac2a-ac2a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-fOXZeFmK/Fh105YznGm7xYRDJnw\"",
-    "mtime": "2024-12-16T10:03:08.168Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/162/dishwasher-conveyor-type-ac2a-ac2a/index.html"
-  },
-  "/commercial-kitchen/product/162/dishwasher-conveyor-type-ac2a-ac2a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zPTjI7y86W2HqWyRt5rBq2w3tFs\"",
-    "mtime": "2024-12-16T10:03:12.911Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/162/dishwasher-conveyor-type-ac2a-ac2a/_payload.json"
-  },
-  "/commercial-kitchen/product/163/rational-icombi-pro-6-1-1-electric-icp61e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-3n2jchJmrnWsBzYOpv+3Si8JaJ8\"",
-    "mtime": "2024-12-16T10:03:04.818Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/163/rational-icombi-pro-6-1-1-electric-icp61e/index.html"
-  },
-  "/commercial-kitchen/product/163/rational-icombi-pro-6-1-1-electric-icp61e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SVge7nHdc7QbwNupf/eimPPlJkU\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/163/rational-icombi-pro-6-1-1-electric-icp61e/_payload.json"
-  },
-  "/commercial-kitchen/product/164/rational-icombi-pro-6-2-1-electric-icp62e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-TqxgxcN5N7MuEfO30O/78EWV6tg\"",
-    "mtime": "2024-12-16T10:03:04.897Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/164/rational-icombi-pro-6-2-1-electric-icp62e/index.html"
-  },
-  "/commercial-kitchen/product/164/rational-icombi-pro-6-2-1-electric-icp62e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KyQos1AoFe9UN6QcxRF8alHWr9w\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/164/rational-icombi-pro-6-2-1-electric-icp62e/_payload.json"
-  },
-  "/commercial-kitchen/product/165/rational-icombi-pro-10-1-electric-icp101e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-O6H8CnyLyeTbR6efYPja9i0R9FI\"",
-    "mtime": "2024-12-16T10:03:04.931Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/165/rational-icombi-pro-10-1-electric-icp101e/index.html"
-  },
-  "/commercial-kitchen/product/165/rational-icombi-pro-10-1-electric-icp101e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Wpfe8hTMUmdGpn6w6MGoL5EebNo\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/165/rational-icombi-pro-10-1-electric-icp101e/_payload.json"
-  },
-  "/commercial-kitchen/product/166/rational-icombi-pro-10-2-1-electric-icp102e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-EwdP3gPrDlwg8CB5uLbYGRla+K8\"",
-    "mtime": "2024-12-16T10:03:04.931Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/166/rational-icombi-pro-10-2-1-electric-icp102e/index.html"
-  },
-  "/commercial-kitchen/product/166/rational-icombi-pro-10-2-1-electric-icp102e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5T/2udF7p4DJ4m+7eVai3cSZbUw\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/166/rational-icombi-pro-10-2-1-electric-icp102e/_payload.json"
-  },
-  "/commercial-kitchen/product/167/rational-icombi-pro-20-1-1-electric-icp201e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-AcxgkUkXdqCB1xJutZThy4Khfuc\"",
-    "mtime": "2024-12-16T10:03:04.952Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/167/rational-icombi-pro-20-1-1-electric-icp201e/index.html"
-  },
-  "/commercial-kitchen/product/167/rational-icombi-pro-20-1-1-electric-icp201e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kHIdPpbMnrr7djpbyJIBzszd650\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/167/rational-icombi-pro-20-1-1-electric-icp201e/_payload.json"
-  },
-  "/commercial-kitchen/product/168/rational-icombi-pro-20-2-1-electric-icp202e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-q27Fg0H29RVz0qtgUsfzTf6Tbe4\"",
-    "mtime": "2024-12-16T10:03:04.955Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/168/rational-icombi-pro-20-2-1-electric-icp202e/index.html"
-  },
-  "/commercial-kitchen/product/168/rational-icombi-pro-20-2-1-electric-icp202e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pDwLaoZRkMn6uBe1qpPqtsh2gws\"",
-    "mtime": "2024-12-16T10:03:12.327Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/168/rational-icombi-pro-20-2-1-electric-icp202e/_payload.json"
-  },
-  "/commercial-kitchen/product/169/rational-icombi-pro-xs-6-2-3-icpxs-6-2-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-VQSnPftoinCVDgetWZ6NW5B/OVY\"",
-    "mtime": "2024-12-16T10:02:59.049Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/169/rational-icombi-pro-xs-6-2-3-icpxs-6-2-3/index.html"
-  },
-  "/commercial-kitchen/product/169/rational-icombi-pro-xs-6-2-3-icpxs-6-2-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XZXqqjm9ept2NrpGsUB9mhgAiEY\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/169/rational-icombi-pro-xs-6-2-3-icpxs-6-2-3/_payload.json"
-  },
-  "/commercial-kitchen/product/170/rational-icombi-pro-6-1-1-gas-icp61g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-0GN60JOGy0k05W25H2Xbqs0HvsA\"",
-    "mtime": "2024-12-16T10:03:04.966Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/170/rational-icombi-pro-6-1-1-gas-icp61g/index.html"
-  },
-  "/commercial-kitchen/product/170/rational-icombi-pro-6-1-1-gas-icp61g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bUMcgXYaQhl1PqlAWA94y7aBh2E\"",
-    "mtime": "2024-12-16T10:03:12.334Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/170/rational-icombi-pro-6-1-1-gas-icp61g/_payload.json"
-  },
-  "/commercial-kitchen/product/171/rational-icombi-pro-6-2-1-gas-icp62g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-BKSQrleh3Hdy89HMTAqkH/uVcZc\"",
-    "mtime": "2024-12-16T10:03:04.987Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/171/rational-icombi-pro-6-2-1-gas-icp62g/index.html"
-  },
-  "/commercial-kitchen/product/171/rational-icombi-pro-6-2-1-gas-icp62g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zXka75zP+uPZmhKxAlQH9+Xb2UM\"",
-    "mtime": "2024-12-16T10:03:12.334Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/171/rational-icombi-pro-6-2-1-gas-icp62g/_payload.json"
-  },
-  "/commercial-kitchen/product/172/rational-icombi-pro-10-1-1-gas-icp101g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-Lt+nT5VVp+3mqnref++i+TV+G4A\"",
-    "mtime": "2024-12-16T10:03:04.996Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/172/rational-icombi-pro-10-1-1-gas-icp101g/index.html"
-  },
-  "/commercial-kitchen/product/172/rational-icombi-pro-10-1-1-gas-icp101g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dDZho0QRzkE7R3WB8hvOadSjDoI\"",
-    "mtime": "2024-12-16T10:03:12.334Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/172/rational-icombi-pro-10-1-1-gas-icp101g/_payload.json"
-  },
-  "/commercial-kitchen/product/173/rational-icombi-pro-10-2-1-gas-icp102g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-Z9zBlNf9c4IoxRYeJSvR1ZDLi5k\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/173/rational-icombi-pro-10-2-1-gas-icp102g/index.html"
-  },
-  "/commercial-kitchen/product/173/rational-icombi-pro-10-2-1-gas-icp102g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-L8nRdUHFjL2x+bzZ5hyeODYstVA\"",
-    "mtime": "2024-12-16T10:03:12.335Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/173/rational-icombi-pro-10-2-1-gas-icp102g/_payload.json"
-  },
-  "/commercial-kitchen/product/174/rational-icombi-pro-20-1-1-gas-icp201g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-hH3PBhl7ucGba1yrnPac6CWthwg\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/174/rational-icombi-pro-20-1-1-gas-icp201g/index.html"
-  },
-  "/commercial-kitchen/product/174/rational-icombi-pro-20-1-1-gas-icp201g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-a12wezrAqXKrT8nqmy8l1LUIys4\"",
-    "mtime": "2024-12-16T10:03:12.351Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/174/rational-icombi-pro-20-1-1-gas-icp201g/_payload.json"
-  },
-  "/commercial-kitchen/product/175/rational-icombi-pro-20-2-1-gas-icp202g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-gzjzAoqeMN6jm+98UvllxabN4j8\"",
-    "mtime": "2024-12-16T10:03:05.019Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/175/rational-icombi-pro-20-2-1-gas-icp202g/index.html"
-  },
-  "/commercial-kitchen/product/175/rational-icombi-pro-20-2-1-gas-icp202g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-i5935jy43WsMRjPiuanMgol3/9w\"",
-    "mtime": "2024-12-16T10:03:12.351Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/175/rational-icombi-pro-20-2-1-gas-icp202g/_payload.json"
-  },
-  "/commercial-kitchen/product/182/rational-i-combi-classic-6-2-1-gas-icc62g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-m3Q0tJeCBCuB/JHIARYhLPTLQQA\"",
-    "mtime": "2024-12-16T10:03:05.025Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/182/rational-i-combi-classic-6-2-1-gas-icc62g/index.html"
-  },
-  "/commercial-kitchen/product/182/rational-i-combi-classic-6-2-1-gas-icc62g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-L5P0OaH97qlYoR0tEqaYSMWRE4I\"",
-    "mtime": "2024-12-16T10:03:12.365Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/182/rational-i-combi-classic-6-2-1-gas-icc62g/_payload.json"
-  },
-  "/commercial-kitchen/product/181/rational-i-combi-classic-6-1-1-gas-icc61g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-zcB1IAonG5cHsUOU193ivHS2LzM\"",
-    "mtime": "2024-12-16T10:03:05.385Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/181/rational-i-combi-classic-6-1-1-gas-icc61g/index.html"
-  },
-  "/commercial-kitchen/product/181/rational-i-combi-classic-6-1-1-gas-icc61g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oKEbmiD2TUF25uKVyqnZGZaBaBo\"",
-    "mtime": "2024-12-16T10:03:12.412Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/181/rational-i-combi-classic-6-1-1-gas-icc61g/_payload.json"
-  },
-  "/commercial-kitchen/product/183/rational-i-combi-classic-10-1-1-gas-icc101g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-OUA/d4JfcstaTaLK7ntyT2zuByU\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/183/rational-i-combi-classic-10-1-1-gas-icc101g/index.html"
-  },
-  "/commercial-kitchen/product/183/rational-i-combi-classic-10-1-1-gas-icc101g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vrOPKHgZipCTidfxJu82qxzaiMk\"",
-    "mtime": "2024-12-16T10:03:12.367Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/183/rational-i-combi-classic-10-1-1-gas-icc101g/_payload.json"
-  },
-  "/commercial-kitchen/product/184/rational-i-combi-classic-10-2-1-gas-icc102g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-VU+hTYGNlMVAeGZ5BQByrDSypkc\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/184/rational-i-combi-classic-10-2-1-gas-icc102g/index.html"
-  },
-  "/commercial-kitchen/product/184/rational-i-combi-classic-10-2-1-gas-icc102g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IC/itaPADkEpuXG45bIoIrDx5b0\"",
-    "mtime": "2024-12-16T10:03:12.378Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/184/rational-i-combi-classic-10-2-1-gas-icc102g/_payload.json"
-  },
-  "/commercial-kitchen/product/185/rational-i-combi-classic-20-1-1-gas-icc201g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-uONTfKUkYNSEifRQGc27UD820Hk\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/185/rational-i-combi-classic-20-1-1-gas-icc201g/index.html"
-  },
-  "/commercial-kitchen/product/185/rational-i-combi-classic-20-1-1-gas-icc201g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uiLKoLud+SfLSkGFcbBFNAUkvTs\"",
-    "mtime": "2024-12-16T10:03:12.378Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/185/rational-i-combi-classic-20-1-1-gas-icc201g/_payload.json"
-  },
-  "/commercial-kitchen/product/186/rational-i-combi-classic-20-2-1-gas-icc202g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-PvVAoV8y1xqBctcNPzWU7YeESXw\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/186/rational-i-combi-classic-20-2-1-gas-icc202g/index.html"
-  },
-  "/commercial-kitchen/product/186/rational-i-combi-classic-20-2-1-gas-icc202g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0Q2GmkiTpZBykADQ3JtoxFSCcUY\"",
-    "mtime": "2024-12-16T10:03:12.379Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/186/rational-i-combi-classic-20-2-1-gas-icc202g/_payload.json"
-  },
-  "/commercial-kitchen/product/188/wine-cooler-yc-103a-yc-103a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-HTJzZrbJdx37ctpdX6ZURVNVUQA\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/188/wine-cooler-yc-103a-yc-103a/index.html"
-  },
-  "/commercial-kitchen/product/188/wine-cooler-yc-103a-yc-103a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MwoMqCyTz+vvAVWeF0r2uaKiNUs\"",
-    "mtime": "2024-12-16T10:03:12.718Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/188/wine-cooler-yc-103a-yc-103a/_payload.json"
-  },
-  "/commercial-kitchen/product/189/wine-cooler-upright-ewb470g-ewb470g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-Ne+oVmgVG7moexUbkNdhvX1Hddw\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/189/wine-cooler-upright-ewb470g-ewb470g/index.html"
-  },
-  "/commercial-kitchen/product/189/wine-cooler-upright-ewb470g-ewb470g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WZWa2DPtceLO7TA6ePypzpK71x8\"",
-    "mtime": "2024-12-16T10:03:12.744Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/189/wine-cooler-upright-ewb470g-ewb470g/_payload.json"
-  },
-  "/commercial-kitchen/product/190/ultravent-exhaust-hood-for-xs-6074063/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-cUMee1W5n/mkPwP3hOi4q1jWOeU\"",
-    "mtime": "2024-12-16T10:03:05.535Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/190/ultravent-exhaust-hood-for-xs-6074063/index.html"
-  },
-  "/commercial-kitchen/product/190/ultravent-exhaust-hood-for-xs-6074063/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+4RVu+Pwd2ZvZdqxfRcMdDpjiXQ\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/190/ultravent-exhaust-hood-for-xs-6074063/_payload.json"
-  },
-  "/commercial-kitchen/product/191/variosmoker-6073008/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-IIwIZq21d7rFXJiQOaUNd6RZDZg\"",
-    "mtime": "2024-12-16T10:03:05.535Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/191/variosmoker-6073008/index.html"
-  },
-  "/commercial-kitchen/product/191/variosmoker-6073008/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IrOOgiiogK2rTQj5TehZPKkYM9k\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/191/variosmoker-6073008/_payload.json"
-  },
-  "/commercial-kitchen/product/192/active-green-cleaner-tab-5601628/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-sDcIW1qdz+ANeuZ/FF0FHkgA4co\"",
-    "mtime": "2024-12-16T10:03:08.425Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/192/active-green-cleaner-tab-5601628/index.html"
-  },
-  "/commercial-kitchen/product/192/active-green-cleaner-tab-5601628/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vfcAht0N2Q7SkWnomgm60LiIJGo\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/192/active-green-cleaner-tab-5601628/_payload.json"
-  },
-  "/commercial-kitchen/product/193/cleaner-tab-5600210/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-IhAHvQcnitfhtyz8qXeirxnP6zE\"",
-    "mtime": "2024-12-16T10:03:08.355Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/193/cleaner-tab-5600210/index.html"
-  },
-  "/commercial-kitchen/product/193/cleaner-tab-5600210/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jukFj8sqE5meufbh2REZPcmpHi0\"",
-    "mtime": "2024-12-16T10:03:12.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/193/cleaner-tab-5600210/_payload.json"
-  },
-  "/commercial-kitchen/product/195/rinse-aid-tablet-5600211/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-3Ls60HOvVLpzPsuvlKb0Ynlm+c0\"",
-    "mtime": "2024-12-16T10:03:08.379Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/195/rinse-aid-tablet-5600211/index.html"
-  },
-  "/commercial-kitchen/product/195/rinse-aid-tablet-5600211/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+jnJAzoj3jqbN95brGhOuWk9/vg\"",
-    "mtime": "2024-12-16T10:03:12.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/195/rinse-aid-tablet-5600211/_payload.json"
-  },
-  "/commercial-kitchen/product/196/cleaner-rinse-detergent-90060153/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-GUYT3QwUXpXMya4nP0Wpek6KBaA\"",
-    "mtime": "2024-12-16T10:03:08.379Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/196/cleaner-rinse-detergent-90060153/index.html"
-  },
-  "/commercial-kitchen/product/196/cleaner-rinse-detergent-90060153/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OA43UHhZWnv8Lx5MAjWMTMcNwl0\"",
-    "mtime": "2024-12-16T10:03:12.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/196/cleaner-rinse-detergent-90060153/_payload.json"
-  },
-  "/commercial-kitchen/product/194/care-tab-5600562/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-KxXzCo4cQCHz9w8c9OFwqurwkqw\"",
-    "mtime": "2024-12-16T10:03:08.456Z",
-    "size": 78470,
-    "path": "../public/commercial-kitchen/product/194/care-tab-5600562/index.html"
-  },
-  "/commercial-kitchen/product/194/care-tab-5600562/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V7FvUbw8g9EXW9uLcmjewiyYC6E\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/194/care-tab-5600562/_payload.json"
-  },
-  "/commercial-kitchen/product/197/descaler-6006011/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-oZjIl1cotOT3y97TU4mZvwgio70\"",
-    "mtime": "2024-12-16T10:03:08.387Z",
-    "size": 78470,
-    "path": "../public/commercial-kitchen/product/197/descaler-6006011/index.html"
-  },
-  "/commercial-kitchen/product/197/descaler-6006011/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IxhD2kTwds5NpYPOVSfz82jrYZA\"",
-    "mtime": "2024-12-16T10:03:12.924Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/197/descaler-6006011/_payload.json"
-  },
-  "/commercial-kitchen/product/198/perforated-baking-tray-1-1-gn-60151103/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-uPwLZPKOgyRTGy3z/RkrboR7Xy0\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/198/perforated-baking-tray-1-1-gn-60151103/index.html"
-  },
-  "/commercial-kitchen/product/198/perforated-baking-tray-1-1-gn-60151103/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-o7ETU+jhf7D0Ft6UiL872pI1824\"",
-    "mtime": "2024-12-16T10:03:12.378Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/198/perforated-baking-tray-1-1-gn-60151103/_payload.json"
-  },
-  "/commercial-kitchen/product/199/perforated-baking-tray-2-3-gn-60152304/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-uz58lwfDXbseb6q4B3Byy9dezAk\"",
-    "mtime": "2024-12-16T10:03:05.039Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/199/perforated-baking-tray-2-3-gn-60152304/index.html"
-  },
-  "/commercial-kitchen/product/199/perforated-baking-tray-2-3-gn-60152304/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7VJQvGf9nx4NmDq4p5k8zqXsEQo\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/199/perforated-baking-tray-2-3-gn-60152304/_payload.json"
-  },
-  "/commercial-kitchen/product/200/perforated-baking-tray-2-1-gn-60152195/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-W0sLi42iEzptzbM8Md9jTkz+23s\"",
-    "mtime": "2024-12-16T10:03:05.123Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/200/perforated-baking-tray-2-1-gn-60152195/index.html"
-  },
-  "/commercial-kitchen/product/200/perforated-baking-tray-2-1-gn-60152195/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D1lSM4u1Tg7bBItXqDllYFWoJDQ\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/200/perforated-baking-tray-2-1-gn-60152195/_payload.json"
-  },
-  "/commercial-kitchen/product/201/standard-perforated-baking-tray-60151/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-lzUVQAJvftOq1E9iqPB60WkQZsg\"",
-    "mtime": "2024-12-16T10:03:05.180Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/201/standard-perforated-baking-tray-60151/index.html"
-  },
-  "/commercial-kitchen/product/201/standard-perforated-baking-tray-60151/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ypFIn9AIVKLgCppt97I/yONQnIA\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/201/standard-perforated-baking-tray-60151/_payload.json"
-  },
-  "/commercial-kitchen/product/202/roasting-and-baking-trays-2-3-gn-unperforated-6073671/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-4ewqRcNttQPT6UFAmm6Zjodxc+4\"",
-    "mtime": "2024-12-16T10:03:05.180Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/202/roasting-and-baking-trays-2-3-gn-unperforated-6073671/index.html"
-  },
-  "/commercial-kitchen/product/202/roasting-and-baking-trays-2-3-gn-unperforated-6073671/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RbC+EoLW8dnLFSJr+Cx51o5ycaA\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/202/roasting-and-baking-trays-2-3-gn-unperforated-6073671/_payload.json"
-  },
-  "/commercial-kitchen/product/203/roasting-and-baking-trays-1-1-gn-unperforated-60131103/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-O+BiCyMR3gvjjwNUZNldmBMCtzs\"",
-    "mtime": "2024-12-16T10:03:05.198Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/203/roasting-and-baking-trays-1-1-gn-unperforated-60131103/index.html"
-  },
-  "/commercial-kitchen/product/203/roasting-and-baking-trays-1-1-gn-unperforated-60131103/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uc7ZO9e1uhUghXUcBTmHn36zgK4\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/203/roasting-and-baking-trays-1-1-gn-unperforated-60131103/_payload.json"
-  },
-  "/commercial-kitchen/product/204/roasting-and-baking-trays-2-1-gn-unperforated-60131003/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-fhAJT5TL9nfn02rHo0NB0gRwi2g\"",
-    "mtime": "2024-12-16T10:03:05.209Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/204/roasting-and-baking-trays-2-1-gn-unperforated-60131003/index.html"
-  },
-  "/commercial-kitchen/product/204/roasting-and-baking-trays-2-1-gn-unperforated-60131003/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5CymAmPTYLeTnZh1+QTKj+ym8WM\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/204/roasting-and-baking-trays-2-1-gn-unperforated-60131003/_payload.json"
-  },
-  "/commercial-kitchen/product/205/grilling-and-roasting-tray-1-1-gn-6071617/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-NeQqywFxKiifN0sqZrr35GCUm88\"",
-    "mtime": "2024-12-16T10:03:05.247Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/205/grilling-and-roasting-tray-1-1-gn-6071617/index.html"
-  },
-  "/commercial-kitchen/product/205/grilling-and-roasting-tray-1-1-gn-6071617/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2Oof/8IQrgLUGzJpJDlf34FOd7c\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/205/grilling-and-roasting-tray-1-1-gn-6071617/_payload.json"
-  },
-  "/commercial-kitchen/product/206/grill-and-pizza-tray-2-3-gn-6073798/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-DRQGnCYeb9d2HXZOMM7W/6zP03g\"",
-    "mtime": "2024-12-16T10:03:05.255Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/206/grill-and-pizza-tray-2-3-gn-6073798/index.html"
-  },
-  "/commercial-kitchen/product/206/grill-and-pizza-tray-2-3-gn-6073798/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-P6WT4tN2bDgWUAGc7vjwUicvnUY\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/206/grill-and-pizza-tray-2-3-gn-6073798/_payload.json"
-  },
-  "/commercial-kitchen/product/208/standard-grill-and-pizza-tray-400--600-mm-6071237/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-zVGs+08rRCguls2DpjZHr0LqigA\"",
-    "mtime": "2024-12-16T10:03:05.265Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/208/standard-grill-and-pizza-tray-400--600-mm-6071237/index.html"
-  },
-  "/commercial-kitchen/product/208/standard-grill-and-pizza-tray-400--600-mm-6071237/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VTZiPp3LhvtELdTQOBwqyU+D9xA\"",
-    "mtime": "2024-12-16T10:03:12.395Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/208/standard-grill-and-pizza-tray-400--600-mm-6071237/_payload.json"
-  },
-  "/commercial-kitchen/product/209/multibaker-1-3-gn-6073764/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-yqCDiahQCN5Itg1qDsD+ol6d3Oo\"",
-    "mtime": "2024-12-16T10:03:05.350Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/209/multibaker-1-3-gn-6073764/index.html"
-  },
-  "/commercial-kitchen/product/209/multibaker-1-3-gn-6073764/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OB98unJC3TOHG8pCU+f/AERyTO0\"",
-    "mtime": "2024-12-16T10:03:12.395Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/209/multibaker-1-3-gn-6073764/_payload.json"
-  },
-  "/commercial-kitchen/product/207/grill-and-pizza-tray-1-1-gn-6070943/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-tWgYimxQR6a/4CfLzLVCyu8JniI\"",
-    "mtime": "2024-12-16T10:03:05.265Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/207/grill-and-pizza-tray-1-1-gn-6070943/index.html"
-  },
-  "/commercial-kitchen/product/207/grill-and-pizza-tray-1-1-gn-6070943/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GMrJDscHuDtCzoXyWsf28w1YJS0\"",
-    "mtime": "2024-12-16T10:03:12.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/207/grill-and-pizza-tray-1-1-gn-6070943/_payload.json"
-  },
-  "/commercial-kitchen/product/210/multibaker-2-3-gn-6073646/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-VXGbs4jLSPBqoTdhkl/S7+r6ipk\"",
-    "mtime": "2024-12-16T10:03:05.351Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/210/multibaker-2-3-gn-6073646/index.html"
-  },
-  "/commercial-kitchen/product/210/multibaker-2-3-gn-6073646/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CXb+gyQzzfP1KldX2IyUeP5obx0\"",
-    "mtime": "2024-12-16T10:03:12.395Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/210/multibaker-2-3-gn-6073646/_payload.json"
-  },
-  "/commercial-kitchen/product/211/multibaker-1-1-gn-6071157/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-JiXGA0MOSPmdLROtj1/OTCS35Mc\"",
-    "mtime": "2024-12-16T10:03:05.385Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/211/multibaker-1-1-gn-6071157/index.html"
-  },
-  "/commercial-kitchen/product/211/multibaker-1-1-gn-6071157/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sakDsyTkZzMgZjmnp3KLNotZR5c\"",
-    "mtime": "2024-12-16T10:03:12.412Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/211/multibaker-1-1-gn-6071157/_payload.json"
-  },
-  "/commercial-kitchen/product/212/cross-n-stripe-grill-2-3-gn-6073801/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-8RbgYbrIJv7YV6rVdvsvxS/cioI\"",
-    "mtime": "2024-12-16T10:03:05.385Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/212/cross-n-stripe-grill-2-3-gn-6073801/index.html"
-  },
-  "/commercial-kitchen/product/212/cross-n-stripe-grill-2-3-gn-6073801/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XvSpSDDR4M6FKwiGkmGkJ+SXreo\"",
-    "mtime": "2024-12-16T10:03:12.412Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/212/cross-n-stripe-grill-2-3-gn-6073801/_payload.json"
-  },
-  "/commercial-kitchen/product/213/cross-n-stripe-grill-1-1-gn-6073314/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-TbiiyI/RDaNfVXwqdbTacp0sIUE\"",
-    "mtime": "2024-12-16T10:03:05.385Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/213/cross-n-stripe-grill-1-1-gn-6073314/index.html"
-  },
-  "/commercial-kitchen/product/213/cross-n-stripe-grill-1-1-gn-6073314/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TQ2oc5s+VDJF4aAj+MqeG5Im1AI\"",
-    "mtime": "2024-12-16T10:03:12.412Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/213/cross-n-stripe-grill-1-1-gn-6073314/_payload.json"
-  },
-  "/commercial-kitchen/product/214/combi-grill-1-1-gn-60351017/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-kgSTABPa1H3ul30iMTG5+otVqt4\"",
-    "mtime": "2024-12-16T10:03:05.422Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/214/combi-grill-1-1-gn-60351017/index.html"
-  },
-  "/commercial-kitchen/product/214/combi-grill-1-1-gn-60351017/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2HV8H0sAv/7TimnQn3FKwGwBriQ\"",
-    "mtime": "2024-12-16T10:03:12.417Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/214/combi-grill-1-1-gn-60351017/_payload.json"
-  },
-  "/commercial-kitchen/product/215/roasting-and-baking-pan---16-cm-6073271/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-pl/xHMYsYBdDzELSVO4pR5yYUdE\"",
-    "mtime": "2024-12-16T10:03:05.422Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/215/roasting-and-baking-pan---16-cm-6073271/index.html"
-  },
-  "/commercial-kitchen/product/215/roasting-and-baking-pan---16-cm-6073271/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DekpSYL5xJawl41yNcRWKYvFtsY\"",
-    "mtime": "2024-12-16T10:03:12.417Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/215/roasting-and-baking-pan---16-cm-6073271/_payload.json"
-  },
-  "/commercial-kitchen/product/216/roasting-and-baking-pan---25-cm-6073272/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-3xHGptH3OL6vEXE5eCds9iFtabE\"",
-    "mtime": "2024-12-16T10:03:05.423Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/216/roasting-and-baking-pan---25-cm-6073272/index.html"
-  },
-  "/commercial-kitchen/product/216/roasting-and-baking-pan---25-cm-6073272/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YqUm0QvlebD3B+TTwjyIx5e5L18\"",
-    "mtime": "2024-12-16T10:03:12.417Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/216/roasting-and-baking-pan---25-cm-6073272/_payload.json"
-  },
-  "/commercial-kitchen/product/217/muffin-and-timbale-moulds-1-1-gn-60171002/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-1PPSeGJeRSxtMzZRTYECgZDkUDY\"",
-    "mtime": "2024-12-16T10:03:05.423Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/217/muffin-and-timbale-moulds-1-1-gn-60171002/index.html"
-  },
-  "/commercial-kitchen/product/217/muffin-and-timbale-moulds-1-1-gn-60171002/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-z9Uyns0KftmWR1osNbLCURdEN0s\"",
-    "mtime": "2024-12-16T10:03:12.426Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/217/muffin-and-timbale-moulds-1-1-gn-60171002/_payload.json"
-  },
-  "/commercial-kitchen/product/219/granite-enamelled-container-2-3-gn--20-mm-deep-60142302/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-MbLNfBE2QshtHJ7uPU4qxt8tMUA\"",
-    "mtime": "2024-12-16T10:03:05.430Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/219/granite-enamelled-container-2-3-gn--20-mm-deep-60142302/index.html"
-  },
-  "/commercial-kitchen/product/219/granite-enamelled-container-2-3-gn--20-mm-deep-60142302/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-paNWr3m165cJcBsje4S+WFZzHbk\"",
-    "mtime": "2024-12-16T10:03:12.434Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/219/granite-enamelled-container-2-3-gn--20-mm-deep-60142302/_payload.json"
-  },
-  "/commercial-kitchen/product/218/muffin-and2-3-gn-timbale-moulds-60171001/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-Bsr4Emk7oeJaN7F+tOT72bCKixU\"",
-    "mtime": "2024-12-16T10:03:05.423Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/218/muffin-and2-3-gn-timbale-moulds-60171001/index.html"
-  },
-  "/commercial-kitchen/product/218/muffin-and2-3-gn-timbale-moulds-60171001/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RyeEBBDWSSR6e0DWBNfptsegBFQ\"",
-    "mtime": "2024-12-16T10:03:12.417Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/218/muffin-and2-3-gn-timbale-moulds-60171001/_payload.json"
-  },
-  "/commercial-kitchen/product/221/granite-enamelled-container-1-1-gn--20-mm-deep-60141102/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-IFJaWDda7JN9mEIuI4/rBnYGRpM\"",
-    "mtime": "2024-12-16T10:03:05.528Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/221/granite-enamelled-container-1-1-gn--20-mm-deep-60141102/index.html"
-  },
-  "/commercial-kitchen/product/221/granite-enamelled-container-1-1-gn--20-mm-deep-60141102/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2F+MJouca2XkeTLlLqpg7T7ZRjc\"",
-    "mtime": "2024-12-16T10:03:12.434Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/221/granite-enamelled-container-1-1-gn--20-mm-deep-60141102/_payload.json"
-  },
-  "/commercial-kitchen/product/220/granite-enamelled-container-2-3-gn--60-mm-deep-60142306/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-k0GfHy1YrxfR8K8A2lme/juxMdQ\"",
-    "mtime": "2024-12-16T10:03:05.466Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/220/granite-enamelled-container-2-3-gn--60-mm-deep-60142306/index.html"
-  },
-  "/commercial-kitchen/product/220/granite-enamelled-container-2-3-gn--60-mm-deep-60142306/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AuwPJVuy/AQCGaYFu+sf2YiZ/1A\"",
-    "mtime": "2024-12-16T10:03:12.434Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/220/granite-enamelled-container-2-3-gn--60-mm-deep-60142306/_payload.json"
-  },
-  "/commercial-kitchen/product/222/granite-enamelled-container-1-1-gn--60-mm-deep-60141106/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-iChXjO2UVWY0p9p1yC4kiIYT6J0\"",
-    "mtime": "2024-12-16T10:03:05.535Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/222/granite-enamelled-container-1-1-gn--60-mm-deep-60141106/index.html"
-  },
-  "/commercial-kitchen/product/222/granite-enamelled-container-1-1-gn--60-mm-deep-60141106/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2ykrj4ul99+gyjnbu6pq1ZAx7A0\"",
-    "mtime": "2024-12-16T10:03:12.435Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/222/granite-enamelled-container-1-1-gn--60-mm-deep-60141106/_payload.json"
-  },
-  "/commercial-kitchen/product/223/granite-enamelled-container-2-1-gn--60-mm-deep-60142106/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-FS1Rfji3VlOymDXEJQaLH0/hDyU\"",
-    "mtime": "2024-12-16T10:03:05.535Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/223/granite-enamelled-container-2-1-gn--60-mm-deep-60142106/index.html"
-  },
-  "/commercial-kitchen/product/223/granite-enamelled-container-2-1-gn--60-mm-deep-60142106/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RkIi/PaNer0FhleMK6VnzoNT++E\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/223/granite-enamelled-container-2-1-gn--60-mm-deep-60142106/_payload.json"
-  },
-  "/commercial-kitchen/product/225/pastry-display-curved-1200-fgdg-1200lm-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-go20OGvMP+d9tvp4muqYaZbMLww\"",
-    "mtime": "2024-12-16T10:02:57.855Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/225/pastry-display-curved-1200-fgdg-1200lm-3/index.html"
-  },
-  "/commercial-kitchen/product/225/pastry-display-curved-1200-fgdg-1200lm-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HWHrMZNx4wlUaDjAZ2kbxhVZYeM\"",
-    "mtime": "2024-12-16T10:03:11.057Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/225/pastry-display-curved-1200-fgdg-1200lm-3/_payload.json"
-  },
-  "/commercial-kitchen/product/226/pastry-display-curved-1000-fgdg-1000lm-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-EcYj0yWGIxMWIJca/SvCSrklKWU\"",
-    "mtime": "2024-12-16T10:02:57.814Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/226/pastry-display-curved-1000-fgdg-1000lm-3/index.html"
-  },
-  "/commercial-kitchen/product/226/pastry-display-curved-1000-fgdg-1000lm-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MB3zqcGGreIYZVqKBf+RANMLREw\"",
-    "mtime": "2024-12-16T10:03:11.057Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/226/pastry-display-curved-1000-fgdg-1000lm-3/_payload.json"
-  },
-  "/commercial-kitchen/product/227/pastry-display-curved-1500-fgdg-1500lm-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-RJtrNwZQuAeU9x5qCjVEZ6s4w9E\"",
-    "mtime": "2024-12-16T10:02:57.877Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/227/pastry-display-curved-1500-fgdg-1500lm-3/index.html"
-  },
-  "/commercial-kitchen/product/227/pastry-display-curved-1500-fgdg-1500lm-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4IObwTHAdjHa/NVouLMLwpgcWo8\"",
-    "mtime": "2024-12-16T10:03:11.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/227/pastry-display-curved-1500-fgdg-1500lm-3/_payload.json"
-  },
-  "/commercial-kitchen/product/228/pastry-display-curved-1800-fgdg-1800lm-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-/OYFQP0F1e4Q/GSGNB9cUAZe1uQ\"",
-    "mtime": "2024-12-16T10:02:57.889Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/228/pastry-display-curved-1800-fgdg-1800lm-3/index.html"
-  },
-  "/commercial-kitchen/product/228/pastry-display-curved-1800-fgdg-1800lm-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cHVOls9mR1GMyiNF0ftRdVSDPeU\"",
-    "mtime": "2024-12-16T10:03:11.071Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/228/pastry-display-curved-1800-fgdg-1800lm-3/_payload.json"
-  },
-  "/commercial-kitchen/product/229/upright-single-glass-door-chiller-technodom-afo7ekomtnpv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-zMQY9yj+tTozbCDDtMGodQmxIu0\"",
-    "mtime": "2024-12-16T10:03:03.726Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/229/upright-single-glass-door-chiller-technodom-afo7ekomtnpv/index.html"
-  },
-  "/commercial-kitchen/product/229/upright-single-glass-door-chiller-technodom-afo7ekomtnpv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GWMCJHSiNv77Xy0b7OnguHg+YcY\"",
-    "mtime": "2024-12-16T10:03:12.162Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/229/upright-single-glass-door-chiller-technodom-afo7ekomtnpv/_payload.json"
-  },
-  "/commercial-kitchen/product/230/upright-single-solid-door-chiller-technodom-af07pkmtn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-qPFJRe393KIoIp4mWsDsWPR0bEw\"",
-    "mtime": "2024-12-16T10:03:03.678Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/230/upright-single-solid-door-chiller-technodom-af07pkmtn/index.html"
-  },
-  "/commercial-kitchen/product/230/upright-single-solid-door-chiller-technodom-af07pkmtn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qntpShlWkExmCmcK2+m57bvhzck\"",
-    "mtime": "2024-12-16T10:03:12.143Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/230/upright-single-solid-door-chiller-technodom-af07pkmtn/_payload.json"
-  },
-  "/commercial-kitchen/product/231/upright-double-glass-door-chiller-technodom-af14ekomtnpv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-baLydrEp6dvxqFp3gDKv+NMKtyc\"",
-    "mtime": "2024-12-16T10:03:03.726Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/231/upright-double-glass-door-chiller-technodom-af14ekomtnpv/index.html"
-  },
-  "/commercial-kitchen/product/231/upright-double-glass-door-chiller-technodom-af14ekomtnpv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-b1Jf+ce+cD+lPIOU++eEJ7BQhqU\"",
-    "mtime": "2024-12-16T10:03:12.162Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/231/upright-double-glass-door-chiller-technodom-af14ekomtnpv/_payload.json"
-  },
-  "/commercial-kitchen/product/232/upright-double-solid-door-chiller-technodom-af14pkmtn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-SOn4jj/wlnZuK/WqhqvR1p1/yno\"",
-    "mtime": "2024-12-16T10:03:03.696Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/232/upright-double-solid-door-chiller-technodom-af14pkmtn/index.html"
-  },
-  "/commercial-kitchen/product/232/upright-double-solid-door-chiller-technodom-af14pkmtn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sLJqOiJMyTMi/OzmNFM3QOlitEo\"",
-    "mtime": "2024-12-16T10:03:12.162Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/232/upright-double-solid-door-chiller-technodom-af14pkmtn/_payload.json"
-  },
-  "/commercial-kitchen/product/346/dish-washer-pot-and-utensil-washer-comenda-ge-125-rcd-ge-125-rcd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13376-OdcvHlWfIE1/hY8lffHqXVNqDS8\"",
-    "mtime": "2024-12-16T10:03:09.278Z",
-    "size": 78710,
-    "path": "../public/commercial-kitchen/product/346/dish-washer-pot-and-utensil-washer-comenda-ge-125-rcd-ge-125-rcd/index.html"
-  },
-  "/commercial-kitchen/product/346/dish-washer-pot-and-utensil-washer-comenda-ge-125-rcd-ge-125-rcd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-T640k9T03tji490xSj6ApXiq8y8\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/346/dish-washer-pot-and-utensil-washer-comenda-ge-125-rcd-ge-125-rcd/_payload.json"
-  },
-  "/commercial-kitchen/product/347/dish-washer-pot-and-utensil-washer-comenda-ge605-h-rcd-ge605-h-rcd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13380-H79N6N7lbKk7igcSSlBZpiO1fos\"",
-    "mtime": "2024-12-16T10:03:09.285Z",
-    "size": 78720,
-    "path": "../public/commercial-kitchen/product/347/dish-washer-pot-and-utensil-washer-comenda-ge605-h-rcd-ge605-h-rcd/index.html"
-  },
-  "/commercial-kitchen/product/347/dish-washer-pot-and-utensil-washer-comenda-ge605-h-rcd-ge605-h-rcd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uStASh397M3jMTVPlkvPVYzVcEI\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/347/dish-washer-pot-and-utensil-washer-comenda-ge605-h-rcd-ge605-h-rcd/_payload.json"
-  },
-  "/commercial-kitchen/product/35/upright-single-glass-door-chiller-gn650tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13302-I7TfYJ8MWogP61C4jq2phloEuys\"",
-    "mtime": "2024-12-16T10:03:03.655Z",
-    "size": 78594,
-    "path": "../public/commercial-kitchen/product/35/upright-single-glass-door-chiller-gn650tng/index.html"
-  },
-  "/commercial-kitchen/product/35/upright-single-glass-door-chiller-gn650tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mr+7HDw+PKO7U8xidxo6CtFIPhM\"",
-    "mtime": "2024-12-16T10:03:12.143Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/35/upright-single-glass-door-chiller-gn650tng/_payload.json"
-  },
-  "/commercial-kitchen/product/354/milk-boiler-12-litres-9228-12/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-DlL+/J8t0QMNRe503/pRJHI74JY\"",
-    "mtime": "2024-12-16T10:02:56.837Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/354/milk-boiler-12-litres-9228-12/index.html"
-  },
-  "/commercial-kitchen/product/354/milk-boiler-12-litres-9228-12/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/0FO/f6TezUortOi/jlx60rOvA8\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/354/milk-boiler-12-litres-9228-12/_payload.json"
-  },
-  "/commercial-kitchen/product/355/milk-boiler-20-litres-9228-20/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-9vZqXPFYfFY0TH1QKEKVOo4+Whw\"",
-    "mtime": "2024-12-16T10:02:56.859Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/355/milk-boiler-20-litres-9228-20/index.html"
-  },
-  "/commercial-kitchen/product/355/milk-boiler-20-litres-9228-20/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/H/nqeWswCh3mWddlT1KmI9mzBo\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/355/milk-boiler-20-litres-9228-20/_payload.json"
-  },
-  "/commercial-kitchen/product/356/milk-boiler-30-litres-9228-30/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-DqU4IuqBgWf06j37EerrkgszqZc\"",
-    "mtime": "2024-12-16T10:02:56.876Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/356/milk-boiler-30-litres-9228-30/index.html"
-  },
-  "/commercial-kitchen/product/356/milk-boiler-30-litres-9228-30/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MZ9E3WerInWfIn7VrozSNtA5SeI\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/356/milk-boiler-30-litres-9228-30/_payload.json"
-  },
-  "/commercial-kitchen/product/358/coffee-brewer-with-coffee-filter-30ltr-9230/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-n8ztYUrndzm2tMMi1JFkJPr28JY\"",
-    "mtime": "2024-12-16T10:02:56.703Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/358/coffee-brewer-with-coffee-filter-30ltr-9230/index.html"
-  },
-  "/commercial-kitchen/product/358/coffee-brewer-with-coffee-filter-30ltr-9230/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-u2aUNTij/MbhjySh420BpLHQ4Rc\"",
-    "mtime": "2024-12-16T10:03:10.879Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/358/coffee-brewer-with-coffee-filter-30ltr-9230/_payload.json"
-  },
-  "/commercial-kitchen/product/359/catering-urn-16l-pr16l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-sfIp/o08ma4R9nswR5hkzNIUflg\"",
-    "mtime": "2024-12-16T10:03:09.322Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/359/catering-urn-16l-pr16l/index.html"
-  },
-  "/commercial-kitchen/product/359/catering-urn-16l-pr16l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Yud7it1xs776IYQ+lC7AcJ16awI\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/359/catering-urn-16l-pr16l/_payload.json"
-  },
-  "/commercial-kitchen/product/36/upright-single-solid-door-chiller-gn650tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fd-sj4XFjQHhjJGWJC0iJAOvnjrGqs\"",
-    "mtime": "2024-12-16T10:03:03.628Z",
-    "size": 78589,
-    "path": "../public/commercial-kitchen/product/36/upright-single-solid-door-chiller-gn650tn/index.html"
-  },
-  "/commercial-kitchen/product/36/upright-single-solid-door-chiller-gn650tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KJMOb0GSrNcmseC8ItwSPyqINwY\"",
-    "mtime": "2024-12-16T10:03:12.131Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/36/upright-single-solid-door-chiller-gn650tn/_payload.json"
-  },
-  "/commercial-kitchen/product/360/catering-urn-20l-pr20l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-1zdfo/dZ5ov+BKZ15E4kivpAOpI\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/360/catering-urn-20l-pr20l/index.html"
-  },
-  "/commercial-kitchen/product/360/catering-urn-20l-pr20l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-lIpiC5Nz+VOzYLnxee5awo+1Xe0\"",
-    "mtime": "2024-12-16T10:03:13.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/360/catering-urn-20l-pr20l/_payload.json"
-  },
-  "/commercial-kitchen/product/361/catering-urn-30l-pr30l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-Cyb4PRqLTPG7tgdn5kSGCa7MSx0\"",
-    "mtime": "2024-12-16T10:03:09.322Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/361/catering-urn-30l-pr30l/index.html"
-  },
-  "/commercial-kitchen/product/361/catering-urn-30l-pr30l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tkFglKDkJY/GYLFhGiK7rXU+rZM\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/361/catering-urn-30l-pr30l/_payload.json"
-  },
-  "/commercial-kitchen/product/362/water-boiler-15ltr-wb15a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-Q6PUWUPpN80xdKjFr8V9rnxn7Yw\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/362/water-boiler-15ltr-wb15a/index.html"
-  },
-  "/commercial-kitchen/product/362/water-boiler-15ltr-wb15a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-LTpduhQT8PFrXDbMniGY30v6UYA\"",
-    "mtime": "2024-12-16T10:03:13.066Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/362/water-boiler-15ltr-wb15a/_payload.json"
-  },
-  "/commercial-kitchen/product/363/water-boiler-20ltr-wb20a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-LgR9QsBwKcHVvwLodukSUb4TwAI\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/363/water-boiler-20ltr-wb20a/index.html"
-  },
-  "/commercial-kitchen/product/363/water-boiler-20ltr-wb20a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1MBC4p+KFmo+FFH+AZk/8TDkJKw\"",
-    "mtime": "2024-12-16T10:03:13.066Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/363/water-boiler-20ltr-wb20a/_payload.json"
-  },
-  "/commercial-kitchen/product/365/25l-stainless-steel-hydroboil-2610007/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-+XCGtWqjo1Gs01tPqxYynH2+fDI\"",
-    "mtime": "2024-12-16T10:02:57.640Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/365/25l-stainless-steel-hydroboil-2610007/index.html"
-  },
-  "/commercial-kitchen/product/365/25l-stainless-steel-hydroboil-2610007/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0xyAMJDExP3nYNDOTqfFZywesIo\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/365/25l-stainless-steel-hydroboil-2610007/_payload.json"
-  },
-  "/commercial-kitchen/product/366/15l-stainless-steel-hydroboil-380011/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-hdZzlwL5W2l3Y48qnz0a8C3JX1U\"",
-    "mtime": "2024-12-16T10:02:57.641Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/366/15l-stainless-steel-hydroboil-380011/index.html"
-  },
-  "/commercial-kitchen/product/366/15l-stainless-steel-hydroboil-380011/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-msBKxY77ArjzYTEtDWpGWVFd54U\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/366/15l-stainless-steel-hydroboil-380011/_payload.json"
-  },
-  "/commercial-kitchen/product/367/25l-stainless-steel-hydroboil-380014/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-YSRRyLr2cVR2bqj8LaQwOlPIMIY\"",
-    "mtime": "2024-12-16T10:02:57.681Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/367/25l-stainless-steel-hydroboil-380014/index.html"
-  },
-  "/commercial-kitchen/product/367/25l-stainless-steel-hydroboil-380014/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JKXjo1n2GrB9ZfB4WUwcyasSBDc\"",
-    "mtime": "2024-12-16T10:03:11.049Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/367/25l-stainless-steel-hydroboil-380014/_payload.json"
-  },
-  "/commercial-kitchen/product/368/dish-washer-pot-and-utensil-washer-comenda-ge1255-rcd-ge1255-rcd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13376-l/U9Yj8Tr7NE6QJScauiRJ8RcZw\"",
-    "mtime": "2024-12-16T10:03:09.285Z",
-    "size": 78710,
-    "path": "../public/commercial-kitchen/product/368/dish-washer-pot-and-utensil-washer-comenda-ge1255-rcd-ge1255-rcd/index.html"
-  },
-  "/commercial-kitchen/product/368/dish-washer-pot-and-utensil-washer-comenda-ge1255-rcd-ge1255-rcd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xGfk7pRD2AUQWHKrRk24xbU7xjA\"",
-    "mtime": "2024-12-16T10:03:13.055Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/368/dish-washer-pot-and-utensil-washer-comenda-ge1255-rcd-ge1255-rcd/_payload.json"
-  },
-  "/commercial-kitchen/product/369/glass-rack-16-compartment-jw-16/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-M7mx9jU09lhOxDIMwGJA1POoQAo\"",
-    "mtime": "2024-12-16T10:03:04.255Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/369/glass-rack-16-compartment-jw-16/index.html"
-  },
-  "/commercial-kitchen/product/369/glass-rack-16-compartment-jw-16/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-H8KhV3rPkIToeNm16e9ZYaB8yUM\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/369/glass-rack-16-compartment-jw-16/_payload.json"
-  },
-  "/commercial-kitchen/product/37/upright-double-glass-door-chiller-gn1410tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13307-T1P1HzS33jmS+t3U7AOPcQkjTi8\"",
-    "mtime": "2024-12-16T10:03:03.678Z",
-    "size": 78599,
-    "path": "../public/commercial-kitchen/product/37/upright-double-glass-door-chiller-gn1410tng/index.html"
-  },
-  "/commercial-kitchen/product/37/upright-double-glass-door-chiller-gn1410tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mN1dkb7wqYaIeoFkKY+GDf1CqmE\"",
-    "mtime": "2024-12-16T10:03:12.150Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/37/upright-double-glass-door-chiller-gn1410tng/_payload.json"
-  },
-  "/commercial-kitchen/product/370/glass-rack-25-compartment-jw-25/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-jrCmetR4fdSLhtcf9ibgaGxyhzA\"",
-    "mtime": "2024-12-16T10:03:04.268Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/370/glass-rack-25-compartment-jw-25/index.html"
-  },
-  "/commercial-kitchen/product/370/glass-rack-25-compartment-jw-25/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-N2zpL1vIBTGiiUbxLeQLwcTecbQ\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/370/glass-rack-25-compartment-jw-25/_payload.json"
-  },
-  "/commercial-kitchen/product/371/plate--tray-rack-25-compartment-jw-25b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-Jh0bALNxV6h+qyA6HWQgfQaZ2fI\"",
-    "mtime": "2024-12-16T10:03:04.280Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/371/plate--tray-rack-25-compartment-jw-25b/index.html"
-  },
-  "/commercial-kitchen/product/371/plate--tray-rack-25-compartment-jw-25b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4P1spK95vUcKl7Y77ZnS2CBMEd8\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/371/plate--tray-rack-25-compartment-jw-25b/_payload.json"
-  },
-  "/commercial-kitchen/product/372/plate--tray-rack-64-compartment-jw-64b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-RuhGurxW4/DDClXdeXtpqTxvQUQ\"",
-    "mtime": "2024-12-16T10:03:04.300Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/372/plate--tray-rack-64-compartment-jw-64b/index.html"
-  },
-  "/commercial-kitchen/product/372/plate--tray-rack-64-compartment-jw-64b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-omSTeY9yoO7EzD/sxPqYvoOUUaA\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/372/plate--tray-rack-64-compartment-jw-64b/_payload.json"
-  },
-  "/commercial-kitchen/product/373/open-rack-25-compartment-jw-25p/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-DAu3bKh3r2/V7Ob2xLCGGA29Tdo\"",
-    "mtime": "2024-12-16T10:03:04.275Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/373/open-rack-25-compartment-jw-25p/index.html"
-  },
-  "/commercial-kitchen/product/373/open-rack-25-compartment-jw-25p/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TpbZ77f7vY5ivA8iBulDCa+dgDI\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/373/open-rack-25-compartment-jw-25p/_payload.json"
-  },
-  "/commercial-kitchen/product/375/cutlery-box-4-compartment-jw-4c/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-uo6ZJa4I3VFnActVUC++taUEOL0\"",
-    "mtime": "2024-12-16T10:03:04.167Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/375/cutlery-box-4-compartment-jw-4c/index.html"
-  },
-  "/commercial-kitchen/product/375/cutlery-box-4-compartment-jw-4c/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D523eKImRNT3ziFBr30DinFVxmc\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/375/cutlery-box-4-compartment-jw-4c/_payload.json"
-  },
-  "/commercial-kitchen/product/374/cutlery-rack-8-compartment-jw-8b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-m/condo08jnhXTbk3Hwu+fQMLn4\"",
-    "mtime": "2024-12-16T10:03:04.234Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/374/cutlery-rack-8-compartment-jw-8b/index.html"
-  },
-  "/commercial-kitchen/product/374/cutlery-rack-8-compartment-jw-8b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-FGuykTeS4hWzoQE1MrkBRp52PRQ\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/374/cutlery-rack-8-compartment-jw-8b/_payload.json"
-  },
-  "/commercial-kitchen/product/376/cutlery-box-8-compartment-with-handle-jw-8bh/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-126TGrnCLGY2jcVBsGst0Od6lUk\"",
-    "mtime": "2024-12-16T10:03:04.236Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/376/cutlery-box-8-compartment-with-handle-jw-8bh/index.html"
-  },
-  "/commercial-kitchen/product/376/cutlery-box-8-compartment-with-handle-jw-8bh/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Nsu6DVi9abS71LyQqLKT5yAbNsc\"",
-    "mtime": "2024-12-16T10:03:12.251Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/376/cutlery-box-8-compartment-with-handle-jw-8bh/_payload.json"
-  },
-  "/commercial-kitchen/product/377/mobile-plate-rack-48-plates-jw-dc48/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-S4kkQtbsMn8ULMQy7l96L5GRKFU\"",
-    "mtime": "2024-12-16T10:03:04.318Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/377/mobile-plate-rack-48-plates-jw-dc48/index.html"
-  },
-  "/commercial-kitchen/product/377/mobile-plate-rack-48-plates-jw-dc48/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fh/CkT3GS40/tL3AKFGTM9+IlS0\"",
-    "mtime": "2024-12-16T10:03:12.263Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/377/mobile-plate-rack-48-plates-jw-dc48/_payload.json"
-  },
-  "/commercial-kitchen/product/38/upright-double-solid-door-chiller-gn1410tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13302-rBLxjqAdywAyYcVsWggus0ysyeM\"",
-    "mtime": "2024-12-16T10:03:03.648Z",
-    "size": 78594,
-    "path": "../public/commercial-kitchen/product/38/upright-double-solid-door-chiller-gn1410tn/index.html"
-  },
-  "/commercial-kitchen/product/38/upright-double-solid-door-chiller-gn1410tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iE816/m4iZXsopwL5AFZz/jtExU\"",
-    "mtime": "2024-12-16T10:03:12.143Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/38/upright-double-solid-door-chiller-gn1410tn/_payload.json"
-  },
-  "/commercial-kitchen/product/382/axial-fan-perpetual-16-inch-af-16-1kw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-g2liMYLr6/dI8axzqn1KzyYa+30\"",
-    "mtime": "2024-12-16T10:03:02.317Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/382/axial-fan-perpetual-16-inch-af-16-1kw/index.html"
-  },
-  "/commercial-kitchen/product/382/axial-fan-perpetual-16-inch-af-16-1kw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-q9SKkSAGl/yuuLQyduHN9sNBIlE\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/382/axial-fan-perpetual-16-inch-af-16-1kw/_payload.json"
-  },
-  "/commercial-kitchen/product/383/axial-fan-perpetual-20-inch-af-20-1kw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-QeSGXeDuf7GcEa9S/Ny85sey9co\"",
-    "mtime": "2024-12-16T10:03:02.315Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/383/axial-fan-perpetual-20-inch-af-20-1kw/index.html"
-  },
-  "/commercial-kitchen/product/383/axial-fan-perpetual-20-inch-af-20-1kw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9NyNXN1DmkdEhBBHiESBSm9/CbU\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/383/axial-fan-perpetual-20-inch-af-20-1kw/_payload.json"
-  },
-  "/commercial-kitchen/product/384/axial-fan-perpetual-24-inch-af-24-2kw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-W1e7kPHpf6Ja1Z5XIfBQutqf+2c\"",
-    "mtime": "2024-12-16T10:03:02.262Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/384/axial-fan-perpetual-24-inch-af-24-2kw/index.html"
-  },
-  "/commercial-kitchen/product/384/axial-fan-perpetual-24-inch-af-24-2kw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XcTGLMzmcmMC9BRPDP7JXZ2W+m8\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/384/axial-fan-perpetual-24-inch-af-24-2kw/_payload.json"
-  },
-  "/commercial-kitchen/product/385/axial-fan-30-inch-af-30-3kw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-jD+xd9oIRc5wVN9BCfoMD2DIcPk\"",
-    "mtime": "2024-12-16T10:03:02.262Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/385/axial-fan-30-inch-af-30-3kw/index.html"
-  },
-  "/commercial-kitchen/product/385/axial-fan-30-inch-af-30-3kw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WKZ4bLVKKevONlPUzMK5B9A03/4\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/385/axial-fan-30-inch-af-30-3kw/_payload.json"
-  },
-  "/commercial-kitchen/product/386/axial-fan-30-inch-perpetual-af-32-3kw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-13uYm+dEwlQ6/z8BiMfrkc6x0FM\"",
-    "mtime": "2024-12-16T10:03:02.262Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/386/axial-fan-30-inch-perpetual-af-32-3kw/index.html"
-  },
-  "/commercial-kitchen/product/386/axial-fan-30-inch-perpetual-af-32-3kw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-h9xlrEDHHtNYo9fpYFugdDdTxPQ\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/386/axial-fan-30-inch-perpetual-af-32-3kw/_payload.json"
-  },
-  "/commercial-kitchen/product/387/centrifugal-fan-belt-driven-yfj-a-12-15kw-yfj-a12/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-4lZ1UE4gMBdZkAb0C1ZqA2LNQIo\"",
-    "mtime": "2024-12-16T10:03:02.417Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/387/centrifugal-fan-belt-driven-yfj-a-12-15kw-yfj-a12/index.html"
-  },
-  "/commercial-kitchen/product/387/centrifugal-fan-belt-driven-yfj-a-12-15kw-yfj-a12/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jKcu3fo+sA8Vxv06BaiHaIN+RYg\"",
-    "mtime": "2024-12-16T10:03:11.908Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/387/centrifugal-fan-belt-driven-yfj-a-12-15kw-yfj-a12/_payload.json"
-  },
-  "/commercial-kitchen/product/388/centrifugal-fan-belt-driven-yfj-a-15-15kw-yfj-a15/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-FyfEozRIYLOdSlS0yLUapNBMKJk\"",
-    "mtime": "2024-12-16T10:03:02.437Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/388/centrifugal-fan-belt-driven-yfj-a-15-15kw-yfj-a15/index.html"
-  },
-  "/commercial-kitchen/product/388/centrifugal-fan-belt-driven-yfj-a-15-15kw-yfj-a15/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4FeUMo9JbEs+dHsMmNZ6OsmAAfw\"",
-    "mtime": "2024-12-16T10:03:11.913Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/388/centrifugal-fan-belt-driven-yfj-a-15-15kw-yfj-a15/_payload.json"
-  },
-  "/commercial-kitchen/product/389/centrifugal-fan-belt-driven-yfj-a-18-3kw-yfj-a18/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-AEPhDW5dbAB3b9cTHM5ooxT2Z+U\"",
-    "mtime": "2024-12-16T10:03:02.441Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/389/centrifugal-fan-belt-driven-yfj-a-18-3kw-yfj-a18/index.html"
-  },
-  "/commercial-kitchen/product/389/centrifugal-fan-belt-driven-yfj-a-18-3kw-yfj-a18/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9ViC9GCnZFyPSdcfkEmAxeP1FbI\"",
-    "mtime": "2024-12-16T10:03:11.913Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/389/centrifugal-fan-belt-driven-yfj-a-18-3kw-yfj-a18/_payload.json"
-  },
-  "/commercial-kitchen/product/39/upright-split-single-solid-door-chiller-gn650tnm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13320-mNd9tZOa9aYwq9oqUSw34vwJvew\"",
-    "mtime": "2024-12-16T10:03:03.636Z",
-    "size": 78624,
-    "path": "../public/commercial-kitchen/product/39/upright-split-single-solid-door-chiller-gn650tnm/index.html"
-  },
-  "/commercial-kitchen/product/39/upright-split-single-solid-door-chiller-gn650tnm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gAh4lCznfozCekPQyfv+YLi9pkI\"",
-    "mtime": "2024-12-16T10:03:12.134Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/39/upright-split-single-solid-door-chiller-gn650tnm/_payload.json"
-  },
-  "/commercial-kitchen/product/390/centrifugal-fan-belt-driven-yfj-a-22-3kw-yfj-a22/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-ckikIVx+Kffb6LOMssiDluADAd0\"",
-    "mtime": "2024-12-16T10:03:02.450Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/390/centrifugal-fan-belt-driven-yfj-a-22-3kw-yfj-a22/index.html"
-  },
-  "/commercial-kitchen/product/390/centrifugal-fan-belt-driven-yfj-a-22-3kw-yfj-a22/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6Y9nCSXam1qGSaB2FTFKd9OcziU\"",
-    "mtime": "2024-12-16T10:03:11.913Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/390/centrifugal-fan-belt-driven-yfj-a-22-3kw-yfj-a22/_payload.json"
-  },
-  "/commercial-kitchen/product/391/centrifugal-fan-belt-driven-yfj-a-25-75kw-25000cmh-yfj-a25/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13358-+3tf34/urdo6BOQUObiBkptVpoQ\"",
-    "mtime": "2024-12-16T10:03:02.467Z",
-    "size": 78680,
-    "path": "../public/commercial-kitchen/product/391/centrifugal-fan-belt-driven-yfj-a-25-75kw-25000cmh-yfj-a25/index.html"
-  },
-  "/commercial-kitchen/product/391/centrifugal-fan-belt-driven-yfj-a-25-75kw-25000cmh-yfj-a25/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WGi63pnledMmjTyH+gcAHChMrJI\"",
-    "mtime": "2024-12-16T10:03:11.917Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/391/centrifugal-fan-belt-driven-yfj-a-25-75kw-25000cmh-yfj-a25/_payload.json"
-  },
-  "/commercial-kitchen/product/392/ducting-no-ducting/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-XLB293AF9V5ePcfrGz5zGTO/Lxk\"",
-    "mtime": "2024-12-16T10:03:02.228Z",
-    "size": 78480,
-    "path": "../public/commercial-kitchen/product/392/ducting-no-ducting/index.html"
-  },
-  "/commercial-kitchen/product/392/ducting-no-ducting/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d2N0FziCm8CemDJFSs+BnzUg3jk\"",
-    "mtime": "2024-12-16T10:03:11.896Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/392/ducting-no-ducting/_payload.json"
-  },
-  "/commercial-kitchen/product/393/inline-fan-10-if-10/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-6DGa6K/m8W+8RfVhOCIL9WGJ8o0\"",
-    "mtime": "2024-12-16T10:03:02.402Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/393/inline-fan-10-if-10/index.html"
-  },
-  "/commercial-kitchen/product/393/inline-fan-10-if-10/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/hb7cY9UQQUFINwWTNISSQ6IkYo\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/393/inline-fan-10-if-10/_payload.json"
-  },
-  "/commercial-kitchen/product/394/propeller-fan-12-pf-12/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-Ai5S6wmh1qxSR6T4/0xAOIKavEg\"",
-    "mtime": "2024-12-16T10:03:02.315Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/394/propeller-fan-12-pf-12/index.html"
-  },
-  "/commercial-kitchen/product/394/propeller-fan-12-pf-12/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SzzwY8FWhWWskjxEzWEyvM2Ibt4\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/394/propeller-fan-12-pf-12/_payload.json"
-  },
-  "/commercial-kitchen/product/395/propeller-fan-24-pf-24/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-QOfAn0OzpN28XDHUl1bYYDTXAOI\"",
-    "mtime": "2024-12-16T10:03:02.358Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/395/propeller-fan-24-pf-24/index.html"
-  },
-  "/commercial-kitchen/product/395/propeller-fan-24-pf-24/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uqRuQve+4cJqn/fXTMde5d9AeYw\"",
-    "mtime": "2024-12-16T10:03:11.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/395/propeller-fan-24-pf-24/_payload.json"
-  },
-  "/commercial-kitchen/product/396/bonesaw-empetk01-empetk01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-ldqdX3J41nEk0DiZ/7Cl2oZo+/g\"",
-    "mtime": "2024-12-16T10:03:05.725Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/396/bonesaw-empetk01-empetk01/index.html"
-  },
-  "/commercial-kitchen/product/396/bonesaw-empetk01-empetk01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-lXue+O45PHTGkwBE4biXEQInypk\"",
-    "mtime": "2024-12-16T10:03:12.480Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/396/bonesaw-empetk01-empetk01/_payload.json"
-  },
-  "/commercial-kitchen/product/397/bonesaw-empetk02-empetk02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-3gVcWLt9ppsYFVQwtSJVBitc5hM\"",
-    "mtime": "2024-12-16T10:03:06.281Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/397/bonesaw-empetk02-empetk02/index.html"
-  },
-  "/commercial-kitchen/product/397/bonesaw-empetk02-empetk02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-FjD1nN86lEzOZXIAUkue9kIFu9Q\"",
-    "mtime": "2024-12-16T10:03:12.568Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/397/bonesaw-empetk02-empetk02/_payload.json"
-  },
-  "/commercial-kitchen/product/398/bonesaw-sf-282hd-sf-282hd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-Rgew0pT4AK4vddMPpFQiotP1adQ\"",
-    "mtime": "2024-12-16T10:03:06.425Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/398/bonesaw-sf-282hd-sf-282hd/index.html"
-  },
-  "/commercial-kitchen/product/398/bonesaw-sf-282hd-sf-282hd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KT6rrxDkPWoTcFa2zojkWcUw9Sw\"",
-    "mtime": "2024-12-16T10:03:12.592Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/398/bonesaw-sf-282hd-sf-282hd/_payload.json"
-  },
-  "/commercial-kitchen/product/399/bonesaw-sbl-sbl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13281-iyf64CYBtaI8rr+XNJ3wHkqunuw\"",
-    "mtime": "2024-12-16T10:03:06.281Z",
-    "size": 78465,
-    "path": "../public/commercial-kitchen/product/399/bonesaw-sbl-sbl/index.html"
-  },
-  "/commercial-kitchen/product/399/bonesaw-sbl-sbl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WhkGleD0vqaa8JLyBRT8R/29bBg\"",
-    "mtime": "2024-12-16T10:03:12.568Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/399/bonesaw-sbl-sbl/_payload.json"
-  },
-  "/commercial-kitchen/product/40/counter-freezer-9007-blueline-gn1100bt/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-xWAc0HwB/XAFP8X91hP8WHiDkj8\"",
-    "mtime": "2024-12-16T10:03:03.520Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/40/counter-freezer-9007-blueline-gn1100bt/index.html"
-  },
-  "/commercial-kitchen/product/40/counter-freezer-9007-blueline-gn1100bt/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-z6oJtAPdmNR2hTFyEhRUc1L4ad4\"",
-    "mtime": "2024-12-16T10:03:12.100Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/40/counter-freezer-9007-blueline-gn1100bt/_payload.json"
-  },
-  "/commercial-kitchen/product/400/bonesaw-so3100-inox-so3100-inox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-aHwhotHnO1/YjctI4Ni9vTvJBIM\"",
-    "mtime": "2024-12-16T10:03:06.405Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/400/bonesaw-so3100-inox-so3100-inox/index.html"
-  },
-  "/commercial-kitchen/product/400/bonesaw-so3100-inox-so3100-inox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HuwKxkIAW6oBVduSEHDtqExAzNM\"",
-    "mtime": "2024-12-16T10:03:12.583Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/400/bonesaw-so3100-inox-so3100-inox/_payload.json"
-  },
-  "/commercial-kitchen/product/401/bonesaw-so1650-inox-so1650-inox/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-Ui3YBe+amyrJKIDFFsmaHwxvG/g\"",
-    "mtime": "2024-12-16T10:03:06.482Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/401/bonesaw-so1650-inox-so1650-inox/index.html"
-  },
-  "/commercial-kitchen/product/401/bonesaw-so1650-inox-so1650-inox/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-B3am/ezMakwpO7B+Q/gqbYywc9M\"",
-    "mtime": "2024-12-16T10:03:12.595Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/401/bonesaw-so1650-inox-so1650-inox/_payload.json"
-  },
-  "/commercial-kitchen/product/402/hamburger-machine-hf-100-hf-100/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-XFcPpM6gJtjpetjRuEcGIFmDJJs\"",
-    "mtime": "2024-12-16T10:03:07.619Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/402/hamburger-machine-hf-100-hf-100/index.html"
-  },
-  "/commercial-kitchen/product/402/hamburger-machine-hf-100-hf-100/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NsyOb0SqlQ01bPQfQIrpoOZXHAM\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/402/hamburger-machine-hf-100-hf-100/_payload.json"
-  },
-  "/commercial-kitchen/product/403/hamburger-machine-sa-130/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-j3PWFQaE2l4zdOe8TxYVYlQjfuc\"",
-    "mtime": "2024-12-16T10:03:07.637Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/403/hamburger-machine-sa-130/index.html"
-  },
-  "/commercial-kitchen/product/403/hamburger-machine-sa-130/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QYFUVFIhrZ2TEoETbDZ+43loNhA\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/403/hamburger-machine-sa-130/_payload.json"
-  },
-  "/commercial-kitchen/product/404/meatball-making-machine-sxw-280-sxw-280/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-EtVA73es0U+DLPz7D10UkWf4+bw\"",
-    "mtime": "2024-12-16T10:03:06.388Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/404/meatball-making-machine-sxw-280-sxw-280/index.html"
-  },
-  "/commercial-kitchen/product/404/meatball-making-machine-sxw-280-sxw-280/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V+cDZT/Xk7CYBCZM8buovMbZ2/o\"",
-    "mtime": "2024-12-16T10:03:12.582Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/404/meatball-making-machine-sxw-280-sxw-280/_payload.json"
-  },
-  "/commercial-kitchen/product/405/tumble-marinator-bc-135l-bc-135l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-1um71k353EKcQPsNoNgRGTHNoP4\"",
-    "mtime": "2024-12-16T10:03:05.769Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/405/tumble-marinator-bc-135l-bc-135l/index.html"
-  },
-  "/commercial-kitchen/product/405/tumble-marinator-bc-135l-bc-135l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-nAD93IWEyPS4vA8dsoyX1WD03jk\"",
-    "mtime": "2024-12-16T10:03:12.492Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/405/tumble-marinator-bc-135l-bc-135l/_payload.json"
-  },
-  "/commercial-kitchen/product/406/meat-mincer-em01p-em01p/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-bQZFrh7+rDDFUpdR/FD9JJboyrE\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/406/meat-mincer-em01p-em01p/index.html"
-  },
-  "/commercial-kitchen/product/406/meat-mincer-em01p-em01p/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jpq//HbqbK79aBfYbrAZ+opXmWU\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/406/meat-mincer-em01p-em01p/_payload.json"
-  },
-  "/commercial-kitchen/product/407/meat-mincer-em2201p-em2201p/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-iQoQQBxHAH17v+r5QkCPwNBZjbM\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/407/meat-mincer-em2201p-em2201p/index.html"
-  },
-  "/commercial-kitchen/product/407/meat-mincer-em2201p-em2201p/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OnqnuSJKlVzMf7s7Dl5kB1FVMNs\"",
-    "mtime": "2024-12-16T10:03:12.450Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/407/meat-mincer-em2201p-em2201p/_payload.json"
-  },
-  "/commercial-kitchen/product/408/meat-mincer-no22-colorado-tc22-colorado/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-nnd8w4b/aT163WGEVOJSmVPd3UY\"",
-    "mtime": "2024-12-16T10:03:05.705Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/408/meat-mincer-no22-colorado-tc22-colorado/index.html"
-  },
-  "/commercial-kitchen/product/408/meat-mincer-no22-colorado-tc22-colorado/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-FiYZeQylBfFfr7Z5hZwIFCRBsME\"",
-    "mtime": "2024-12-16T10:03:12.455Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/408/meat-mincer-no22-colorado-tc22-colorado/_payload.json"
-  },
-  "/commercial-kitchen/product/409/meat-mincer-psee-98t-psee-98t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-kZ23Ef1dUXRDktQlbFXzSDi7GzM\"",
-    "mtime": "2024-12-16T10:03:05.605Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/409/meat-mincer-psee-98t-psee-98t/index.html"
-  },
-  "/commercial-kitchen/product/409/meat-mincer-psee-98t-psee-98t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-F9+J8IHqEaSp/V21pap3y2IQcSw\"",
-    "mtime": "2024-12-16T10:03:12.455Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/409/meat-mincer-psee-98t-psee-98t/_payload.json"
-  },
-  "/commercial-kitchen/product/41/counter-freezer-1207-blueline-gn2100bt-1200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13307-vg/zmwUQf0C+KJ1jzd/aodIRDp0\"",
-    "mtime": "2024-12-16T10:03:03.526Z",
-    "size": 78599,
-    "path": "../public/commercial-kitchen/product/41/counter-freezer-1207-blueline-gn2100bt-1200/index.html"
-  },
-  "/commercial-kitchen/product/41/counter-freezer-1207-blueline-gn2100bt-1200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Dk39QcU7/EZiDRcnaQlwOJtyHNU\"",
-    "mtime": "2024-12-16T10:03:12.110Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/41/counter-freezer-1207-blueline-gn2100bt-1200/_payload.json"
-  },
-  "/commercial-kitchen/product/410/meat-slicer-jpgd300-jpgd300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-Q+IOuizOzDCBlsRDAn1UP3czsds\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/410/meat-slicer-jpgd300-jpgd300/index.html"
-  },
-  "/commercial-kitchen/product/410/meat-slicer-jpgd300-jpgd300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QM7ZxPe3BioeUHVjTFRq15puMzw\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/410/meat-slicer-jpgd300-jpgd300/_payload.json"
-  },
-  "/commercial-kitchen/product/411/meat-slicer-jpgd250-jpgd250/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-geWk4CRHJPwmQBCHDOcqf4hAZhE\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/411/meat-slicer-jpgd250-jpgd250/index.html"
-  },
-  "/commercial-kitchen/product/411/meat-slicer-jpgd250-jpgd250/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CzwS+PL6Y/xXVQZR2CO3opbCm/k\"",
-    "mtime": "2024-12-16T10:03:12.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/411/meat-slicer-jpgd250-jpgd250/_payload.json"
-  },
-  "/commercial-kitchen/product/412/meat-slicer-cfi-300-cfi-300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-iGtIJbDAqsFonLslE3Gc5jK7x2o\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/412/meat-slicer-cfi-300-cfi-300/index.html"
-  },
-  "/commercial-kitchen/product/412/meat-slicer-cfi-300-cfi-300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/1Xp/hbtHEkrZsP0WLYRf+20xjk\"",
-    "mtime": "2024-12-16T10:03:12.455Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/412/meat-slicer-cfi-300-cfi-300/_payload.json"
-  },
-  "/commercial-kitchen/product/413/meat-slicer-gcp-350-gcp-350/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-6MCR1HmGg4tbNmuA/oh9nLD3FH4\"",
-    "mtime": "2024-12-16T10:03:05.599Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/413/meat-slicer-gcp-350-gcp-350/index.html"
-  },
-  "/commercial-kitchen/product/413/meat-slicer-gcp-350-gcp-350/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-J7TpQmL7DZpQXa+7DxwfFnh62+w\"",
-    "mtime": "2024-12-16T10:03:12.455Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/413/meat-slicer-gcp-350-gcp-350/_payload.json"
-  },
-  "/commercial-kitchen/product/414/sausage-stuffer-jssf-05s-jssf-05s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-YkxrLoDnBmPV8rEqmJIqm4JBoFs\"",
-    "mtime": "2024-12-16T10:03:07.639Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/414/sausage-stuffer-jssf-05s-jssf-05s/index.html"
-  },
-  "/commercial-kitchen/product/414/sausage-stuffer-jssf-05s-jssf-05s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HjEkOV8GP/kP8zbvmwGbCUKD2rc\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/414/sausage-stuffer-jssf-05s-jssf-05s/_payload.json"
-  },
-  "/commercial-kitchen/product/415/vacuum-packing-machine-empvcm01-empvcm01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-jJSnF2x/b8QsPP1Ay6O4LYjO+i8\"",
-    "mtime": "2024-12-16T10:03:06.425Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/415/vacuum-packing-machine-empvcm01-empvcm01/index.html"
-  },
-  "/commercial-kitchen/product/415/vacuum-packing-machine-empvcm01-empvcm01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-FwWIjlyccyt5S//KPr+lTF+y3u0\"",
-    "mtime": "2024-12-16T10:03:12.584Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/415/vacuum-packing-machine-empvcm01-empvcm01/_payload.json"
-  },
-  "/commercial-kitchen/product/416/pre-rinse-shower-with-spout-ps38-ps38/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-PK5Bajoc9Zx2KWQgykXPWqNe0pU\"",
-    "mtime": "2024-12-16T10:03:00.522Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/416/pre-rinse-shower-with-spout-ps38-ps38/index.html"
-  },
-  "/commercial-kitchen/product/416/pre-rinse-shower-with-spout-ps38-ps38/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-O1puHHj6KSY60IXG+R86LDqiy8I\"",
-    "mtime": "2024-12-16T10:03:11.602Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/416/pre-rinse-shower-with-spout-ps38-ps38/_payload.json"
-  },
-  "/commercial-kitchen/product/417/pre-rinse-shower-ps18-jw-ps18/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-6Em8KCrBFyBWqK6FKs6KMxrovMY\"",
-    "mtime": "2024-12-16T10:03:00.522Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/417/pre-rinse-shower-ps18-jw-ps18/index.html"
-  },
-  "/commercial-kitchen/product/417/pre-rinse-shower-ps18-jw-ps18/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-by5z4FOpxyUwCy7hWHI5xdfjock\"",
-    "mtime": "2024-12-16T10:03:11.602Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/417/pre-rinse-shower-ps18-jw-ps18/_payload.json"
-  },
-  "/commercial-kitchen/product/42/counter-freezer-1507-blueline-gn2100bt-1500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13307-bthp4FtpNCtOCkA/QK5EiUeSfTE\"",
-    "mtime": "2024-12-16T10:03:03.555Z",
-    "size": 78599,
-    "path": "../public/commercial-kitchen/product/42/counter-freezer-1507-blueline-gn2100bt-1500/index.html"
-  },
-  "/commercial-kitchen/product/42/counter-freezer-1507-blueline-gn2100bt-1500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0xnV259TeK0xdnV1qgsfu52jeLw\"",
-    "mtime": "2024-12-16T10:03:12.110Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/42/counter-freezer-1507-blueline-gn2100bt-1500/_payload.json"
-  },
-  "/commercial-kitchen/product/425/induction-chafing-dish-9-litres-ac112g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-Y8glc/7IxPrlfL/PCbJAVx2uA6g\"",
-    "mtime": "2024-12-16T10:03:08.906Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/425/induction-chafing-dish-9-litres-ac112g/index.html"
-  },
-  "/commercial-kitchen/product/425/induction-chafing-dish-9-litres-ac112g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-v6taH7lKQA5edRY5HKrMexmLw44\"",
-    "mtime": "2024-12-16T10:03:13.006Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/425/induction-chafing-dish-9-litres-ac112g/_payload.json"
-  },
-  "/commercial-kitchen/product/427/chafing-dish-roll-top-double-pan-9-litres-r23301-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-bPIqNrfcvXZq0pSej1Vqk9UVVoQ\"",
-    "mtime": "2024-12-16T10:03:08.705Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/427/chafing-dish-roll-top-double-pan-9-litres-r23301-2/index.html"
-  },
-  "/commercial-kitchen/product/427/chafing-dish-roll-top-double-pan-9-litres-r23301-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hWgKY6LiDg7ClpW5HLfHC+m+HiU\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/427/chafing-dish-roll-top-double-pan-9-litres-r23301-2/_payload.json"
-  },
-  "/commercial-kitchen/product/428/chafing-dish-roll-top-6-litres-r23301-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-0cmfLwVNZqeYgQakc2wM8yuDsvs\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/428/chafing-dish-roll-top-6-litres-r23301-1/index.html"
-  },
-  "/commercial-kitchen/product/428/chafing-dish-roll-top-6-litres-r23301-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d/6V/QKulUKg4EjqhufH/HbbYlo\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/428/chafing-dish-roll-top-6-litres-r23301-1/_payload.json"
-  },
-  "/commercial-kitchen/product/429/chafing-dish-roll-top-double-pan-9-litres-electric-ecd09c/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-Wzit+2SiBc+Tb2BcNgMi3X9PJ3g\"",
-    "mtime": "2024-12-16T10:03:08.789Z",
-    "size": 78675,
-    "path": "../public/commercial-kitchen/product/429/chafing-dish-roll-top-double-pan-9-litres-electric-ecd09c/index.html"
-  },
-  "/commercial-kitchen/product/429/chafing-dish-roll-top-double-pan-9-litres-electric-ecd09c/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-aDG/qNxwzL8wJye4KtsSOKVJo6Q\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/429/chafing-dish-roll-top-double-pan-9-litres-electric-ecd09c/_payload.json"
-  },
-  "/commercial-kitchen/product/43/counter-freezer-snack-2100bt-snack2100bt/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-QS3iExsBTPl2TnxI7+KYIpF+Seg\"",
-    "mtime": "2024-12-16T10:03:03.555Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/43/counter-freezer-snack-2100bt-snack2100bt/index.html"
-  },
-  "/commercial-kitchen/product/43/counter-freezer-snack-2100bt-snack2100bt/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BDbLzyawsXSq4wzFyBwCQQQPTGY\"",
-    "mtime": "2024-12-16T10:03:12.111Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/43/counter-freezer-snack-2100bt-snack2100bt/_payload.json"
-  },
-  "/commercial-kitchen/product/430/chafing-dish-roll-top-double-pan-9-litres-electric-ra2301ae-ra2301ae/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1338a-sEqG/4j72Xnpx34Li2OWWg3mO6U\"",
-    "mtime": "2024-12-16T10:03:08.789Z",
-    "size": 78730,
-    "path": "../public/commercial-kitchen/product/430/chafing-dish-roll-top-double-pan-9-litres-electric-ra2301ae-ra2301ae/index.html"
-  },
-  "/commercial-kitchen/product/430/chafing-dish-roll-top-double-pan-9-litres-electric-ra2301ae-ra2301ae/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DfMNSSnMsgZ37nOjH5OGu9tV3bA\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/430/chafing-dish-roll-top-double-pan-9-litres-electric-ra2301ae-ra2301ae/_payload.json"
-  },
-  "/commercial-kitchen/product/431/chafing-dish-roll-top-9-litres-with-glass-lid-ra2302/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-8Q/rPZQdV7slkgqAbjPCtUtqoL8\"",
-    "mtime": "2024-12-16T10:03:08.722Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/431/chafing-dish-roll-top-9-litres-with-glass-lid-ra2302/index.html"
-  },
-  "/commercial-kitchen/product/431/chafing-dish-roll-top-9-litres-with-glass-lid-ra2302/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-LibuBdMxIVIjDW7dW7tQvs8KwsU\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/431/chafing-dish-roll-top-9-litres-with-glass-lid-ra2302/_payload.json"
-  },
-  "/commercial-kitchen/product/432/chafing-dish-square-h-kitchen-yfl02-1-yfl02-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-t5zsRSayZpE1KMIyxw2I63sx4og\"",
-    "mtime": "2024-12-16T10:03:08.808Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/432/chafing-dish-square-h-kitchen-yfl02-1-yfl02-1/index.html"
-  },
-  "/commercial-kitchen/product/432/chafing-dish-square-h-kitchen-yfl02-1-yfl02-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Zz47omzoR1PCSQMHUrjxRlpiKAQ\"",
-    "mtime": "2024-12-16T10:03:12.995Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/432/chafing-dish-square-h-kitchen-yfl02-1-yfl02-1/_payload.json"
-  },
-  "/commercial-kitchen/product/433/chafing-dish-drop-in-square-h-kitchen-yfr01-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-9YBAWrUAP44tmbMsVInLCjqvu7s\"",
-    "mtime": "2024-12-16T10:03:08.808Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/433/chafing-dish-drop-in-square-h-kitchen-yfr01-2/index.html"
-  },
-  "/commercial-kitchen/product/433/chafing-dish-drop-in-square-h-kitchen-yfr01-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9hmuPFbNsIx+EDXqpa28m1YDLRU\"",
-    "mtime": "2024-12-16T10:03:13.006Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/433/chafing-dish-drop-in-square-h-kitchen-yfr01-2/_payload.json"
-  },
-  "/commercial-kitchen/product/434/chafing-dish-induction-round-at50293-h-kitchen-at50293/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-0oUGsubS7FsB6PHOGWA+hsqPhmg\"",
-    "mtime": "2024-12-16T10:03:08.817Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/434/chafing-dish-induction-round-at50293-h-kitchen-at50293/index.html"
-  },
-  "/commercial-kitchen/product/434/chafing-dish-induction-round-at50293-h-kitchen-at50293/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ii9CCi3bJtj8S9eMB0aBxZuUhjo\"",
-    "mtime": "2024-12-16T10:03:13.006Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/434/chafing-dish-induction-round-at50293-h-kitchen-at50293/_payload.json"
-  },
-  "/commercial-kitchen/product/435/chafing-dish-induction-square-at50293-h-kitchen-at60293/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-a4pLSd/AxSVxM7L4JLPQuAv3wTo\"",
-    "mtime": "2024-12-16T10:03:08.808Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/435/chafing-dish-induction-square-at50293-h-kitchen-at60293/index.html"
-  },
-  "/commercial-kitchen/product/435/chafing-dish-induction-square-at50293-h-kitchen-at60293/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wark7eJOxppEDp24Z+LGf/znaYo\"",
-    "mtime": "2024-12-16T10:03:12.997Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/435/chafing-dish-induction-square-at50293-h-kitchen-at60293/_payload.json"
-  },
-  "/commercial-kitchen/product/44/counter-freezer-snack-3100bt-snack3100bt/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-R5k7KIscV9Qg0yq3jeo5tCZpzXI\"",
-    "mtime": "2024-12-16T10:03:03.569Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/44/counter-freezer-snack-3100bt-snack3100bt/index.html"
-  },
-  "/commercial-kitchen/product/44/counter-freezer-snack-3100bt-snack3100bt/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8sD/BNbpKnxy3yqqFnOt5sAdF2s\"",
-    "mtime": "2024-12-16T10:03:12.130Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/44/counter-freezer-snack-3100bt-snack3100bt/_payload.json"
-  },
-  "/commercial-kitchen/product/45/counter-chiller-9007-blueline-gn1100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-fDN/K0dme+mSivP91l2gj4qt5ko\"",
-    "mtime": "2024-12-16T10:03:03.411Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/45/counter-chiller-9007-blueline-gn1100tn/index.html"
-  },
-  "/commercial-kitchen/product/45/counter-chiller-9007-blueline-gn1100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TjfFJtaZBvSTzPalymNlRVdHHa8\"",
-    "mtime": "2024-12-16T10:03:12.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/45/counter-chiller-9007-blueline-gn1100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/46/counter-chiller-1207-blueline-gn2100tn-1200-gn2100tn-1200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334d-GYTbUK28pZOiZt/hWqdN9ZiIcA4\"",
-    "mtime": "2024-12-16T10:03:03.411Z",
-    "size": 78669,
-    "path": "../public/commercial-kitchen/product/46/counter-chiller-1207-blueline-gn2100tn-1200-gn2100tn-1200/index.html"
-  },
-  "/commercial-kitchen/product/46/counter-chiller-1207-blueline-gn2100tn-1200-gn2100tn-1200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UODfUIGyGfbMSPQ3dkkbRqXLHb4\"",
-    "mtime": "2024-12-16T10:03:12.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/46/counter-chiller-1207-blueline-gn2100tn-1200-gn2100tn-1200/_payload.json"
-  },
-  "/commercial-kitchen/product/47/counter-chiller-1507-blueline-gn2100tn-1500-gn2100tn-1500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334d-VBq28n5bCWveveN7o5UvpdFTQas\"",
-    "mtime": "2024-12-16T10:03:03.413Z",
-    "size": 78669,
-    "path": "../public/commercial-kitchen/product/47/counter-chiller-1507-blueline-gn2100tn-1500-gn2100tn-1500/index.html"
-  },
-  "/commercial-kitchen/product/47/counter-chiller-1507-blueline-gn2100tn-1500-gn2100tn-1500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VOfrJexrpd+aOaSdl9Ns4KpYlRA\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/47/counter-chiller-1507-blueline-gn2100tn-1500-gn2100tn-1500/_payload.json"
-  },
-  "/commercial-kitchen/product/48/counter-chiller-1407-blueline-gn2100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-9fRI5KC8bz4VMR1ciBHaGidocW4\"",
-    "mtime": "2024-12-16T10:03:03.413Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/48/counter-chiller-1407-blueline-gn2100tn/index.html"
-  },
-  "/commercial-kitchen/product/48/counter-chiller-1407-blueline-gn2100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YWmWAKzGzNm+ex3xccHnZWjK2Ng\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/48/counter-chiller-1407-blueline-gn2100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/49/counter-chiller-1807-blueline-gn3100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-WdOO1nVCIvXuJTWlG6Eg9/b5vQM\"",
-    "mtime": "2024-12-16T10:03:03.418Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/49/counter-chiller-1807-blueline-gn3100tn/index.html"
-  },
-  "/commercial-kitchen/product/49/counter-chiller-1807-blueline-gn3100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-M6tiuuEMK6VPh3/ISwAWK8r2iXc\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/49/counter-chiller-1807-blueline-gn3100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/494/4-tier-rack-1105-4trs1105/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-MaK1dSRY7fJDF+EvDb3Sw4+Vnp4\"",
-    "mtime": "2024-12-16T10:03:00.522Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/494/4-tier-rack-1105-4trs1105/index.html"
-  },
-  "/commercial-kitchen/product/494/4-tier-rack-1105-4trs1105/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-t4pUaSSO2bQyLxRxb/oDTu9HOa8\"",
-    "mtime": "2024-12-16T10:03:11.602Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/494/4-tier-rack-1105-4trs1105/_payload.json"
-  },
-  "/commercial-kitchen/product/495/4-tier-rack-1505-4trs1505/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-0e5i8kdViEVFLGe5FCWnnih1M3k\"",
-    "mtime": "2024-12-16T10:03:00.535Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/495/4-tier-rack-1505-4trs1505/index.html"
-  },
-  "/commercial-kitchen/product/495/4-tier-rack-1505-4trs1505/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rXE4GE1q5fBWs3nrX0FNJfcgmTs\"",
-    "mtime": "2024-12-16T10:03:11.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/495/4-tier-rack-1505-4trs1505/_payload.json"
-  },
-  "/commercial-kitchen/product/496/4-tier-rack-1805-4trs1805/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-wbta7Kjfcqw23QsZVWRUdjkzxqo\"",
-    "mtime": "2024-12-16T10:03:00.567Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/496/4-tier-rack-1805-4trs1805/index.html"
-  },
-  "/commercial-kitchen/product/496/4-tier-rack-1805-4trs1805/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PYuAaXTEnc8S6YCqk2GxmctIRuk\"",
-    "mtime": "2024-12-16T10:03:11.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/496/4-tier-rack-1805-4trs1805/_payload.json"
-  },
-  "/commercial-kitchen/product/497/4-tier-rack-2005-4trs2005/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-3ykLsrTW5h9Zd7ZpNNZx0z9ywr4\"",
-    "mtime": "2024-12-16T10:03:00.589Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/497/4-tier-rack-2005-4trs2005/index.html"
-  },
-  "/commercial-kitchen/product/497/4-tier-rack-2005-4trs2005/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hlA3e6WsFH90kjMbDm6ZvukTUmk\"",
-    "mtime": "2024-12-16T10:03:11.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/497/4-tier-rack-2005-4trs2005/_payload.json"
-  },
-  "/commercial-kitchen/product/498/4-tier-slatted-rack-1105-4trsl1105/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-D/7mjXHfHkdy+C8s+VcJ2emFm2s\"",
-    "mtime": "2024-12-16T10:03:00.608Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/498/4-tier-slatted-rack-1105-4trsl1105/index.html"
-  },
-  "/commercial-kitchen/product/498/4-tier-slatted-rack-1105-4trsl1105/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VJgznW9eOU6rqVALO96jhKGo6tA\"",
-    "mtime": "2024-12-16T10:03:11.625Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/498/4-tier-slatted-rack-1105-4trsl1105/_payload.json"
-  },
-  "/commercial-kitchen/product/499/4-tier-slatted-rack-1505-4trsl1505/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-n3z3EQ45hKBMwE1l7J9pXLKIqRQ\"",
-    "mtime": "2024-12-16T10:03:00.608Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/499/4-tier-slatted-rack-1505-4trsl1505/index.html"
-  },
-  "/commercial-kitchen/product/499/4-tier-slatted-rack-1505-4trsl1505/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9NSqa7LZHyhLMqk7W7Z9Cv+4XBo\"",
-    "mtime": "2024-12-16T10:03:11.625Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/499/4-tier-slatted-rack-1505-4trsl1505/_payload.json"
-  },
-  "/commercial-kitchen/product/50/counter-chiller-2207-blueline-gn4100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-MrTrsBPrUVPHUCgU7/NgyGwOt1U\"",
-    "mtime": "2024-12-16T10:03:03.418Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/50/counter-chiller-2207-blueline-gn4100tn/index.html"
-  },
-  "/commercial-kitchen/product/50/counter-chiller-2207-blueline-gn4100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qHjYnvpKrZrf2kujpgnjIWgrwJ8\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/50/counter-chiller-2207-blueline-gn4100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/500/4-tier-slatted-rack-2005-4trsl2005/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-NiG8lPZE+jnIa23s77w1maopf/Q\"",
-    "mtime": "2024-12-16T10:03:00.609Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/500/4-tier-slatted-rack-2005-4trsl2005/index.html"
-  },
-  "/commercial-kitchen/product/500/4-tier-slatted-rack-2005-4trsl2005/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-O8lkXJHUgV7Q1U/cuv1ZswDLPBE\"",
-    "mtime": "2024-12-16T10:03:11.631Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/500/4-tier-slatted-rack-2005-4trsl2005/_payload.json"
-  },
-  "/commercial-kitchen/product/501/4-tier-gi-rack-9005-4trsg905/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-LCWPDArCEaE1m9K8PmHsUhUeB08\"",
-    "mtime": "2024-12-16T10:03:00.608Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/501/4-tier-gi-rack-9005-4trsg905/index.html"
-  },
-  "/commercial-kitchen/product/501/4-tier-gi-rack-9005-4trsg905/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5zfgOc5k/GjWh40/vC7V5VlPamI\"",
-    "mtime": "2024-12-16T10:03:11.625Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/501/4-tier-gi-rack-9005-4trsg905/_payload.json"
-  },
-  "/commercial-kitchen/product/502/4-tier-gi-rack-1105-4trsg1105/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-zHaeGnd8C3BCGE8lp5Ej/IbeVvM\"",
-    "mtime": "2024-12-16T10:03:00.609Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/502/4-tier-gi-rack-1105-4trsg1105/index.html"
-  },
-  "/commercial-kitchen/product/502/4-tier-gi-rack-1105-4trsg1105/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XfE+FS1fzLuBHPOtotatQVvBeMk\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/502/4-tier-gi-rack-1105-4trsg1105/_payload.json"
-  },
-  "/commercial-kitchen/product/503/pvc-shelves-vented-910-perfect-jw-p3621/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-hyqchztAzhBHXYQoonN0tUZ75Zg\"",
-    "mtime": "2024-12-16T10:03:08.907Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/503/pvc-shelves-vented-910-perfect-jw-p3621/index.html"
-  },
-  "/commercial-kitchen/product/503/pvc-shelves-vented-910-perfect-jw-p3621/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VuWrsFNJvdsrgnrp7HO4fXiTP2Y\"",
-    "mtime": "2024-12-16T10:03:13.025Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/503/pvc-shelves-vented-910-perfect-jw-p3621/_payload.json"
-  },
-  "/commercial-kitchen/product/509/fire-suppression-system-for-extraction-hoods-csfs/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-F8xGn2o761+jD3pGetQfB6c/d+A\"",
-    "mtime": "2024-12-16T10:03:02.485Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/509/fire-suppression-system-for-extraction-hoods-csfs/index.html"
-  },
-  "/commercial-kitchen/product/509/fire-suppression-system-for-extraction-hoods-csfs/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YEj3xpXfVEeqgF8+AtRixIVPodg\"",
-    "mtime": "2024-12-16T10:03:11.933Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/509/fire-suppression-system-for-extraction-hoods-csfs/_payload.json"
-  },
-  "/commercial-kitchen/product/504/pvc-shelves-vented-1060-perfect-jw-p4221/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-+oaLfxHANINf36iKV40bOd79ZHs\"",
-    "mtime": "2024-12-16T10:03:08.907Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/504/pvc-shelves-vented-1060-perfect-jw-p4221/index.html"
-  },
-  "/commercial-kitchen/product/504/pvc-shelves-vented-1060-perfect-jw-p4221/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NNeTY7btm+xDi7zjx3/jPbGS1hA\"",
-    "mtime": "2024-12-16T10:03:13.007Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/504/pvc-shelves-vented-1060-perfect-jw-p4221/_payload.json"
-  },
-  "/commercial-kitchen/product/51/counter-chiller-snack2100tn-600-series-snack2100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332a-dSdS8kx8J6YaozZL1YjkeOWV6Dc\"",
-    "mtime": "2024-12-16T10:03:03.511Z",
-    "size": 78634,
-    "path": "../public/commercial-kitchen/product/51/counter-chiller-snack2100tn-600-series-snack2100tn/index.html"
-  },
-  "/commercial-kitchen/product/51/counter-chiller-snack2100tn-600-series-snack2100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Z7yuC2gPZWqR98Hrq+TpRJKdF2k\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/51/counter-chiller-snack2100tn-600-series-snack2100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/510/hot-banquet-trolley-emp-bq1-single-emp-bq1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-n4oCEhZgqpwbXm+QL0PJobdgHrk\"",
-    "mtime": "2024-12-16T10:03:08.106Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/510/hot-banquet-trolley-emp-bq1-single-emp-bq1/index.html"
-  },
-  "/commercial-kitchen/product/510/hot-banquet-trolley-emp-bq1-single-emp-bq1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TOJ7JVkyy5/SlqjFxFuMM4E8y68\"",
-    "mtime": "2024-12-16T10:03:12.898Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/510/hot-banquet-trolley-emp-bq1-single-emp-bq1/_payload.json"
-  },
-  "/commercial-kitchen/product/511/hot-banquet-trolley-emp-bq2-double-emp-bq2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-QzD2exk8bzB5ncD3GuIDvVy1wEU\"",
-    "mtime": "2024-12-16T10:03:08.123Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/511/hot-banquet-trolley-emp-bq2-double-emp-bq2/index.html"
-  },
-  "/commercial-kitchen/product/511/hot-banquet-trolley-emp-bq2-double-emp-bq2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wCMepOp4AMFm2+OZsO0JsN8p3pg\"",
-    "mtime": "2024-12-16T10:03:12.900Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/511/hot-banquet-trolley-emp-bq2-double-emp-bq2/_payload.json"
-  },
-  "/commercial-kitchen/product/512/hot-banquet-trolley-emp-bq4-double-emp-bq4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-ulxjx/Q7SLr2LofBXJG4nJPTxeM\"",
-    "mtime": "2024-12-16T10:03:08.106Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/512/hot-banquet-trolley-emp-bq4-double-emp-bq4/index.html"
-  },
-  "/commercial-kitchen/product/512/hot-banquet-trolley-emp-bq4-double-emp-bq4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-T/3x9hn2J5B0tTHrh83MjoKWTao\"",
-    "mtime": "2024-12-16T10:03:12.898Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/512/hot-banquet-trolley-emp-bq4-double-emp-bq4/_payload.json"
-  },
-  "/commercial-kitchen/product/513/hot-and-cold-meal-distribution-trolley-24-tray-emp-bq1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-bGb1qpWFwWKlDNVb8RLhRJ2H5JY\"",
-    "mtime": "2024-12-16T10:03:08.135Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/513/hot-and-cold-meal-distribution-trolley-24-tray-emp-bq1/index.html"
-  },
-  "/commercial-kitchen/product/513/hot-and-cold-meal-distribution-trolley-24-tray-emp-bq1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qJH3OmrMK346JrKzPRTK43/eds8\"",
-    "mtime": "2024-12-16T10:03:12.911Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/513/hot-and-cold-meal-distribution-trolley-24-tray-emp-bq1/_payload.json"
-  },
-  "/commercial-kitchen/product/514/hot-and-cold-banquet-trolley-sdx-f120/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-jD2PKFRnNET8gvwew/3tu8mo0JA\"",
-    "mtime": "2024-12-16T10:03:08.135Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/514/hot-and-cold-banquet-trolley-sdx-f120/index.html"
-  },
-  "/commercial-kitchen/product/514/hot-and-cold-banquet-trolley-sdx-f120/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7OkjNajjGKt9Mtl8BdpydWT/O9g\"",
-    "mtime": "2024-12-16T10:03:12.911Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/514/hot-and-cold-banquet-trolley-sdx-f120/_payload.json"
-  },
-  "/commercial-kitchen/product/515/thermobox-3-gn-jw-sif/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-/Wp3g1WzErRevDO1QKbMY4f9S8s\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/515/thermobox-3-gn-jw-sif/index.html"
-  },
-  "/commercial-kitchen/product/515/thermobox-3-gn-jw-sif/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9cw4SkBbx7X+coD89A9SnEjqPjc\"",
-    "mtime": "2024-12-16T10:03:13.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/515/thermobox-3-gn-jw-sif/_payload.json"
-  },
-  "/commercial-kitchen/product/516/thermobox-6-gn-jw-dow/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-MkkL8XmlnB1pShHOmzcNbMNTrvg\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/516/thermobox-6-gn-jw-dow/index.html"
-  },
-  "/commercial-kitchen/product/516/thermobox-6-gn-jw-dow/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vM/bNYYKTIWyBhEWpcW3F3eHB0g\"",
-    "mtime": "2024-12-16T10:03:13.070Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/516/thermobox-6-gn-jw-dow/_payload.json"
-  },
-  "/commercial-kitchen/product/517/avatherm-thermotray-with-locks-ugc-tt6/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-Fa1rePHdEmlnIv3stc2D9pPLgI8\"",
-    "mtime": "2024-12-16T10:03:09.323Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/517/avatherm-thermotray-with-locks-ugc-tt6/index.html"
-  },
-  "/commercial-kitchen/product/517/avatherm-thermotray-with-locks-ugc-tt6/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Af+6P+xTiTxwXoM5PSU8Hxhj08w\"",
-    "mtime": "2024-12-16T10:03:13.085Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/517/avatherm-thermotray-with-locks-ugc-tt6/_payload.json"
-  },
-  "/commercial-kitchen/product/518/wall-type-combined-cooker-wtc-wtc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-tcOQ435Sd5QxxowV2ECLFxh9+7s\"",
-    "mtime": "2024-12-16T10:03:02.126Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/518/wall-type-combined-cooker-wtc-wtc/index.html"
-  },
-  "/commercial-kitchen/product/518/wall-type-combined-cooker-wtc-wtc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ev/ypwz+ANXo2PTjiGKYn5L23hQ\"",
-    "mtime": "2024-12-16T10:03:11.867Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/518/wall-type-combined-cooker-wtc-wtc/_payload.json"
-  },
-  "/commercial-kitchen/product/519/two-burner-low-pressure-for-combined-cooker-blp2-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-UKdje3oRkeCn+9tC2ShhYW7G8pw\"",
-    "mtime": "2024-12-16T10:03:02.125Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/519/two-burner-low-pressure-for-combined-cooker-blp2-7s/index.html"
-  },
-  "/commercial-kitchen/product/519/two-burner-low-pressure-for-combined-cooker-blp2-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-h6VELdh4vPRWu7OQP/1P7a4+SQQ\"",
-    "mtime": "2024-12-16T10:03:11.867Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/519/two-burner-low-pressure-for-combined-cooker-blp2-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/52/counter-chiller-snack3100tn-600-series-snack3100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332a-whOLLvsfSXp1SHncKzIQ7GSBpTk\"",
-    "mtime": "2024-12-16T10:03:03.520Z",
-    "size": 78634,
-    "path": "../public/commercial-kitchen/product/52/counter-chiller-snack3100tn-600-series-snack3100tn/index.html"
-  },
-  "/commercial-kitchen/product/52/counter-chiller-snack3100tn-600-series-snack3100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-EAs4ZdpSACQ8ZSAIOvx9b5zWPhw\"",
-    "mtime": "2024-12-16T10:03:12.110Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/52/counter-chiller-snack3100tn-600-series-snack3100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/520/four-burner-low-pressure-for-combined-cooker-blp4-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-3PdpA+WR0F5aFbLXWsRFqdk/q10\"",
-    "mtime": "2024-12-16T10:03:01.801Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/520/four-burner-low-pressure-for-combined-cooker-blp4-7s/index.html"
-  },
-  "/commercial-kitchen/product/520/four-burner-low-pressure-for-combined-cooker-blp4-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Pi1NogWuVG0SgHHq82gn05TFiW0\"",
-    "mtime": "2024-12-16T10:03:11.817Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/520/four-burner-low-pressure-for-combined-cooker-blp4-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/521/six-burner-low-pressure-cooker-for-combined-cooker-blp6-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13358-46LfrcI9HyOYOxGveuhrTyXypZI\"",
-    "mtime": "2024-12-16T10:03:01.810Z",
-    "size": 78680,
-    "path": "../public/commercial-kitchen/product/521/six-burner-low-pressure-cooker-for-combined-cooker-blp6-7s/index.html"
-  },
-  "/commercial-kitchen/product/521/six-burner-low-pressure-cooker-for-combined-cooker-blp6-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RpIIVdD3RzzLLODCwHF8Ud+Lihc\"",
-    "mtime": "2024-12-16T10:03:11.833Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/521/six-burner-low-pressure-cooker-for-combined-cooker-blp6-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/522/one-burner-high-pressure-for-combined-cooker-bhp1s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-yLDs+gzFixAxltFGNO3f/rJqWyg\"",
-    "mtime": "2024-12-16T10:03:01.810Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/522/one-burner-high-pressure-for-combined-cooker-bhp1s/index.html"
-  },
-  "/commercial-kitchen/product/522/one-burner-high-pressure-for-combined-cooker-bhp1s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-aXNrUOny52CCJR0LOjO28aG75D0\"",
-    "mtime": "2024-12-16T10:03:11.817Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/522/one-burner-high-pressure-for-combined-cooker-bhp1s/_payload.json"
-  },
-  "/commercial-kitchen/product/523/two-burner-high-pressure-for-combined-cooker-bhp2e-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-ybi0qjp4oukSWo/EYmfXdNhmcr0\"",
-    "mtime": "2024-12-16T10:03:01.840Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/523/two-burner-high-pressure-for-combined-cooker-bhp2e-7s/index.html"
-  },
-  "/commercial-kitchen/product/523/two-burner-high-pressure-for-combined-cooker-bhp2e-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fk6wEMV4rH4c9gwRjOy1CsDTalw\"",
-    "mtime": "2024-12-16T10:03:11.833Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/523/two-burner-high-pressure-for-combined-cooker-bhp2e-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/524/three-burner-high-pressure-for-combined-cooker-bhp3e-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-dpX7wWf7D3IcpW8dceilOkGEriU\"",
-    "mtime": "2024-12-16T10:03:01.841Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/524/three-burner-high-pressure-for-combined-cooker-bhp3e-7s/index.html"
-  },
-  "/commercial-kitchen/product/524/three-burner-high-pressure-for-combined-cooker-bhp3e-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mRS9B5kPNwbkC8GiFEqaYN8/z0k\"",
-    "mtime": "2024-12-16T10:03:11.835Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/524/three-burner-high-pressure-for-combined-cooker-bhp3e-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/525/griddle-for-combined-cooker-smooth-hps750-7s-hps750-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-t4nnMhoT/sOOTOnC+XZ8Yrmg6zw\"",
-    "mtime": "2024-12-16T10:03:01.880Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/525/griddle-for-combined-cooker-smooth-hps750-7s-hps750-7s/index.html"
-  },
-  "/commercial-kitchen/product/525/griddle-for-combined-cooker-smooth-hps750-7s-hps750-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vlBtLS2XkQA33Vt4ZWdY/Fw1nQ0\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/525/griddle-for-combined-cooker-smooth-hps750-7s-hps750-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/526/griddle-for-combined-cooker-smooth-hps375-7s-hps375-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-o2ccMQBJ2w5fZjflBZkoFqybhNQ\"",
-    "mtime": "2024-12-16T10:03:01.840Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/526/griddle-for-combined-cooker-smooth-hps375-7s-hps375-7s/index.html"
-  },
-  "/commercial-kitchen/product/526/griddle-for-combined-cooker-smooth-hps375-7s-hps375-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DdfThxGyJYxHs12EjjINEfuxZKw\"",
-    "mtime": "2024-12-16T10:03:11.835Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/526/griddle-for-combined-cooker-smooth-hps375-7s-hps375-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/527/griddle-for-combined-cooker-grooved-hpg375-7s-hpg375-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-+vaDNZWk5AOGgg2Pg5mn8f0/dPc\"",
-    "mtime": "2024-12-16T10:03:01.882Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/527/griddle-for-combined-cooker-grooved-hpg375-7s-hpg375-7s/index.html"
-  },
-  "/commercial-kitchen/product/527/griddle-for-combined-cooker-grooved-hpg375-7s-hpg375-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gaVtaGs+jgIKIwF4fDA6N4WFxuI\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/527/griddle-for-combined-cooker-grooved-hpg375-7s-hpg375-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/528/griddle-for-combined-cooker-grooved-hpg750-7s-hpg750-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-h6X208OCFnbPtwNbGsJ4oXpFYoM\"",
-    "mtime": "2024-12-16T10:03:01.915Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/528/griddle-for-combined-cooker-grooved-hpg750-7s-hpg750-7s/index.html"
-  },
-  "/commercial-kitchen/product/528/griddle-for-combined-cooker-grooved-hpg750-7s-hpg750-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eg5ZNNltDS+W9Td2kYr91BTS184\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/528/griddle-for-combined-cooker-grooved-hpg750-7s-hpg750-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/529/griddle-for-combined-cooker-1-2-grooved-hpg750-7s-hpsg750-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13362-mMUNJqK6eP91WViG/GZJArsG77A\"",
-    "mtime": "2024-12-16T10:03:01.955Z",
-    "size": 78690,
-    "path": "../public/commercial-kitchen/product/529/griddle-for-combined-cooker-1-2-grooved-hpg750-7s-hpsg750-7s/index.html"
-  },
-  "/commercial-kitchen/product/529/griddle-for-combined-cooker-1-2-grooved-hpg750-7s-hpsg750-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hSWVvps+Q/Gfn2o7Zq/IBbk45Ag\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/529/griddle-for-combined-cooker-1-2-grooved-hpg750-7s-hpsg750-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/53/barline-chiller-1207-blueline-gn2100tng-1200-gn2100tng-1200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13357-AjQAawhaZgRMK8iCP2w9Znn886U\"",
-    "mtime": "2024-12-16T10:03:03.745Z",
-    "size": 78679,
-    "path": "../public/commercial-kitchen/product/53/barline-chiller-1207-blueline-gn2100tng-1200-gn2100tng-1200/index.html"
-  },
-  "/commercial-kitchen/product/53/barline-chiller-1207-blueline-gn2100tng-1200-gn2100tng-1200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qkNfYwdwqXBp28Fqvv610tQv3rM\"",
-    "mtime": "2024-12-16T10:03:12.164Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/53/barline-chiller-1207-blueline-gn2100tng-1200-gn2100tng-1200/_payload.json"
-  },
-  "/commercial-kitchen/product/530/lava-stone-grill-for-combined-cooker-grooved-lsg-375t-lsg-375t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1336c-mLiMbVG8p/tznrPpGEq0Nisg1IY\"",
-    "mtime": "2024-12-16T10:03:01.955Z",
-    "size": 78700,
-    "path": "../public/commercial-kitchen/product/530/lava-stone-grill-for-combined-cooker-grooved-lsg-375t-lsg-375t/index.html"
-  },
-  "/commercial-kitchen/product/530/lava-stone-grill-for-combined-cooker-grooved-lsg-375t-lsg-375t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TOR17WBNdIN/yAvbA485+/bH7lA\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/530/lava-stone-grill-for-combined-cooker-grooved-lsg-375t-lsg-375t/_payload.json"
-  },
-  "/commercial-kitchen/product/531/lava-stone-grill-for-combined-cooker-grooved-lsg-750t-lsg-750t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1336c-2+GJuAzLuaTwjw0zJQn+QiROfQg\"",
-    "mtime": "2024-12-16T10:03:02.033Z",
-    "size": 78700,
-    "path": "../public/commercial-kitchen/product/531/lava-stone-grill-for-combined-cooker-grooved-lsg-750t-lsg-750t/index.html"
-  },
-  "/commercial-kitchen/product/531/lava-stone-grill-for-combined-cooker-grooved-lsg-750t-lsg-750t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ttNpA+S89wPFm0QIy5J6bXnuCio\"",
-    "mtime": "2024-12-16T10:03:11.845Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/531/lava-stone-grill-for-combined-cooker-grooved-lsg-750t-lsg-750t/_payload.json"
-  },
-  "/commercial-kitchen/product/532/infill-for-combined-cooker-iwt425-7s-iwt425-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-Nul/AUnHHDaOwu1EBkIxW73sboQ\"",
-    "mtime": "2024-12-16T10:03:01.915Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/532/infill-for-combined-cooker-iwt425-7s-iwt425-7s/index.html"
-  },
-  "/commercial-kitchen/product/532/infill-for-combined-cooker-iwt425-7s-iwt425-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Stz1d3ESEgQMQWFb+F0MMPFtFiw\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/532/infill-for-combined-cooker-iwt425-7s-iwt425-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/533/infill-for-combined-cooker-iwt850-7s-iwt850-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-GIV+egJK+AwmdlpygCPU5GNiGZs\"",
-    "mtime": "2024-12-16T10:03:01.955Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/533/infill-for-combined-cooker-iwt850-7s-iwt850-7s/index.html"
-  },
-  "/commercial-kitchen/product/533/infill-for-combined-cooker-iwt850-7s-iwt850-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uoE6Y9jnx7/2CvVmcU3UN7QolZM\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/533/infill-for-combined-cooker-iwt850-7s-iwt850-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/534/chips-dump-for-combined-cooker-cdd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-LNIdbY8GruHihij9WnEqpwmR7fI\"",
-    "mtime": "2024-12-16T10:03:02.034Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/534/chips-dump-for-combined-cooker-cdd/index.html"
-  },
-  "/commercial-kitchen/product/534/chips-dump-for-combined-cooker-cdd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-nDZnJdupsBb2qYDuD3JLLVdireM\"",
-    "mtime": "2024-12-16T10:03:11.850Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/534/chips-dump-for-combined-cooker-cdd/_payload.json"
-  },
-  "/commercial-kitchen/product/535/drop-in-bratt-pan-for-combined-cooker-btp100-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-fRgYrAikmCOz7PtAdbugbVJV6Ck\"",
-    "mtime": "2024-12-16T10:03:08.106Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/535/drop-in-bratt-pan-for-combined-cooker-btp100-7s/index.html"
-  },
-  "/commercial-kitchen/product/535/drop-in-bratt-pan-for-combined-cooker-btp100-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jr8dCxBR0ptrvot4eZhsqrlmP+o\"",
-    "mtime": "2024-12-16T10:03:12.898Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/535/drop-in-bratt-pan-for-combined-cooker-btp100-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/536/drop-in-boiling-pan-for-combined-cooker-bop100-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-J/1+5Pf2Wsd+sXPWeL/xJbcoZ9M\"",
-    "mtime": "2024-12-16T10:03:08.057Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/536/drop-in-boiling-pan-for-combined-cooker-bop100-7s/index.html"
-  },
-  "/commercial-kitchen/product/536/drop-in-boiling-pan-for-combined-cooker-bop100-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Pf+9U8ThRM7zE9vUms3SnFWkctg\"",
-    "mtime": "2024-12-16T10:03:12.879Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/536/drop-in-boiling-pan-for-combined-cooker-bop100-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/538/island-type-combined-cooker-isc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-qF4TSSn1RNm/xKxqcw1UlWcNht4\"",
-    "mtime": "2024-12-16T10:03:07.983Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/538/island-type-combined-cooker-isc/index.html"
-  },
-  "/commercial-kitchen/product/538/island-type-combined-cooker-isc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V7mN0q69ATbr8pEzUJ5OQnvUDQQ\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/538/island-type-combined-cooker-isc/_payload.json"
-  },
-  "/commercial-kitchen/product/54/barline-chiller-1406-blueline-snack2100tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13302-2FCugevK143bHd10LEexnw41ZR4\"",
-    "mtime": "2024-12-16T10:03:03.797Z",
-    "size": 78594,
-    "path": "../public/commercial-kitchen/product/54/barline-chiller-1406-blueline-snack2100tng/index.html"
-  },
-  "/commercial-kitchen/product/54/barline-chiller-1406-blueline-snack2100tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-c0WNYWMJy2n7eBVAhD/sEqLDaGk\"",
-    "mtime": "2024-12-16T10:03:12.167Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/54/barline-chiller-1406-blueline-snack2100tng/_payload.json"
-  },
-  "/commercial-kitchen/product/540/2-burner-low-pressure-cooker-free-standing-blpf2-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-uY/z7NpsBiqAuDcscqNX5NYNHXI\"",
-    "mtime": "2024-12-16T10:03:01.504Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/540/2-burner-low-pressure-cooker-free-standing-blpf2-7s/index.html"
-  },
-  "/commercial-kitchen/product/540/2-burner-low-pressure-cooker-free-standing-blpf2-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-GX3e2i2oJW+pIXzfx/zMCmLX2MY\"",
-    "mtime": "2024-12-16T10:03:11.767Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/540/2-burner-low-pressure-cooker-free-standing-blpf2-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/541/4-burner-low-pressure-cooker-free-standing-blpf4-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-WuRwbyHZlOUmDh4ySGDs158qgBI\"",
-    "mtime": "2024-12-16T10:03:01.514Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/541/4-burner-low-pressure-cooker-free-standing-blpf4-7s/index.html"
-  },
-  "/commercial-kitchen/product/541/4-burner-low-pressure-cooker-free-standing-blpf4-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7f7RrrF/aK0L/7p22BANFgsDliw\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/541/4-burner-low-pressure-cooker-free-standing-blpf4-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/542/6-burner-low-pressure-cooker-free-standing-blpf6-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-XfiomKtkpjUHx8J3hSDvl3uHp8U\"",
-    "mtime": "2024-12-16T10:03:01.519Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/542/6-burner-low-pressure-cooker-free-standing-blpf6-7s/index.html"
-  },
-  "/commercial-kitchen/product/542/6-burner-low-pressure-cooker-free-standing-blpf6-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V9QoDNo7O1Kt9gvt3icHpn+cJyk\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/542/6-burner-low-pressure-cooker-free-standing-blpf6-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/543/2-burner-high-pressure-cooker-free-standing-bhp2fg-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-lCB4YAEuiFyX3+4b2MIE2clv1ug\"",
-    "mtime": "2024-12-16T10:03:01.524Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/543/2-burner-high-pressure-cooker-free-standing-bhp2fg-7s/index.html"
-  },
-  "/commercial-kitchen/product/543/2-burner-high-pressure-cooker-free-standing-bhp2fg-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7kGDBX/QYdhurZ0ecf0CUnVpVu0\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/543/2-burner-high-pressure-cooker-free-standing-bhp2fg-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/544/3-burner-high-pressure-cooker-free-standing-bhp3fg-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-HamjuIOh4+aHCYUt97DwajCwRDc\"",
-    "mtime": "2024-12-16T10:03:01.524Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/544/3-burner-high-pressure-cooker-free-standing-bhp3fg-7s/index.html"
-  },
-  "/commercial-kitchen/product/544/3-burner-high-pressure-cooker-free-standing-bhp3fg-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Euf4wiEQh0AgmUls74R4k9bLl40\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/544/3-burner-high-pressure-cooker-free-standing-bhp3fg-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/545/1-burner-stock-pot-sphp1f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-B2uNS4FSpPtv7HVEfuUXxACLqDI\"",
-    "mtime": "2024-12-16T10:03:01.575Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/545/1-burner-stock-pot-sphp1f-7s/index.html"
-  },
-  "/commercial-kitchen/product/545/1-burner-stock-pot-sphp1f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5Qs0h176upoZjD40a0ihVDVNznM\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/545/1-burner-stock-pot-sphp1f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/546/2-burner-stock-pot-sphp2f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-p5dcPAcd0LXqSQF5r9LRSccD+NE\"",
-    "mtime": "2024-12-16T10:03:01.619Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/546/2-burner-stock-pot-sphp2f-7s/index.html"
-  },
-  "/commercial-kitchen/product/546/2-burner-stock-pot-sphp2f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ztyAIw2rdyt43b9OU7R/rFGDXog\"",
-    "mtime": "2024-12-16T10:03:11.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/546/2-burner-stock-pot-sphp2f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/547/3-burner-stock-pot-sphp3f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-4wBjYpygyQN5yM9mtcXL2USmSOI\"",
-    "mtime": "2024-12-16T10:03:01.616Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/547/3-burner-stock-pot-sphp3f-7s/index.html"
-  },
-  "/commercial-kitchen/product/547/3-burner-stock-pot-sphp3f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eB9yGIQ1uNutovSFDzfPB8RdQjk\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/547/3-burner-stock-pot-sphp3f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/548/free-standing-chips-dump-cdf-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-xnHZaVcX98BI+6FNjGyz7GMMzIY\"",
-    "mtime": "2024-12-16T10:03:01.743Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/548/free-standing-chips-dump-cdf-7s/index.html"
-  },
-  "/commercial-kitchen/product/548/free-standing-chips-dump-cdf-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QQHpZoDlYABpzibOWffXduiNEts\"",
-    "mtime": "2024-12-16T10:03:11.813Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/548/free-standing-chips-dump-cdf-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/549/chips-dump-with-overhead-lighting-cdfhl-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-bpRzdosfHYERfD7eRm76mDRiikU\"",
-    "mtime": "2024-12-16T10:03:01.785Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/549/chips-dump-with-overhead-lighting-cdfhl-7s/index.html"
-  },
-  "/commercial-kitchen/product/549/chips-dump-with-overhead-lighting-cdfhl-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CCGjIwcrDqaa3Qr1bgY560dzr6g\"",
-    "mtime": "2024-12-16T10:03:11.817Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/549/chips-dump-with-overhead-lighting-cdfhl-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/55/barline-chiller-1407-blueline-gn2100tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-5qM26VWCccRztR1438bhmbc4Txs\"",
-    "mtime": "2024-12-16T10:03:03.811Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/55/barline-chiller-1407-blueline-gn2100tng/index.html"
-  },
-  "/commercial-kitchen/product/55/barline-chiller-1407-blueline-gn2100tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-L/ww0ZykeKbBCJGmIAX/luezAqk\"",
-    "mtime": "2024-12-16T10:03:12.167Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/55/barline-chiller-1407-blueline-gn2100tng/_payload.json"
-  },
-  "/commercial-kitchen/product/550/smooth-hot-plate-griddle-375-hps-375f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-4Dl84nDzYgk6EW4IIPDYsRqclvE\"",
-    "mtime": "2024-12-16T10:03:01.631Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/550/smooth-hot-plate-griddle-375-hps-375f-7s/index.html"
-  },
-  "/commercial-kitchen/product/550/smooth-hot-plate-griddle-375-hps-375f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-msPRjsfU94MYE5yWPYVak9LbQps\"",
-    "mtime": "2024-12-16T10:03:11.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/550/smooth-hot-plate-griddle-375-hps-375f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/551/smooth-hot-plate-griddle-750-hps-750f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-EVuvu6fsZfH3roRqYGD7fIdR6D4\"",
-    "mtime": "2024-12-16T10:03:01.642Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/551/smooth-hot-plate-griddle-750-hps-750f-7s/index.html"
-  },
-  "/commercial-kitchen/product/551/smooth-hot-plate-griddle-750-hps-750f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iSDcCfzLxVY8NAUMKRsqjiikepU\"",
-    "mtime": "2024-12-16T10:03:11.791Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/551/smooth-hot-plate-griddle-750-hps-750f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/553/grooved-hot-plate-griddle-375-hpg-375f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-rh44ZPRwORzUxfMwH0iDMAQIbew\"",
-    "mtime": "2024-12-16T10:03:01.702Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/553/grooved-hot-plate-griddle-375-hpg-375f-7s/index.html"
-  },
-  "/commercial-kitchen/product/553/grooved-hot-plate-griddle-375-hpg-375f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6t5AffIewa51juZEUR0Kj2WVMfg\"",
-    "mtime": "2024-12-16T10:03:11.811Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/553/grooved-hot-plate-griddle-375-hpg-375f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/552/1-2-smooth-1-2-grooved-hot-plate-griddle-hpsg-750f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-u5NhCdaaqouofrQa4A7dH5jmOCI\"",
-    "mtime": "2024-12-16T10:03:01.719Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/552/1-2-smooth-1-2-grooved-hot-plate-griddle-hpsg-750f-7s/index.html"
-  },
-  "/commercial-kitchen/product/552/1-2-smooth-1-2-grooved-hot-plate-griddle-hpsg-750f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VPURUqbcKnsifXpgQ/iiTZQxwqI\"",
-    "mtime": "2024-12-16T10:03:11.811Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/552/1-2-smooth-1-2-grooved-hot-plate-griddle-hpsg-750f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/554/grooved-hot-plate-griddle-750-hpg-750f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-jTKfWHvV1hTwhF+VFuLWWNIp4os\"",
-    "mtime": "2024-12-16T10:03:01.719Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/554/grooved-hot-plate-griddle-750-hpg-750f-7s/index.html"
-  },
-  "/commercial-kitchen/product/554/grooved-hot-plate-griddle-750-hpg-750f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BiJ7vk/830yqRx3a4s/HFBscwHw\"",
-    "mtime": "2024-12-16T10:03:11.811Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/554/grooved-hot-plate-griddle-750-hpg-750f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/555/free-standing-lava-stone-grill-375-lsg-375f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-rTZlh13NsBSPdUNmt0gmHLAJD6g\"",
-    "mtime": "2024-12-16T10:03:01.740Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/555/free-standing-lava-stone-grill-375-lsg-375f-7s/index.html"
-  },
-  "/commercial-kitchen/product/555/free-standing-lava-stone-grill-375-lsg-375f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hmNsRGuB+pr2JKDguUusaHIuaNs\"",
-    "mtime": "2024-12-16T10:03:11.811Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/555/free-standing-lava-stone-grill-375-lsg-375f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/556/free-standing-lava-stone-grill-750-lsg-750f-7s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-PVgV7QzG169CiDTsaNz/ktGFw1o\"",
-    "mtime": "2024-12-16T10:03:01.758Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/556/free-standing-lava-stone-grill-750-lsg-750f-7s/index.html"
-  },
-  "/commercial-kitchen/product/556/free-standing-lava-stone-grill-750-lsg-750f-7s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mvi3ykvugfTx/8R2XYB5beM37mM\"",
-    "mtime": "2024-12-16T10:03:11.817Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/556/free-standing-lava-stone-grill-750-lsg-750f-7s/_payload.json"
-  },
-  "/commercial-kitchen/product/557/chinese-wok-cooker-cs2308/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-WDUqfoT0nZ5UPIRM+64/sOeuuYE\"",
-    "mtime": "2024-12-16T10:03:01.619Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/557/chinese-wok-cooker-cs2308/index.html"
-  },
-  "/commercial-kitchen/product/557/chinese-wok-cooker-cs2308/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XCFizMbBP56rLjriHzLGegu9COA\"",
-    "mtime": "2024-12-16T10:03:11.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/557/chinese-wok-cooker-cs2308/_payload.json"
-  },
-  "/commercial-kitchen/product/558/free-standing-boiling-pan-100-bop100/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-bWfECfogOWxWSnpFJjOA6S31Ptk\"",
-    "mtime": "2024-12-16T10:03:08.005Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/558/free-standing-boiling-pan-100-bop100/index.html"
-  },
-  "/commercial-kitchen/product/558/free-standing-boiling-pan-100-bop100/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jXoPfUne7B1W7lxFvTSFLUTM97g\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/558/free-standing-boiling-pan-100-bop100/_payload.json"
-  },
-  "/commercial-kitchen/product/559/free-standing-boiling-pan-200-bop200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-q4S4C6gNiloHcOFzoxf4lQCGDMQ\"",
-    "mtime": "2024-12-16T10:03:08.015Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/559/free-standing-boiling-pan-200-bop200/index.html"
-  },
-  "/commercial-kitchen/product/559/free-standing-boiling-pan-200-bop200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-azZq/jXwnkEA4+puDlFY7KbV6hU\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/559/free-standing-boiling-pan-200-bop200/_payload.json"
-  },
-  "/commercial-kitchen/product/56/barline-chiller-1507-blueline-gn2100tng-1500-gn2100tng-1500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13357-bDnaRtEYc+eBsaKWontSykbsOUc\"",
-    "mtime": "2024-12-16T10:03:03.817Z",
-    "size": 78679,
-    "path": "../public/commercial-kitchen/product/56/barline-chiller-1507-blueline-gn2100tng-1500-gn2100tng-1500/index.html"
-  },
-  "/commercial-kitchen/product/56/barline-chiller-1507-blueline-gn2100tng-1500-gn2100tng-1500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CJn30KEMp/foI0kq+gVGcdF7hjE\"",
-    "mtime": "2024-12-16T10:03:12.167Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/56/barline-chiller-1507-blueline-gn2100tng-1500-gn2100tng-1500/_payload.json"
-  },
-  "/commercial-kitchen/product/560/free-standing-bratt-pan-100-btp100/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-g9ilxSdCGkDq4Ldl+kZL1MDOvEw\"",
-    "mtime": "2024-12-16T10:03:08.106Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/560/free-standing-bratt-pan-100-btp100/index.html"
-  },
-  "/commercial-kitchen/product/560/free-standing-bratt-pan-100-btp100/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SwA0wHOaZwe8KZ9SA5BDMRTbclw\"",
-    "mtime": "2024-12-16T10:03:12.880Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/560/free-standing-bratt-pan-100-btp100/_payload.json"
-  },
-  "/commercial-kitchen/product/561/free-standing-bratt-pan-200-btp200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-GUo+Kk+cowhQeE7qynG2OJl4JbQ\"",
-    "mtime": "2024-12-16T10:03:08.106Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/561/free-standing-bratt-pan-200-btp200/index.html"
-  },
-  "/commercial-kitchen/product/561/free-standing-bratt-pan-200-btp200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cEKfxNQRqYBNLZNNnphDLBx/TXw\"",
-    "mtime": "2024-12-16T10:03:12.898Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/561/free-standing-bratt-pan-200-btp200/_payload.json"
-  },
-  "/commercial-kitchen/product/562/6-burner-low-pressure-cooker-free-standing-900mm-sph6f-9s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-hvPtiebgHNucuj/8yv15dzBfamM\"",
-    "mtime": "2024-12-16T10:03:01.541Z",
-    "size": 78675,
-    "path": "../public/commercial-kitchen/product/562/6-burner-low-pressure-cooker-free-standing-900mm-sph6f-9s/index.html"
-  },
-  "/commercial-kitchen/product/562/6-burner-low-pressure-cooker-free-standing-900mm-sph6f-9s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tTpe7yCTEhLs/nmQoDvg69n2AXs\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/562/6-burner-low-pressure-cooker-free-standing-900mm-sph6f-9s/_payload.json"
-  },
-  "/commercial-kitchen/product/563/high-pressure-3-ring-burner-rbhp8008/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-VrTOabGlkujv8KxSgj9rAl9ncYI\"",
-    "mtime": "2024-12-16T10:03:01.519Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/563/high-pressure-3-ring-burner-rbhp8008/index.html"
-  },
-  "/commercial-kitchen/product/563/high-pressure-3-ring-burner-rbhp8008/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bAE6/EODwsOYsqbuvvDlk7QIReo\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/563/high-pressure-3-ring-burner-rbhp8008/_payload.json"
-  },
-  "/commercial-kitchen/product/567/lava-stone-grill-table-top-lsg750-t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-ZsIJx1WrBQINlBFHSVASLS/MeaE\"",
-    "mtime": "2024-12-16T10:03:02.865Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/567/lava-stone-grill-table-top-lsg750-t/index.html"
-  },
-  "/commercial-kitchen/product/567/lava-stone-grill-table-top-lsg750-t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-g16FjNrUPNQVUXJjpaGvS3+Kb6k\"",
-    "mtime": "2024-12-16T10:03:11.996Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/567/lava-stone-grill-table-top-lsg750-t/_payload.json"
-  },
-  "/commercial-kitchen/product/57/barline-chiller-1806-blueline-snack3100tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13302-P2eHXxIag2KuwKBUxnliBDuwmkU\"",
-    "mtime": "2024-12-16T10:03:03.829Z",
-    "size": 78594,
-    "path": "../public/commercial-kitchen/product/57/barline-chiller-1806-blueline-snack3100tng/index.html"
-  },
-  "/commercial-kitchen/product/57/barline-chiller-1806-blueline-snack3100tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IY1ZwfJ5Kyw8Yx2uUH9STeWfUFY\"",
-    "mtime": "2024-12-16T10:03:12.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/57/barline-chiller-1806-blueline-snack3100tng/_payload.json"
-  },
-  "/commercial-kitchen/product/573/wall-type-hood-2400-wth2400/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-kPMhknioJqd+jzpdmqTFKjcILjI\"",
-    "mtime": "2024-12-16T10:03:02.033Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/573/wall-type-hood-2400-wth2400/index.html"
-  },
-  "/commercial-kitchen/product/573/wall-type-hood-2400-wth2400/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iK292cjBq7wReqhJCmnVVd9vezc\"",
-    "mtime": "2024-12-16T10:03:11.850Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/573/wall-type-hood-2400-wth2400/_payload.json"
-  },
-  "/commercial-kitchen/product/574/wall-type-hood-3000-wt3000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-pB2ItTdYHe35eNOX5o4j7o2TfOY\"",
-    "mtime": "2024-12-16T10:03:02.033Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/574/wall-type-hood-3000-wt3000/index.html"
-  },
-  "/commercial-kitchen/product/574/wall-type-hood-3000-wt3000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Sy2oxZH9TZ6TiChLJ7nTW/wavFk\"",
-    "mtime": "2024-12-16T10:03:11.850Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/574/wall-type-hood-3000-wt3000/_payload.json"
-  },
-  "/commercial-kitchen/product/575/wall-type-hood-3600-wth3600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-k7kKRuudKN+58d0lXq9Yk4owgs4\"",
-    "mtime": "2024-12-16T10:03:02.045Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/575/wall-type-hood-3600-wth3600/index.html"
-  },
-  "/commercial-kitchen/product/575/wall-type-hood-3600-wth3600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-avhs7Ymd/xOG8JR27fjGsP/MM6k\"",
-    "mtime": "2024-12-16T10:03:11.855Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/575/wall-type-hood-3600-wth3600/_payload.json"
-  },
-  "/commercial-kitchen/product/576/wall-type-hood-4000-wth4000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-bHPIR+KEO1dCGbCxwiuwDLpI6gM\"",
-    "mtime": "2024-12-16T10:03:02.095Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/576/wall-type-hood-4000-wth4000/index.html"
-  },
-  "/commercial-kitchen/product/576/wall-type-hood-4000-wth4000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cFdHGIhZSuRFWGxpFaxhnZHMyDY\"",
-    "mtime": "2024-12-16T10:03:11.867Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/576/wall-type-hood-4000-wth4000/_payload.json"
-  },
-  "/commercial-kitchen/product/577/wall-type-hood-4800-wth4800/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-JprjTPcoNidVdjgt3aLr7urB7zk\"",
-    "mtime": "2024-12-16T10:03:02.095Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/577/wall-type-hood-4800-wth4800/index.html"
-  },
-  "/commercial-kitchen/product/577/wall-type-hood-4800-wth4800/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QiFwznIM9BOcGL9feUlbUGLdsA0\"",
-    "mtime": "2024-12-16T10:03:11.867Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/577/wall-type-hood-4800-wth4800/_payload.json"
-  },
-  "/commercial-kitchen/product/578/grease-filters-gf/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-6+hoo/H+04PAJlXFBnN/xXIo4ho\"",
-    "mtime": "2024-12-16T10:03:02.033Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/578/grease-filters-gf/index.html"
-  },
-  "/commercial-kitchen/product/578/grease-filters-gf/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V0MsMgtA0y1kDHJSXYDr3PkHTpk\"",
-    "mtime": "2024-12-16T10:03:11.844Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/578/grease-filters-gf/_payload.json"
-  },
-  "/commercial-kitchen/product/579/island-type-hood-2400-ish2400/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-l2gUhGG8K5lls0IwKFGYVZDw3Eo\"",
-    "mtime": "2024-12-16T10:03:02.126Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/579/island-type-hood-2400-ish2400/index.html"
-  },
-  "/commercial-kitchen/product/579/island-type-hood-2400-ish2400/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-55tBirbU69D9ALZ10+d+hhI3Vgw\"",
-    "mtime": "2024-12-16T10:03:11.880Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/579/island-type-hood-2400-ish2400/_payload.json"
-  },
-  "/commercial-kitchen/product/58/barline-chiller-1807-blueline-gn3100tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-yE5HFAgG1MEMnrfWCx5oO33m0Vo\"",
-    "mtime": "2024-12-16T10:03:03.835Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/58/barline-chiller-1807-blueline-gn3100tng/index.html"
-  },
-  "/commercial-kitchen/product/58/barline-chiller-1807-blueline-gn3100tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8FdbSTsYbxyBXhdr5hIA9LwjPLo\"",
-    "mtime": "2024-12-16T10:03:12.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/58/barline-chiller-1807-blueline-gn3100tng/_payload.json"
-  },
-  "/commercial-kitchen/product/580/island-type-hood-3000-ish3000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-zNflSoFMM/Cd5gIsV/id/vY8PCs\"",
-    "mtime": "2024-12-16T10:03:02.126Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/580/island-type-hood-3000-ish3000/index.html"
-  },
-  "/commercial-kitchen/product/580/island-type-hood-3000-ish3000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rvQsVOgZXH8cSOcW6nn3jDca/z0\"",
-    "mtime": "2024-12-16T10:03:11.875Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/580/island-type-hood-3000-ish3000/_payload.json"
-  },
-  "/commercial-kitchen/product/581/island-type-hood-3600-ish3600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-pafcuiGvXVZ0NVCvSth4n3HH3cU\"",
-    "mtime": "2024-12-16T10:03:02.133Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/581/island-type-hood-3600-ish3600/index.html"
-  },
-  "/commercial-kitchen/product/581/island-type-hood-3600-ish3600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WsUlZuI9G18jl544V/UHavw2yxA\"",
-    "mtime": "2024-12-16T10:03:11.880Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/581/island-type-hood-3600-ish3600/_payload.json"
-  },
-  "/commercial-kitchen/product/582/island-type-hood-4000-ish4000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-Gehgd2okebPuzMY8dXYrYgfbvfg\"",
-    "mtime": "2024-12-16T10:03:02.148Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/582/island-type-hood-4000-ish4000/index.html"
-  },
-  "/commercial-kitchen/product/582/island-type-hood-4000-ish4000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QvmRFNtQQBYs7vSVkA57etnRZ1o\"",
-    "mtime": "2024-12-16T10:03:11.880Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/582/island-type-hood-4000-ish4000/_payload.json"
-  },
-  "/commercial-kitchen/product/583/island-type-hood-4600-ish4600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-LBY7tlFCiy10Q6cIcY+z3v54Fek\"",
-    "mtime": "2024-12-16T10:03:02.148Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/583/island-type-hood-4600-ish4600/index.html"
-  },
-  "/commercial-kitchen/product/583/island-type-hood-4600-ish4600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XT5lcGNUPK5NYHNEATpJACzFl00\"",
-    "mtime": "2024-12-16T10:03:11.885Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/583/island-type-hood-4600-ish4600/_payload.json"
-  },
-  "/commercial-kitchen/product/584/service-spines-ss/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-jvJafwSGD3p+Ny3x5X5RWog2nsY\"",
-    "mtime": "2024-12-16T10:03:02.162Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/584/service-spines-ss/index.html"
-  },
-  "/commercial-kitchen/product/584/service-spines-ss/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oEViCCj8RDCHgQ/ENp4fMhsdZyw\"",
-    "mtime": "2024-12-16T10:03:11.895Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/584/service-spines-ss/_payload.json"
-  },
-  "/commercial-kitchen/product/585/pillars-sps/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1326d-NYPbqmInuvGEyhTKqXUF5EguZck\"",
-    "mtime": "2024-12-16T10:03:02.228Z",
-    "size": 78445,
-    "path": "../public/commercial-kitchen/product/585/pillars-sps/index.html"
-  },
-  "/commercial-kitchen/product/585/pillars-sps/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kSPPCEoTQfsQobsuHj5BRFZo/BY\"",
-    "mtime": "2024-12-16T10:03:11.895Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/585/pillars-sps/_payload.json"
-  },
-  "/commercial-kitchen/product/586/central-service-spine-csps/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-TCdfQN2GzB5cX1vA4GyiuiXTYiw\"",
-    "mtime": "2024-12-16T10:03:02.228Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/586/central-service-spine-csps/index.html"
-  },
-  "/commercial-kitchen/product/586/central-service-spine-csps/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1Ero+V2zLXsbvYYMC5KgC1iXcwI\"",
-    "mtime": "2024-12-16T10:03:11.895Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/586/central-service-spine-csps/_payload.json"
-  },
-  "/commercial-kitchen/product/587/kusina-tilting-bratt-pan-60-litres-g7td200g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-+bH458GMXCM22Srp6NiHa0MtNOQ\"",
-    "mtime": "2024-12-16T10:03:08.087Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/587/kusina-tilting-bratt-pan-60-litres-g7td200g/index.html"
-  },
-  "/commercial-kitchen/product/587/kusina-tilting-bratt-pan-60-litres-g7td200g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-f9AxgebW0QmrQzBFpROHV3NJidQ\"",
-    "mtime": "2024-12-16T10:03:12.879Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/587/kusina-tilting-bratt-pan-60-litres-g7td200g/_payload.json"
-  },
-  "/commercial-kitchen/product/588/boiling-pan-250-ltrs-kusina-g9kt201g-g9kt201g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-dOd1UL8kr5mUOyaCnrNYoz6Ox8c\"",
-    "mtime": "2024-12-16T10:03:08.015Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/588/boiling-pan-250-ltrs-kusina-g9kt201g-g9kt201g/index.html"
-  },
-  "/commercial-kitchen/product/588/boiling-pan-250-ltrs-kusina-g9kt201g-g9kt201g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9gohcZd6qIoK0Od4TD6s/NC6Hik\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/588/boiling-pan-250-ltrs-kusina-g9kt201g-g9kt201g/_payload.json"
-  },
-  "/commercial-kitchen/product/589/500-litre-square-commercial-boiling-pan-pqf-v500n/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-Ez/Fa05Ficf67gT6hrZoMpdQhDo\"",
-    "mtime": "2024-12-16T10:03:08.020Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/589/500-litre-square-commercial-boiling-pan-pqf-v500n/index.html"
-  },
-  "/commercial-kitchen/product/589/500-litre-square-commercial-boiling-pan-pqf-v500n/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2BYlHEBg7UVX7l0aXRFhwA23W3I\"",
-    "mtime": "2024-12-16T10:03:12.879Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/589/500-litre-square-commercial-boiling-pan-pqf-v500n/_payload.json"
-  },
-  "/commercial-kitchen/product/59/barline-chiller-2206-blueline-snack4100tn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fd-3cNCpyTl65IxlU+GZVtJG/ToQeE\"",
-    "mtime": "2024-12-16T10:03:03.871Z",
-    "size": 78589,
-    "path": "../public/commercial-kitchen/product/59/barline-chiller-2206-blueline-snack4100tn/index.html"
-  },
-  "/commercial-kitchen/product/59/barline-chiller-2206-blueline-snack4100tn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6GKuslZkEefeKaHTxZkIj65Zxvk\"",
-    "mtime": "2024-12-16T10:03:12.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/59/barline-chiller-2206-blueline-snack4100tn/_payload.json"
-  },
-  "/commercial-kitchen/product/590/4-burner-gas-range-on-gas-oven-q70pcf-g8008-q70pcf-g8008/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-9Ms+58fA+nJel6R5gVqOtOs6Hbs\"",
-    "mtime": "2024-12-16T10:03:01.422Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/590/4-burner-gas-range-on-gas-oven-q70pcf-g8008-q70pcf-g8008/index.html"
-  },
-  "/commercial-kitchen/product/590/4-burner-gas-range-on-gas-oven-q70pcf-g8008-q70pcf-g8008/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-178KRSBzF0fa26u8/iZlFglU39Q\"",
-    "mtime": "2024-12-16T10:03:11.760Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/590/4-burner-gas-range-on-gas-oven-q70pcf-g8008-q70pcf-g8008/_payload.json"
-  },
-  "/commercial-kitchen/product/591/4-burner-gas-range-on-gas-oven-q90pcf-g8001-q90pcf-g8001/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-hsZB7akoOvlu/60HFLwq9V5eMa8\"",
-    "mtime": "2024-12-16T10:03:01.396Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/591/4-burner-gas-range-on-gas-oven-q90pcf-g8001-q90pcf-g8001/index.html"
-  },
-  "/commercial-kitchen/product/591/4-burner-gas-range-on-gas-oven-q90pcf-g8001-q90pcf-g8001/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZbG+aKCz7d58vGtpwF/YqvCAV0s\"",
-    "mtime": "2024-12-16T10:03:11.751Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/591/4-burner-gas-range-on-gas-oven-q90pcf-g8001-q90pcf-g8001/_payload.json"
-  },
-  "/commercial-kitchen/product/592/4-square-hotplate-electric-range-q90pc-e801/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-pm9gxRLIPQWi0j3damK3p+++TMk\"",
-    "mtime": "2024-12-16T10:03:01.396Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/592/4-square-hotplate-electric-range-q90pc-e801/index.html"
-  },
-  "/commercial-kitchen/product/592/4-square-hotplate-electric-range-q90pc-e801/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U2VYZqS5p+Hj8bBw4wpuVdOkdEo\"",
-    "mtime": "2024-12-16T10:03:11.751Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/592/4-square-hotplate-electric-range-q90pc-e801/_payload.json"
-  },
-  "/commercial-kitchen/product/593/4-round-hotplate-electric-range-q70pc-e800/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-0roWCb7Yd+24thH3EgXhkmPHbvM\"",
-    "mtime": "2024-12-16T10:03:01.327Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/593/4-round-hotplate-electric-range-q70pc-e800/index.html"
-  },
-  "/commercial-kitchen/product/593/4-round-hotplate-electric-range-q70pc-e800/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+Wy884f4Oz5bYPyDPZa8COwX3D8\"",
-    "mtime": "2024-12-16T10:03:11.741Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/593/4-round-hotplate-electric-range-q70pc-e800/_payload.json"
-  },
-  "/commercial-kitchen/product/594/4-burner-gas-range-electric-oven-g9k210g-e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-e3BBl5CfTZWaipamR3N+HIkkHek\"",
-    "mtime": "2024-12-16T10:03:01.490Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/594/4-burner-gas-range-electric-oven-g9k210g-e/index.html"
-  },
-  "/commercial-kitchen/product/594/4-burner-gas-range-electric-oven-g9k210g-e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Nu0SJj7yBaE+MLqqebEu/Q9L/+0\"",
-    "mtime": "2024-12-16T10:03:11.767Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/594/4-burner-gas-range-electric-oven-g9k210g-e/_payload.json"
-  },
-  "/commercial-kitchen/product/595/4-burner-gas-range-with-gas-oven-rgr24-redline-rgr24/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-yUFG2NZQWBpGFYpO31iY61OXCE8\"",
-    "mtime": "2024-12-16T10:03:01.396Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/595/4-burner-gas-range-with-gas-oven-rgr24-redline-rgr24/index.html"
-  },
-  "/commercial-kitchen/product/595/4-burner-gas-range-with-gas-oven-rgr24-redline-rgr24/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jSBUI/Hvn+OQCCgJLXefTSAQi78\"",
-    "mtime": "2024-12-16T10:03:11.751Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/595/4-burner-gas-range-with-gas-oven-rgr24-redline-rgr24/_payload.json"
-  },
-  "/commercial-kitchen/product/596/6-burner-gas-range-with-gas-oven-rgr36-redline-rgr36/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-ZXDVocYTVW8LU4unPiYCsjlgNTI\"",
-    "mtime": "2024-12-16T10:03:01.428Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/596/6-burner-gas-range-with-gas-oven-rgr36-redline-rgr36/index.html"
-  },
-  "/commercial-kitchen/product/596/6-burner-gas-range-with-gas-oven-rgr36-redline-rgr36/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-X2wvgupHId92aRh5TKwuOpMytlw\"",
-    "mtime": "2024-12-16T10:03:11.767Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/596/6-burner-gas-range-with-gas-oven-rgr36-redline-rgr36/_payload.json"
-  },
-  "/commercial-kitchen/product/597/6-burner-gas-cookeroven-bertos-g7f6pfg1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-UCYEtiKa2f5TMts3tJsSZgB1mGo\"",
-    "mtime": "2024-12-16T10:03:01.504Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/597/6-burner-gas-cookeroven-bertos-g7f6pfg1/index.html"
-  },
-  "/commercial-kitchen/product/597/6-burner-gas-cookeroven-bertos-g7f6pfg1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-j/OiZwSAZaGW/pv029SaIHKV9NM\"",
-    "mtime": "2024-12-16T10:03:11.779Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/597/6-burner-gas-cookeroven-bertos-g7f6pfg1/_payload.json"
-  },
-  "/commercial-kitchen/product/598/fryer-double-25-litres-table-top-electric-elaboratex-hef-904-hef-904/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1338a-IV4ARwt7/lxBV2N0ponxe+xP434\"",
-    "mtime": "2024-12-16T10:03:02.528Z",
-    "size": 78730,
-    "path": "../public/commercial-kitchen/product/598/fryer-double-25-litres-table-top-electric-elaboratex-hef-904-hef-904/index.html"
-  },
-  "/commercial-kitchen/product/598/fryer-double-25-litres-table-top-electric-elaboratex-hef-904-hef-904/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-onK8jSHfPbRFXunuiVtyT8StCb8\"",
-    "mtime": "2024-12-16T10:03:11.933Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/598/fryer-double-25-litres-table-top-electric-elaboratex-hef-904-hef-904/_payload.json"
-  },
-  "/commercial-kitchen/product/599/fryer-single-30-litres-gas-hds--150-hds-150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-3BcD7yNVMmNg+SFwCnqZQ+fQeN0\"",
-    "mtime": "2024-12-16T10:03:02.580Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/599/fryer-single-30-litres-gas-hds--150-hds-150/index.html"
-  },
-  "/commercial-kitchen/product/599/fryer-single-30-litres-gas-hds--150-hds-150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-u6icq87uAcEAM13FTx7yv1X+wgg\"",
-    "mtime": "2024-12-16T10:03:11.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/599/fryer-single-30-litres-gas-hds--150-hds-150/_payload.json"
-  },
-  "/commercial-kitchen/product/60/barline-chiller-2207-blueline-gn4100tng/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-/hVtajO16y4sJzIi9ZtkABO1Zr8\"",
-    "mtime": "2024-12-16T10:03:03.885Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/60/barline-chiller-2207-blueline-gn4100tng/index.html"
-  },
-  "/commercial-kitchen/product/60/barline-chiller-2207-blueline-gn4100tng/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TEek9bkGNr6na6VUpL+v3vkJ8Ko\"",
-    "mtime": "2024-12-16T10:03:12.176Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/60/barline-chiller-2207-blueline-gn4100tng/_payload.json"
-  },
-  "/commercial-kitchen/product/600/fryer-single-22-litres-gas-hds--120-hds-120/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-Xh1MGiDw7i4ddEIwhfVqt6gaWcE\"",
-    "mtime": "2024-12-16T10:03:02.579Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/600/fryer-single-22-litres-gas-hds--120-hds-120/index.html"
-  },
-  "/commercial-kitchen/product/600/fryer-single-22-litres-gas-hds--120-hds-120/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zAly+dUVelsIhFJY+58/g74IJP8\"",
-    "mtime": "2024-12-16T10:03:11.943Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/600/fryer-single-22-litres-gas-hds--120-hds-120/_payload.json"
-  },
-  "/commercial-kitchen/product/601/electric-single-well-fryer-ef171/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-fQS4JSMg7rvfvE4dkRO7jju8Dp0\"",
-    "mtime": "2024-12-16T10:03:02.511Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/601/electric-single-well-fryer-ef171/index.html"
-  },
-  "/commercial-kitchen/product/601/electric-single-well-fryer-ef171/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Zue2QngFAWeVHEEzEJjQgBAJ8YI\"",
-    "mtime": "2024-12-16T10:03:11.933Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/601/electric-single-well-fryer-ef171/_payload.json"
-  },
-  "/commercial-kitchen/product/602/electric-single-well-fryer-e7f10-4m-e7f10-4m/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-0Rdv3expYiO7WzbaJytONCVSBZY\"",
-    "mtime": "2024-12-16T10:03:02.680Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/602/electric-single-well-fryer-e7f10-4m-e7f10-4m/index.html"
-  },
-  "/commercial-kitchen/product/602/electric-single-well-fryer-e7f10-4m-e7f10-4m/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HYp0AzsgoC7oV6hB0+9IH7MBgZA\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/602/electric-single-well-fryer-e7f10-4m-e7f10-4m/_payload.json"
-  },
-  "/commercial-kitchen/product/603/gas-single-well-fryer-gl20m/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-jSJrXkBXy+Wok50ZJ/9C0aoKRJ8\"",
-    "mtime": "2024-12-16T10:03:02.697Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/603/gas-single-well-fryer-gl20m/index.html"
-  },
-  "/commercial-kitchen/product/603/gas-single-well-fryer-gl20m/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UziLLpvW/dES37Uq8zpAsjFFgP4\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/603/gas-single-well-fryer-gl20m/_payload.json"
-  },
-  "/commercial-kitchen/product/604/fryer-double-15--15-litres-gas-bertos-gl1515m/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-qJ9ed6pbuAmrFwFP+Z/8MwAXTn4\"",
-    "mtime": "2024-12-16T10:03:02.659Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/604/fryer-double-15--15-litres-gas-bertos-gl1515m/index.html"
-  },
-  "/commercial-kitchen/product/604/fryer-double-15--15-litres-gas-bertos-gl1515m/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MMGJUMT3G2SqnXUF+T0Rko7pe1U\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/604/fryer-double-15--15-litres-gas-bertos-gl1515m/_payload.json"
-  },
-  "/commercial-kitchen/product/605/fryer-double-10--10-litres-gas-bertos-gl1010b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-8fZYTU4TCbglh5SdGEtJbkK/f+g\"",
-    "mtime": "2024-12-16T10:03:02.659Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/605/fryer-double-10--10-litres-gas-bertos-gl1010b/index.html"
-  },
-  "/commercial-kitchen/product/605/fryer-double-10--10-litres-gas-bertos-gl1010b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+5EpvCckrbmBsDzz8coBSKobaSI\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/605/fryer-double-10--10-litres-gas-bertos-gl1010b/_payload.json"
-  },
-  "/commercial-kitchen/product/606/fryer-single-10-litre-electric-baron-d17fre410-d17fre410/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-IyIzKmBpzQfhscdL9QUrx7DfRKg\"",
-    "mtime": "2024-12-16T10:03:02.603Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/606/fryer-single-10-litre-electric-baron-d17fre410-d17fre410/index.html"
-  },
-  "/commercial-kitchen/product/606/fryer-single-10-litre-electric-baron-d17fre410-d17fre410/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-lRG3r0ND7BIYoEy3nJ29DcSQb8Q\"",
-    "mtime": "2024-12-16T10:03:11.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/606/fryer-single-10-litre-electric-baron-d17fre410-d17fre410/_payload.json"
-  },
-  "/commercial-kitchen/product/608/28ltr-electric-fryer-df28l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-Y4rgH7UltQ05EI0Hz9ygbTv1wfI\"",
-    "mtime": "2024-12-16T10:03:02.585Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/608/28ltr-electric-fryer-df28l/index.html"
-  },
-  "/commercial-kitchen/product/608/28ltr-electric-fryer-df28l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RQEI4UCKl3lnnJrwsbIrBc4RwOM\"",
-    "mtime": "2024-12-16T10:03:11.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/608/28ltr-electric-fryer-df28l/_payload.json"
-  },
-  "/commercial-kitchen/product/607/fryer-single-15-litres-gas-baron-q70fri-g415-q70fri-g415/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-2aAwC8rN21jQtvhXJTI0NQ5/GvQ\"",
-    "mtime": "2024-12-16T10:03:02.611Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/607/fryer-single-15-litres-gas-baron-q70fri-g415-q70fri-g415/index.html"
-  },
-  "/commercial-kitchen/product/607/fryer-single-15-litres-gas-baron-q70fri-g415-q70fri-g415/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eUn/HPYXTv8tYUTprDRijG6jDOQ\"",
-    "mtime": "2024-12-16T10:03:11.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/607/fryer-single-15-litres-gas-baron-q70fri-g415-q70fri-g415/_payload.json"
-  },
-  "/commercial-kitchen/product/609/pressure-fryer-electric-broaster-1600-broaster-1600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-LEBlP4vfVPEBnRduEzjckcJ/yFU\"",
-    "mtime": "2024-12-16T10:03:04.609Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/609/pressure-fryer-electric-broaster-1600-broaster-1600/index.html"
-  },
-  "/commercial-kitchen/product/609/pressure-fryer-electric-broaster-1600-broaster-1600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qTLb8cG9oIjgaQy1ubyX/ejfQbc\"",
-    "mtime": "2024-12-16T10:03:12.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/609/pressure-fryer-electric-broaster-1600-broaster-1600/_payload.json"
-  },
-  "/commercial-kitchen/product/61/salad-counter-2-door-1045-blueline-s902v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-UH+J80IT45eaZfHrjpyEkz2P2xc\"",
-    "mtime": "2024-12-16T10:03:03.265Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/61/salad-counter-2-door-1045-blueline-s902v/index.html"
-  },
-  "/commercial-kitchen/product/61/salad-counter-2-door-1045-blueline-s902v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Qvo0Z6jsAPyfMHlw1B8gkrEP75Q\"",
-    "mtime": "2024-12-16T10:03:12.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/61/salad-counter-2-door-1045-blueline-s902v/_payload.json"
-  },
-  "/commercial-kitchen/product/610/pressure-fryer-electric-broaster-1800e-broaster-1800e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-Bf8zAglw3Yz/T1kX9uphiyw2UMs\"",
-    "mtime": "2024-12-16T10:03:04.645Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/610/pressure-fryer-electric-broaster-1800e-broaster-1800e/index.html"
-  },
-  "/commercial-kitchen/product/610/pressure-fryer-electric-broaster-1800e-broaster-1800e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-P47jVA8XtCR5+3SJWmOKixNTMcI\"",
-    "mtime": "2024-12-16T10:03:12.300Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/610/pressure-fryer-electric-broaster-1800e-broaster-1800e/_payload.json"
-  },
-  "/commercial-kitchen/product/611/pressure-fryer-gas-broaster-1800g-broaster-1800g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-2bG7YHiiJGD25y6ASeEVCTsHoH8\"",
-    "mtime": "2024-12-16T10:03:04.657Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/611/pressure-fryer-gas-broaster-1800g-broaster-1800g/index.html"
-  },
-  "/commercial-kitchen/product/611/pressure-fryer-gas-broaster-1800g-broaster-1800g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-s887wqWgmxNlY195VP5UAD8WX18\"",
-    "mtime": "2024-12-16T10:03:12.300Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/611/pressure-fryer-gas-broaster-1800g-broaster-1800g/_payload.json"
-  },
-  "/commercial-kitchen/product/612/electric-pressure-fryer-16l-mdx15/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-tmnORVDS4up92GzVD5l0acQFyds\"",
-    "mtime": "2024-12-16T10:03:04.688Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/612/electric-pressure-fryer-16l-mdx15/index.html"
-  },
-  "/commercial-kitchen/product/612/electric-pressure-fryer-16l-mdx15/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kUWqmg9dqYykGtr8ZqzvGCD0qAA\"",
-    "mtime": "2024-12-16T10:03:12.300Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/612/electric-pressure-fryer-16l-mdx15/_payload.json"
-  },
-  "/commercial-kitchen/product/614/electric-pressure-fryer-pfe500-pfe500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-CD1wOtw/tMKDxBvlvahOkIJ0CpU\"",
-    "mtime": "2024-12-16T10:03:04.782Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/614/electric-pressure-fryer-pfe500-pfe500/index.html"
-  },
-  "/commercial-kitchen/product/614/electric-pressure-fryer-pfe500-pfe500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-078euJyAbR4LR/kcdYfZq35aNXk\"",
-    "mtime": "2024-12-16T10:03:12.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/614/electric-pressure-fryer-pfe500-pfe500/_payload.json"
-  },
-  "/commercial-kitchen/product/613/electric-pressure-fryer-mdxz-24-mdxz-24/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-SSARRTW6aSuWJ4FA213i8Ofyu9E\"",
-    "mtime": "2024-12-16T10:03:04.790Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/613/electric-pressure-fryer-mdxz-24-mdxz-24/index.html"
-  },
-  "/commercial-kitchen/product/613/electric-pressure-fryer-mdxz-24-mdxz-24/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-s/4XZ6/4fZcI/efVARHbvb24A98\"",
-    "mtime": "2024-12-16T10:03:12.314Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/613/electric-pressure-fryer-mdxz-24-mdxz-24/_payload.json"
-  },
-  "/commercial-kitchen/product/615/radiant-broiler-gas-h-kitchen-36-cb36/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-EP4DtzTfGAUzOfyavMD+oj/KgjQ\"",
-    "mtime": "2024-12-16T10:03:02.766Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/615/radiant-broiler-gas-h-kitchen-36-cb36/index.html"
-  },
-  "/commercial-kitchen/product/615/radiant-broiler-gas-h-kitchen-36-cb36/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uWkRfGwWUbaXma4M55jaVbtE4Wg\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/615/radiant-broiler-gas-h-kitchen-36-cb36/_payload.json"
-  },
-  "/commercial-kitchen/product/616/radiant-broiler-gas-h-kitchen-48-cb48/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-zDdWtAsuNf39qJOiRIyYkNh1RBk\"",
-    "mtime": "2024-12-16T10:03:02.745Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/616/radiant-broiler-gas-h-kitchen-48-cb48/index.html"
-  },
-  "/commercial-kitchen/product/616/radiant-broiler-gas-h-kitchen-48-cb48/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DvbayaIbO7AmlECTiuEfyWw69g0\"",
-    "mtime": "2024-12-16T10:03:11.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/616/radiant-broiler-gas-h-kitchen-48-cb48/_payload.json"
-  },
-  "/commercial-kitchen/product/617/outdoor-grill-hps-1300f-6s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-hzBA9Re0/n/AQx+6RdGHm4W5sms\"",
-    "mtime": "2024-12-16T10:03:02.791Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/617/outdoor-grill-hps-1300f-6s/index.html"
-  },
-  "/commercial-kitchen/product/617/outdoor-grill-hps-1300f-6s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wPVgNZrLZa+0EaYUgSy/nMfJcNU\"",
-    "mtime": "2024-12-16T10:03:11.975Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/617/outdoor-grill-hps-1300f-6s/_payload.json"
-  },
-  "/commercial-kitchen/product/618/exotic-open-flame-grill-glt-grill/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-u5DzX4qPkpBpErpxsCCVd/HRxpM\"",
-    "mtime": "2024-12-16T10:03:02.833Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/618/exotic-open-flame-grill-glt-grill/index.html"
-  },
-  "/commercial-kitchen/product/618/exotic-open-flame-grill-glt-grill/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bguWhOtAJzOEWtCckZQCZtDufpQ\"",
-    "mtime": "2024-12-16T10:03:11.975Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/618/exotic-open-flame-grill-glt-grill/_payload.json"
-  },
-  "/commercial-kitchen/product/619/commercial-microwave-oven-30-litres-mwp1050-30en/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-dZTGugqnfTpxwwxZy1/N5qVFQz4\"",
-    "mtime": "2024-12-16T10:03:03.045Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/619/commercial-microwave-oven-30-litres-mwp1050-30en/index.html"
-  },
-  "/commercial-kitchen/product/619/commercial-microwave-oven-30-litres-mwp1050-30en/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-yx4JsgFdCQaev5gPTAtW9OJ2Xq4\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/619/commercial-microwave-oven-30-litres-mwp1050-30en/_payload.json"
-  },
-  "/commercial-kitchen/product/62/salad-counter-3-door-1800-blueline-sh3000-700/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13311-xhfnBKzB4ikL7aMJC1JGM06E6jY\"",
-    "mtime": "2024-12-16T10:03:03.265Z",
-    "size": 78609,
-    "path": "../public/commercial-kitchen/product/62/salad-counter-3-door-1800-blueline-sh3000-700/index.html"
-  },
-  "/commercial-kitchen/product/62/salad-counter-3-door-1800-blueline-sh3000-700/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-myvsQ3NzowTpfnLxYlOxjXEdmYM\"",
-    "mtime": "2024-12-16T10:03:12.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/62/salad-counter-3-door-1800-blueline-sh3000-700/_payload.json"
-  },
-  "/commercial-kitchen/product/620/commercial-microwave-oven-26-litres-mwp1052-26-e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-Bpvo5BEUWBjEGP02e1tk0UtnolA\"",
-    "mtime": "2024-12-16T10:03:03.015Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/620/commercial-microwave-oven-26-litres-mwp1052-26-e/index.html"
-  },
-  "/commercial-kitchen/product/620/commercial-microwave-oven-26-litres-mwp1052-26-e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6UIWZ36UXWibzzt6wgFkCU5CCfc\"",
-    "mtime": "2024-12-16T10:03:12.025Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/620/commercial-microwave-oven-26-litres-mwp1052-26-e/_payload.json"
-  },
-  "/commercial-kitchen/product/621/microwave-oven-menumaster-34-litres-rcs511ts/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-1HqtXUHzkm9t1t6J/YPWc3CrHqc\"",
-    "mtime": "2024-12-16T10:03:03.045Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/621/microwave-oven-menumaster-34-litres-rcs511ts/index.html"
-  },
-  "/commercial-kitchen/product/621/microwave-oven-menumaster-34-litres-rcs511ts/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9pXLLFQWygRbj01N9A+ySrn/IBg\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/621/microwave-oven-menumaster-34-litres-rcs511ts/_payload.json"
-  },
-  "/commercial-kitchen/product/627/electric-lift-up-salamander-h-kitchen-eb600-eb-600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-togYRgNMDSMhP9ge0v+PkR6Va4Q\"",
-    "mtime": "2024-12-16T10:03:02.891Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/627/electric-lift-up-salamander-h-kitchen-eb600-eb-600/index.html"
-  },
-  "/commercial-kitchen/product/627/electric-lift-up-salamander-h-kitchen-eb600-eb-600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ebFbHsinKVF4BlSh0WWzZ9+DEwY\"",
-    "mtime": "2024-12-16T10:03:11.996Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/627/electric-lift-up-salamander-h-kitchen-eb600-eb-600/_payload.json"
-  },
-  "/commercial-kitchen/product/628/electric-lift-up-salamander-h-kitchen-eb450-eb-450/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-xzBdy90GOpOiGG1iglJonAfPrLo\"",
-    "mtime": "2024-12-16T10:03:02.891Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/628/electric-lift-up-salamander-h-kitchen-eb450-eb-450/index.html"
-  },
-  "/commercial-kitchen/product/628/electric-lift-up-salamander-h-kitchen-eb450-eb-450/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kA8MOhg6M7Xr5Om5O+AAN572IkI\"",
-    "mtime": "2024-12-16T10:03:11.998Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/628/electric-lift-up-salamander-h-kitchen-eb450-eb-450/_payload.json"
-  },
-  "/commercial-kitchen/product/629/salamander-electric-kassidy-at937/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-lnfXfQMH9vO6mHIMwDSIWbtRuqI\"",
-    "mtime": "2024-12-16T10:03:02.944Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/629/salamander-electric-kassidy-at937/index.html"
-  },
-  "/commercial-kitchen/product/629/salamander-electric-kassidy-at937/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0wJzZtyxnGlMChdwmiXWKuqd5KY\"",
-    "mtime": "2024-12-16T10:03:12.009Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/629/salamander-electric-kassidy-at937/_payload.json"
-  },
-  "/commercial-kitchen/product/63/salad-counter-3-door-2000-blueline-sh3000-800/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13311-BhAR2NezLqT8jZLMQKZ1Ps+yHD8\"",
-    "mtime": "2024-12-16T10:03:03.294Z",
-    "size": 78609,
-    "path": "../public/commercial-kitchen/product/63/salad-counter-3-door-2000-blueline-sh3000-800/index.html"
-  },
-  "/commercial-kitchen/product/63/salad-counter-3-door-2000-blueline-sh3000-800/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qz/eGKMsQw6XsnX8TgBfr6wEaT8\"",
-    "mtime": "2024-12-16T10:03:12.068Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/63/salad-counter-3-door-2000-blueline-sh3000-800/_payload.json"
-  },
-  "/commercial-kitchen/product/630/salamander-electric-bertos-sa-e60e/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-ISSfVSlOOOvPZO5kMabTjvzyuR4\"",
-    "mtime": "2024-12-16T10:03:02.944Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/630/salamander-electric-bertos-sa-e60e/index.html"
-  },
-  "/commercial-kitchen/product/630/salamander-electric-bertos-sa-e60e/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wLjXR17UrHxVVZy4pGPlMjJXpfo\"",
-    "mtime": "2024-12-16T10:03:12.014Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/630/salamander-electric-bertos-sa-e60e/_payload.json"
-  },
-  "/commercial-kitchen/product/631/salamander-electric-baron-se40-ocb-se-40/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-aa8XnHgFHjNgrdJao17Aw2Bk0W0\"",
-    "mtime": "2024-12-16T10:03:02.940Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/631/salamander-electric-baron-se40-ocb-se-40/index.html"
-  },
-  "/commercial-kitchen/product/631/salamander-electric-baron-se40-ocb-se-40/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-p1Ellgy7wxDr5olWTbzbA2grmHQ\"",
-    "mtime": "2024-12-16T10:03:12.009Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/631/salamander-electric-baron-se40-ocb-se-40/_payload.json"
-  },
-  "/commercial-kitchen/product/632/salamander-electric-baron-se60-se-60/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-B+dmnUdKwz9xkpN7m7WphiHn5wU\"",
-    "mtime": "2024-12-16T10:03:02.943Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/632/salamander-electric-baron-se60-se-60/index.html"
-  },
-  "/commercial-kitchen/product/632/salamander-electric-baron-se60-se-60/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HQE5VC1oWLaOejB3r8njCDTeMVo\"",
-    "mtime": "2024-12-16T10:03:12.009Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/632/salamander-electric-baron-se60-se-60/_payload.json"
-  },
-  "/commercial-kitchen/product/633/6-slots-toaster-h-kitchen-6atsc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-onSexWbo/6Jf3CGNv7xOqUp5OZc\"",
-    "mtime": "2024-12-16T10:03:03.147Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/633/6-slots-toaster-h-kitchen-6atsc/index.html"
-  },
-  "/commercial-kitchen/product/633/6-slots-toaster-h-kitchen-6atsc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/PodClRrv3/8uFL8HRdP1xcn2Ho\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/633/6-slots-toaster-h-kitchen-6atsc/_payload.json"
-  },
-  "/commercial-kitchen/product/634/conveyor-toaster-waring-cts-1000k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-g71WBg3D+FkVZ4rgjLJ7QHMBf70\"",
-    "mtime": "2024-12-16T10:03:03.191Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/634/conveyor-toaster-waring-cts-1000k/index.html"
-  },
-  "/commercial-kitchen/product/634/conveyor-toaster-waring-cts-1000k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-d4JwHWw02Bz8bt2TUcAMj860wDA\"",
-    "mtime": "2024-12-16T10:03:12.041Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/634/conveyor-toaster-waring-cts-1000k/_payload.json"
-  },
-  "/commercial-kitchen/product/635/commercial-4-slot-toaster-wct805k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-4GEVDpN41qjCncWhmxpoB8BOAw8\"",
-    "mtime": "2024-12-16T10:03:03.191Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/635/commercial-4-slot-toaster-wct805k/index.html"
-  },
-  "/commercial-kitchen/product/635/commercial-4-slot-toaster-wct805k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-yFdNN5F4XtHOmCWWbxhmCSFVhDk\"",
-    "mtime": "2024-12-16T10:03:12.041Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/635/commercial-4-slot-toaster-wct805k/_payload.json"
-  },
-  "/commercial-kitchen/product/636/conveyor-toaster-roller-grill-ct-540b-ct540b/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-/49ulF4dVQz0sk3g4QaRh0IlciA\"",
-    "mtime": "2024-12-16T10:03:03.265Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/636/conveyor-toaster-roller-grill-ct-540b-ct540b/index.html"
-  },
-  "/commercial-kitchen/product/636/conveyor-toaster-roller-grill-ct-540b-ct540b/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Mxlqit3buGEHPLLsPBoDplx4EyY\"",
-    "mtime": "2024-12-16T10:03:12.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/636/conveyor-toaster-roller-grill-ct-540b-ct540b/_payload.json"
-  },
-  "/commercial-kitchen/product/637/heavy-duty-conveyor-toaster-ct540/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-9tG0iU1rO5+FoXoxMbr9GG/AXBg\"",
-    "mtime": "2024-12-16T10:03:03.244Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/637/heavy-duty-conveyor-toaster-ct540/index.html"
-  },
-  "/commercial-kitchen/product/637/heavy-duty-conveyor-toaster-ct540/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kgjPS56oXy1n7m67whRwnEG20kU\"",
-    "mtime": "2024-12-16T10:03:12.061Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/637/heavy-duty-conveyor-toaster-ct540/_payload.json"
-  },
-  "/commercial-kitchen/product/640/blender-kitchen-4-litres-lar-04-mbn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-IJFLfteL9ORjUIFf4nyBIAIGPkU\"",
-    "mtime": "2024-12-16T10:02:57.229Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/640/blender-kitchen-4-litres-lar-04-mbn/index.html"
-  },
-  "/commercial-kitchen/product/640/blender-kitchen-4-litres-lar-04-mbn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V8PuDEkVmjY2oUbg+EPntTPuj6I\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/640/blender-kitchen-4-litres-lar-04-mbn/_payload.json"
-  },
-  "/commercial-kitchen/product/638/hand-blender-400-length-wsb60ck-wsb60ck/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-p0eAO2/BUQZFj3zmQa4V9kDcHsA\"",
-    "mtime": "2024-12-16T10:02:57.000Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/638/hand-blender-400-length-wsb60ck-wsb60ck/index.html"
-  },
-  "/commercial-kitchen/product/638/hand-blender-400-length-wsb60ck-wsb60ck/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TVJRM2TaV5zFcuiAXXC1cR/RIIM\"",
-    "mtime": "2024-12-16T10:03:10.949Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/638/hand-blender-400-length-wsb60ck-wsb60ck/_payload.json"
-  },
-  "/commercial-kitchen/product/639/hand-blender-300-length-wsb50ck-wsb50ck/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-5TTEdN3I1hAu7/jnslvB18FDXbY\"",
-    "mtime": "2024-12-16T10:02:56.976Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/639/hand-blender-300-length-wsb50ck-wsb50ck/index.html"
-  },
-  "/commercial-kitchen/product/639/hand-blender-300-length-wsb50ck-wsb50ck/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QUBBr0kb/gb0II5ujt9mZGbEOi4\"",
-    "mtime": "2024-12-16T10:03:10.949Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/639/hand-blender-300-length-wsb50ck-wsb50ck/_payload.json"
-  },
-  "/commercial-kitchen/product/641/blender-kitchen-8-litres-lar-08-mbn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-7vMYvIvro/CepU66TBgVQIk2ilU\"",
-    "mtime": "2024-12-16T10:02:57.253Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/641/blender-kitchen-8-litres-lar-08-mbn/index.html"
-  },
-  "/commercial-kitchen/product/641/blender-kitchen-8-litres-lar-08-mbn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uk/b0qNYr2Yf8X8aEwxtVLmJbXI\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/641/blender-kitchen-8-litres-lar-08-mbn/_payload.json"
-  },
-  "/commercial-kitchen/product/642/blender-kitchen-10-litres-lar-10-mbn/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-4gwNETU+flY6H2gO/jEJ72VSjUo\"",
-    "mtime": "2024-12-16T10:02:57.278Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/642/blender-kitchen-10-litres-lar-10-mbn/index.html"
-  },
-  "/commercial-kitchen/product/642/blender-kitchen-10-litres-lar-10-mbn/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-M4w18ucrDDSirsioMsz10gOfrs0\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/642/blender-kitchen-10-litres-lar-10-mbn/_payload.json"
-  },
-  "/commercial-kitchen/product/644/blender-kitchen-24-litres-37-a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-vdbtPQkyI52HWVznv5yYsqlD7LM\"",
-    "mtime": "2024-12-16T10:02:57.305Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/644/blender-kitchen-24-litres-37-a/index.html"
-  },
-  "/commercial-kitchen/product/644/blender-kitchen-24-litres-37-a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IjG9tkQuOo4jRPDc7ZlXH+DOzAA\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/644/blender-kitchen-24-litres-37-a/_payload.json"
-  },
-  "/commercial-kitchen/product/643/blender-kitchen-25-litres-lar25mb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-H5cTfXdKVdeifNNxV/qTDbJEPa4\"",
-    "mtime": "2024-12-16T10:02:57.295Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/643/blender-kitchen-25-litres-lar25mb/index.html"
-  },
-  "/commercial-kitchen/product/643/blender-kitchen-25-litres-lar25mb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AgosZUzBL9HiN1IzOY3j99OCXFI\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/643/blender-kitchen-25-litres-lar25mb/_payload.json"
-  },
-  "/commercial-kitchen/product/645/blender-bar-2-litres-skymsen-bm2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-nBJZPJ3TXPedHqxZtBUtKSm31wk\"",
-    "mtime": "2024-12-16T10:02:57.225Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/645/blender-bar-2-litres-skymsen-bm2/index.html"
-  },
-  "/commercial-kitchen/product/645/blender-bar-2-litres-skymsen-bm2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iHORzSaOyU8lnlvIUGMDtakIDVg\"",
-    "mtime": "2024-12-16T10:03:10.973Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/645/blender-bar-2-litres-skymsen-bm2/_payload.json"
-  },
-  "/commercial-kitchen/product/646/blender-bar-14-litre-waring-bb300k-bb300k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-9A8/mFGkpQeb4DnTMamS5UHiky4\"",
-    "mtime": "2024-12-16T10:02:57.024Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/646/blender-bar-14-litre-waring-bb300k-bb300k/index.html"
-  },
-  "/commercial-kitchen/product/646/blender-bar-14-litre-waring-bb300k-bb300k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-89mxYGH+3U4mAfPAa1h7hlhir/4\"",
-    "mtime": "2024-12-16T10:03:10.959Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/646/blender-bar-14-litre-waring-bb300k-bb300k/_payload.json"
-  },
-  "/commercial-kitchen/product/647/blender-brushless-2-litres-mx1500xtxsek-waring-mx1500xtxsek/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335d-byVUA2cQPqO9Ewvj6h78ljcK/go\"",
-    "mtime": "2024-12-16T10:02:57.218Z",
-    "size": 78685,
-    "path": "../public/commercial-kitchen/product/647/blender-brushless-2-litres-mx1500xtxsek-waring-mx1500xtxsek/index.html"
-  },
-  "/commercial-kitchen/product/647/blender-brushless-2-litres-mx1500xtxsek-waring-mx1500xtxsek/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wJpE4MnvFR9uu3/X5AvzHUxMe7s\"",
-    "mtime": "2024-12-16T10:03:10.971Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/647/blender-brushless-2-litres-mx1500xtxsek-waring-mx1500xtxsek/_payload.json"
-  },
-  "/commercial-kitchen/product/648/blender-bar-125-litres-santos-33e-33ea/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-MbmWrpCFEagg50tgfTTFvgXI+PY\"",
-    "mtime": "2024-12-16T10:02:57.305Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/648/blender-bar-125-litres-santos-33e-33ea/index.html"
-  },
-  "/commercial-kitchen/product/648/blender-bar-125-litres-santos-33e-33ea/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/yva+Nw361CfXFs7Zlb7vSZ/kt8\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/648/blender-bar-125-litres-santos-33e-33ea/_payload.json"
-  },
-  "/commercial-kitchen/product/649/blender-brushless-santos-14ltr-62a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-Ufpw7NFzS38+TxQ+axSdp8rqBmc\"",
-    "mtime": "2024-12-16T10:02:57.324Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/649/blender-brushless-santos-14ltr-62a/index.html"
-  },
-  "/commercial-kitchen/product/649/blender-brushless-santos-14ltr-62a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bfrrv2wLua+aKl0+NIsUleGTvLw\"",
-    "mtime": "2024-12-16T10:03:10.987Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/649/blender-brushless-santos-14ltr-62a/_payload.json"
-  },
-  "/commercial-kitchen/product/652/automatic-orange-juicer-cancan-38-cancan-38/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-OHoSZdxSGbwXzFnI8jPnBMH5RCw\"",
-    "mtime": "2024-12-16T10:03:07.833Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/652/automatic-orange-juicer-cancan-38-cancan-38/index.html"
-  },
-  "/commercial-kitchen/product/652/automatic-orange-juicer-cancan-38-cancan-38/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hDiukoWfLheEJ6GwUSkSRN9FsvQ\"",
-    "mtime": "2024-12-16T10:03:12.835Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/652/automatic-orange-juicer-cancan-38-cancan-38/_payload.json"
-  },
-  "/commercial-kitchen/product/650/commercial-brushless-blender-15ltr-shg902/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-Yo4fffkqt3bdziDQ5cgUPStRRwc\"",
-    "mtime": "2024-12-16T10:02:57.338Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/650/commercial-brushless-blender-15ltr-shg902/index.html"
-  },
-  "/commercial-kitchen/product/650/commercial-brushless-blender-15ltr-shg902/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YKeV8GLaAKlk0s3gMKqh50N2r8k\"",
-    "mtime": "2024-12-16T10:03:10.997Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/650/commercial-brushless-blender-15ltr-shg902/_payload.json"
-  },
-  "/commercial-kitchen/product/651/automatic-orange-juicer-cancan-28-cancan-28/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-APRNF1dlZFg7K5sqGDb9b1tckW8\"",
-    "mtime": "2024-12-16T10:03:07.818Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/651/automatic-orange-juicer-cancan-28-cancan-28/index.html"
-  },
-  "/commercial-kitchen/product/651/automatic-orange-juicer-cancan-28-cancan-28/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RovJgpSBqlWhLixJebKbKPka12c\"",
-    "mtime": "2024-12-16T10:03:12.835Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/651/automatic-orange-juicer-cancan-28-cancan-28/_payload.json"
-  },
-  "/commercial-kitchen/product/653/orange-juicer-z06a-n-zo6a-n/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-z8k2MdudRW6VI2vk/ForVFY2jec\"",
-    "mtime": "2024-12-16T10:03:07.850Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/653/orange-juicer-z06a-n-zo6a-n/index.html"
-  },
-  "/commercial-kitchen/product/653/orange-juicer-z06a-n-zo6a-n/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-g8Fw0dJjm5iUu4QSwo5wNUUncOQ\"",
-    "mtime": "2024-12-16T10:03:12.859Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/653/orange-juicer-z06a-n-zo6a-n/_payload.json"
-  },
-  "/commercial-kitchen/product/654/orange-juicer-z14-z14/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-XkdQpL6ktTKmbGsXGSpTu4eNjVQ\"",
-    "mtime": "2024-12-16T10:03:07.833Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/654/orange-juicer-z14-z14/index.html"
-  },
-  "/commercial-kitchen/product/654/orange-juicer-z14-z14/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OU4VTp64XbS0o8dKX5/hRd6cHdI\"",
-    "mtime": "2024-12-16T10:03:12.846Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/654/orange-juicer-z14-z14/_payload.json"
-  },
-  "/commercial-kitchen/product/655/citrus-juicer-10a-10a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-E03KIZC095tRtEQW2zFyg8IN2dc\"",
-    "mtime": "2024-12-16T10:02:57.426Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/655/citrus-juicer-10a-10a/index.html"
-  },
-  "/commercial-kitchen/product/655/citrus-juicer-10a-10a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-78AAnUsu/+k/OYmLrux78qmcivo\"",
-    "mtime": "2024-12-16T10:03:11.014Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/655/citrus-juicer-10a-10a/_payload.json"
-  },
-  "/commercial-kitchen/product/656/citrus-juicer-70a-70a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-5kwMgeoIK6cdvNV6H21N/aGZNr0\"",
-    "mtime": "2024-12-16T10:02:57.464Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/656/citrus-juicer-70a-70a/index.html"
-  },
-  "/commercial-kitchen/product/656/citrus-juicer-70a-70a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fgCknFIjE9xuCfh8yrBYWhH3zxc\"",
-    "mtime": "2024-12-16T10:03:11.018Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/656/citrus-juicer-70a-70a/_payload.json"
-  },
-  "/commercial-kitchen/product/657/citrus-juicer-ex-ex/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-F21B7Co489WQhWXIXPnGN9bK+Xc\"",
-    "mtime": "2024-12-16T10:02:57.464Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/657/citrus-juicer-ex-ex/index.html"
-  },
-  "/commercial-kitchen/product/657/citrus-juicer-ex-ex/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CFkKyQMM3uXkkO1eEiUzQ7ntfh8\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/657/citrus-juicer-ex-ex/_payload.json"
-  },
-  "/commercial-kitchen/product/658/centrifugal-juicer-68-ja-68-ja/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-bnPvuouSkOFazEJxlWnBCtF6hOc\"",
-    "mtime": "2024-12-16T10:02:57.382Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/658/centrifugal-juicer-68-ja-68-ja/index.html"
-  },
-  "/commercial-kitchen/product/658/centrifugal-juicer-68-ja-68-ja/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3wPo9JBqiAuAv9TtUTnm+TUHl0A\"",
-    "mtime": "2024-12-16T10:03:10.997Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/658/centrifugal-juicer-68-ja-68-ja/_payload.json"
-  },
-  "/commercial-kitchen/product/659/centrifugal-juicer-50ca-50ca/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-I/x41pKCsrCbfePcRk++dVQ7Amk\"",
-    "mtime": "2024-12-16T10:02:57.329Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/659/centrifugal-juicer-50ca-50ca/index.html"
-  },
-  "/commercial-kitchen/product/659/centrifugal-juicer-50ca-50ca/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OZ9tnz2QjX4xQMV723Mn7XkSnI4\"",
-    "mtime": "2024-12-16T10:03:10.992Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/659/centrifugal-juicer-50ca-50ca/_payload.json"
-  },
-  "/commercial-kitchen/product/660/centrifugal-juicer-cse-cse/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-Xs2uw94pJZXudyM9TYOoqzRlAFM\"",
-    "mtime": "2024-12-16T10:02:57.406Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/660/centrifugal-juicer-cse-cse/index.html"
-  },
-  "/commercial-kitchen/product/660/centrifugal-juicer-cse-cse/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HjMR2f91WicvWDDasz15AElEQtk\"",
-    "mtime": "2024-12-16T10:03:10.997Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/660/centrifugal-juicer-cse-cse/_payload.json"
-  },
-  "/commercial-kitchen/product/661/sugarcane-juicer-jsescj-300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-JalXm0yND+2QU/wl+g7OZRkIgV4\"",
-    "mtime": "2024-12-16T10:03:07.885Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/661/sugarcane-juicer-jsescj-300/index.html"
-  },
-  "/commercial-kitchen/product/661/sugarcane-juicer-jsescj-300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fGPZco/GBzQxSBcSxj4wPLjx+EE\"",
-    "mtime": "2024-12-16T10:03:12.859Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/661/sugarcane-juicer-jsescj-300/_payload.json"
-  },
-  "/commercial-kitchen/product/662/shakers-bms-n-bms-n/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-g6l0k+IL8rOmBJV635nKal4u0FM\"",
-    "mtime": "2024-12-16T10:02:57.491Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/662/shakers-bms-n-bms-n/index.html"
-  },
-  "/commercial-kitchen/product/662/shakers-bms-n-bms-n/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2VBJH+9Yv4MwuS5ff4WY0e0c8j0\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/662/shakers-bms-n-bms-n/_payload.json"
-  },
-  "/commercial-kitchen/product/665/pineapple-cutter-55775-55775/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-GAg8wW8cxf+7isZlgM08vBlbcMM\"",
-    "mtime": "2024-12-16T10:03:07.872Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/665/pineapple-cutter-55775-55775/index.html"
-  },
-  "/commercial-kitchen/product/665/pineapple-cutter-55775-55775/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KQGlMM6lOZk57IpYdqa5rBnEskU\"",
-    "mtime": "2024-12-16T10:03:12.859Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/665/pineapple-cutter-55775-55775/_payload.json"
-  },
-  "/commercial-kitchen/product/663/shakers-bms-3-bms-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-oAHMTDUY3rn905cX9C6pv2/+GgE\"",
-    "mtime": "2024-12-16T10:02:57.491Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/663/shakers-bms-3-bms-3/index.html"
-  },
-  "/commercial-kitchen/product/663/shakers-bms-3-bms-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zbirLzNeuhw3bkGHnL/ld0dHXAA\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/663/shakers-bms-3-bms-3/_payload.json"
-  },
-  "/commercial-kitchen/product/664/shakers-wdm120k-wdm120k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-sG/zf2tyqamp2uXmWdYOYRk7N6o\"",
-    "mtime": "2024-12-16T10:02:57.514Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/664/shakers-wdm120k-wdm120k/index.html"
-  },
-  "/commercial-kitchen/product/664/shakers-wdm120k-wdm120k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dqk911j0r+DGvL7grn7WRyr53YA\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/664/shakers-wdm120k-wdm120k/_payload.json"
-  },
-  "/commercial-kitchen/product/666/ice-crusher-53a-53a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-KpG2yQMwN4BoHwvZjuR5wOI0vuY\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/666/ice-crusher-53a-53a/index.html"
-  },
-  "/commercial-kitchen/product/666/ice-crusher-53a-53a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-g2b/QYIk0K+1irVAjZsA+pRigG4\"",
-    "mtime": "2024-12-16T10:03:12.744Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/666/ice-crusher-53a-53a/_payload.json"
-  },
-  "/commercial-kitchen/product/667/ice-shaver-tg-tg/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-0HzebWmzJfOxjC5C94G1HSRb3oc\"",
-    "mtime": "2024-12-16T10:03:07.963Z",
-    "size": 78470,
-    "path": "../public/commercial-kitchen/product/667/ice-shaver-tg-tg/index.html"
-  },
-  "/commercial-kitchen/product/667/ice-shaver-tg-tg/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kw2os+gLZBAXl0Z2kkAXUhJhZwA\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/667/ice-shaver-tg-tg/_payload.json"
-  },
-  "/commercial-kitchen/product/668/ice-cream-display-1200-blueline-fggs-1200lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-ISE7JOAr9qwRUzjbNBV4CGJjwsg\"",
-    "mtime": "2024-12-16T10:03:07.517Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/668/ice-cream-display-1200-blueline-fggs-1200lm/index.html"
-  },
-  "/commercial-kitchen/product/668/ice-cream-display-1200-blueline-fggs-1200lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-w6hCXzcH7M3fumGzHRocwG/C44Q\"",
-    "mtime": "2024-12-16T10:03:12.778Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/668/ice-cream-display-1200-blueline-fggs-1200lm/_payload.json"
-  },
-  "/commercial-kitchen/product/669/ice-cream-display-1500-blueline-fggs-1500lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-OC/91lGzQlsvR5gav5JmUPw9DMw\"",
-    "mtime": "2024-12-16T10:03:07.520Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/669/ice-cream-display-1500-blueline-fggs-1500lm/index.html"
-  },
-  "/commercial-kitchen/product/669/ice-cream-display-1500-blueline-fggs-1500lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YPZQYwAjruPbFaeKKF9PuTGIXcU\"",
-    "mtime": "2024-12-16T10:03:12.785Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/669/ice-cream-display-1500-blueline-fggs-1500lm/_payload.json"
-  },
-  "/commercial-kitchen/product/670/ice-cream-display-ic-1200-ic-1200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-73vkpwz8wPM9n7l4F9N8tRshiLE\"",
-    "mtime": "2024-12-16T10:03:07.512Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/670/ice-cream-display-ic-1200-ic-1200/index.html"
-  },
-  "/commercial-kitchen/product/670/ice-cream-display-ic-1200-ic-1200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KDW8hYIJiPBGmevkm7CyRUNWrD0\"",
-    "mtime": "2024-12-16T10:03:12.768Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/670/ice-cream-display-ic-1200-ic-1200/_payload.json"
-  },
-  "/commercial-kitchen/product/672/display-chiller-single-door-lc-300-lc-300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-TVN8Cz36q2pC9caBrgOzt8h1TZ8\"",
-    "mtime": "2024-12-16T10:02:58.533Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/672/display-chiller-single-door-lc-300-lc-300/index.html"
-  },
-  "/commercial-kitchen/product/672/display-chiller-single-door-lc-300-lc-300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KvuaKpMasjCWWaSaVLP/kXpyluE\"",
-    "mtime": "2024-12-16T10:03:11.255Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/672/display-chiller-single-door-lc-300-lc-300/_payload.json"
-  },
-  "/commercial-kitchen/product/673/display-chiller-double-door-lc-600fs-lc-600fs/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-HDnOLasoEL8P1fjU17nCquo11bU\"",
-    "mtime": "2024-12-16T10:02:58.533Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/673/display-chiller-double-door-lc-600fs-lc-600fs/index.html"
-  },
-  "/commercial-kitchen/product/673/display-chiller-double-door-lc-600fs-lc-600fs/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ehw5wo3XhLR6mWxxKEu9eHjEBbU\"",
-    "mtime": "2024-12-16T10:03:11.240Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/673/display-chiller-double-door-lc-600fs-lc-600fs/_payload.json"
-  },
-  "/commercial-kitchen/product/674/display-chiller-double-door-lc-1000-lc-1000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-lC/tLPVTeXUFsT1Oca2Fk8F4uVI\"",
-    "mtime": "2024-12-16T10:02:58.559Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/674/display-chiller-double-door-lc-1000-lc-1000/index.html"
-  },
-  "/commercial-kitchen/product/674/display-chiller-double-door-lc-1000-lc-1000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U7xo4K+fdk8nygaQ8XId5WCazL0\"",
-    "mtime": "2024-12-16T10:03:11.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/674/display-chiller-double-door-lc-1000-lc-1000/_payload.json"
-  },
-  "/commercial-kitchen/product/676/meat-display-counter-md2000-md2000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-mOFUZ9eDlaUvjQlhqwTLcxXIZVk\"",
-    "mtime": "2024-12-16T10:03:07.715Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/676/meat-display-counter-md2000-md2000/index.html"
-  },
-  "/commercial-kitchen/product/676/meat-display-counter-md2000-md2000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eKNvSuSmqt3NYEsvGvpjcMrZhvc\"",
-    "mtime": "2024-12-16T10:03:12.826Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/676/meat-display-counter-md2000-md2000/_payload.json"
-  },
-  "/commercial-kitchen/product/675/meat-display-counter-1490-md1490/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-E93J6jMWI6XmOJrziOK9wbifrWM\"",
-    "mtime": "2024-12-16T10:03:07.713Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/675/meat-display-counter-1490-md1490/index.html"
-  },
-  "/commercial-kitchen/product/675/meat-display-counter-1490-md1490/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BwGhu7TGfpS40b5mSFVmfoU76Rw\"",
-    "mtime": "2024-12-16T10:03:12.826Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/675/meat-display-counter-1490-md1490/_payload.json"
-  },
-  "/commercial-kitchen/product/678/warm-display-table-top-600-fw-5g/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-It+Es36mq0ZRZsEptdEpX/HntjI\"",
-    "mtime": "2024-12-16T10:02:58.067Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/678/warm-display-table-top-600-fw-5g/index.html"
-  },
-  "/commercial-kitchen/product/678/warm-display-table-top-600-fw-5g/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IIUMX16CzW/Vjx8td+kO2XZOYR4\"",
-    "mtime": "2024-12-16T10:03:11.102Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/678/warm-display-table-top-600-fw-5g/_payload.json"
-  },
-  "/commercial-kitchen/product/677/warm-display-table-top-380-hw861/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-DMlMm5KG1Doeiwr6oKKYyVUwkek\"",
-    "mtime": "2024-12-16T10:02:58.061Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/677/warm-display-table-top-380-hw861/index.html"
-  },
-  "/commercial-kitchen/product/677/warm-display-table-top-380-hw861/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rsfNrAweD6dGi/1P4CgnKSCvRQA\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/677/warm-display-table-top-380-hw861/_payload.json"
-  },
-  "/commercial-kitchen/product/679/warm-display-curved-1200-fgsw1200lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-/AD5qMzAjCHBUXy7HPkHyuBx7II\"",
-    "mtime": "2024-12-16T10:02:58.095Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/679/warm-display-curved-1200-fgsw1200lm/index.html"
-  },
-  "/commercial-kitchen/product/679/warm-display-curved-1200-fgsw1200lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-LasMh0aY+WafGQbPwP/mmCG9nm8\"",
-    "mtime": "2024-12-16T10:03:11.107Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/679/warm-display-curved-1200-fgsw1200lm/_payload.json"
-  },
-  "/commercial-kitchen/product/68/pastry-display-square-900-fcdg-900ls-3-fgdg10a-900ls/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13334-apDPG37oGCgYnMZCo7EvHyezP8Q\"",
-    "mtime": "2024-12-16T10:02:57.927Z",
-    "size": 78644,
-    "path": "../public/commercial-kitchen/product/68/pastry-display-square-900-fcdg-900ls-3-fgdg10a-900ls/index.html"
-  },
-  "/commercial-kitchen/product/68/pastry-display-square-900-fcdg-900ls-3-fgdg10a-900ls/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uATTXW7EyyNjoExts/B4LT9u30A\"",
-    "mtime": "2024-12-16T10:03:11.071Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/68/pastry-display-square-900-fcdg-900ls-3-fgdg10a-900ls/_payload.json"
-  },
-  "/commercial-kitchen/product/680/warm-display-curved-1500-fgsw1500lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-Tdx8h8rxBYKhVw/rdFDjEqsvZbc\"",
-    "mtime": "2024-12-16T10:02:58.118Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/680/warm-display-curved-1500-fgsw1500lm/index.html"
-  },
-  "/commercial-kitchen/product/680/warm-display-curved-1500-fgsw1500lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HHyBlaOntl0gc+dCrLBXoYOJ4Wc\"",
-    "mtime": "2024-12-16T10:03:11.141Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/680/warm-display-curved-1500-fgsw1500lm/_payload.json"
-  },
-  "/commercial-kitchen/product/681/display-warmer-r-60-r-60/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-rzrvMUlT4TvEPu4gFp2BzJHBric\"",
-    "mtime": "2024-12-16T10:02:58.206Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/681/display-warmer-r-60-r-60/index.html"
-  },
-  "/commercial-kitchen/product/681/display-warmer-r-60-r-60/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ixY+QDlK/mZSnfdjDzBlzjnuwtg\"",
-    "mtime": "2024-12-16T10:03:11.158Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/681/display-warmer-r-60-r-60/_payload.json"
-  },
-  "/commercial-kitchen/product/682/oven-convection-turbo-electrical-10-trays-discovery-10/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-NWPtsBxjT9JxY0XnFaiBUcaNc+Q\"",
-    "mtime": "2024-12-16T10:02:58.833Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/682/oven-convection-turbo-electrical-10-trays-discovery-10/index.html"
-  },
-  "/commercial-kitchen/product/682/oven-convection-turbo-electrical-10-trays-discovery-10/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bWnDB9KfJHWStk+cAeEw+gn/7iI\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/682/oven-convection-turbo-electrical-10-trays-discovery-10/_payload.json"
-  },
-  "/commercial-kitchen/product/683/oven-convection-turbo-electrical-4-tray-maxiconv-maxiconv/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-xLkM8pyWQZ07+jnSHbnu2P+gOAc\"",
-    "mtime": "2024-12-16T10:02:58.830Z",
-    "size": 78675,
-    "path": "../public/commercial-kitchen/product/683/oven-convection-turbo-electrical-4-tray-maxiconv-maxiconv/index.html"
-  },
-  "/commercial-kitchen/product/683/oven-convection-turbo-electrical-4-tray-maxiconv-maxiconv/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oN8F88fuj/we4Yrhgtz+WCttfuc\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/683/oven-convection-turbo-electrical-4-tray-maxiconv-maxiconv/_payload.json"
-  },
-  "/commercial-kitchen/product/684/triple-deck-oven-electric-htd-90/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-O6ooO2MiLkO8bwLrluul2usMbYI\"",
-    "mtime": "2024-12-16T10:03:04.816Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/684/triple-deck-oven-electric-htd-90/index.html"
-  },
-  "/commercial-kitchen/product/684/triple-deck-oven-electric-htd-90/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZI6KJmKdZ+2yirKNqHQ91+yN3r0\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/684/triple-deck-oven-electric-htd-90/_payload.json"
-  },
-  "/commercial-kitchen/product/685/double-deck-oven-electric-htd-40/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-Ieaf6jSwzBcdmwG0O7jbsxzr3jg\"",
-    "mtime": "2024-12-16T10:03:04.816Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/685/double-deck-oven-electric-htd-40/index.html"
-  },
-  "/commercial-kitchen/product/685/double-deck-oven-electric-htd-40/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YJU0Jtd/jmITdGkaaNeOZItjA+A\"",
-    "mtime": "2024-12-16T10:03:12.323Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/685/double-deck-oven-electric-htd-40/_payload.json"
-  },
-  "/commercial-kitchen/product/686/single-deck-oven-electric-htd-20/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-X32MZIAgRPqmS/tqDeSHqmYnjFk\"",
-    "mtime": "2024-12-16T10:03:04.792Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/686/single-deck-oven-electric-htd-20/index.html"
-  },
-  "/commercial-kitchen/product/686/single-deck-oven-electric-htd-20/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YIxFCqEsKLEumkcq7Z6JgdmseQg\"",
-    "mtime": "2024-12-16T10:03:12.315Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/686/single-deck-oven-electric-htd-20/_payload.json"
-  },
-  "/commercial-kitchen/product/687/single-deck-oven-gas-htr-20q/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-g0U3FIYRfi9iCdqY3+HTdX/nPoY\"",
-    "mtime": "2024-12-16T10:03:04.792Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/687/single-deck-oven-gas-htr-20q/index.html"
-  },
-  "/commercial-kitchen/product/687/single-deck-oven-gas-htr-20q/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BlLNdcxNoe5sztd8LPtBgkjGe6E\"",
-    "mtime": "2024-12-16T10:03:12.317Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/687/single-deck-oven-gas-htr-20q/_payload.json"
-  },
-  "/commercial-kitchen/product/688/1-deck-electric-pizza-oven-basic-1-50-vetro/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-sBIcVgpqiPxTyI1ZI1fRpW6sDpw\"",
-    "mtime": "2024-12-16T10:02:58.993Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/688/1-deck-electric-pizza-oven-basic-1-50-vetro/index.html"
-  },
-  "/commercial-kitchen/product/688/1-deck-electric-pizza-oven-basic-1-50-vetro/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tmeafhbHGYUAvOQNVXpINJJ5Olo\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/688/1-deck-electric-pizza-oven-basic-1-50-vetro/_payload.json"
-  },
-  "/commercial-kitchen/product/689/2-deck-electric-pizza-oven-basic-medium-44/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-09lRhZ5BkE+zwy7gAVNXDzI+RgU\"",
-    "mtime": "2024-12-16T10:02:59.008Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/689/2-deck-electric-pizza-oven-basic-medium-44/index.html"
-  },
-  "/commercial-kitchen/product/689/2-deck-electric-pizza-oven-basic-medium-44/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VJQlwpC4sHq3kKUPyW2Yc2M2HZE\"",
-    "mtime": "2024-12-16T10:03:11.316Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/689/2-deck-electric-pizza-oven-basic-medium-44/_payload.json"
-  },
-  "/commercial-kitchen/product/69/pastry-display-square-1200-fgdg-1200ls-3-h-kitchen-fgdg10a-1200ls/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13375-BsYQ8f07CKcxRbNEKzcp65uuKh8\"",
-    "mtime": "2024-12-16T10:02:57.931Z",
-    "size": 78709,
-    "path": "../public/commercial-kitchen/product/69/pastry-display-square-1200-fgdg-1200ls-3-h-kitchen-fgdg10a-1200ls/index.html"
-  },
-  "/commercial-kitchen/product/69/pastry-display-square-1200-fgdg-1200ls-3-h-kitchen-fgdg10a-1200ls/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TSwOCZt/Yit+8yf9Xe1OBQmORzs\"",
-    "mtime": "2024-12-16T10:03:11.073Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/69/pastry-display-square-1200-fgdg-1200ls-3-h-kitchen-fgdg10a-1200ls/_payload.json"
-  },
-  "/commercial-kitchen/product/690/1-deck-gas-pizza-oven-gas-4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-+ajbhOG3izG/74Sgsvh1TfrD1qQ\"",
-    "mtime": "2024-12-16T10:02:58.993Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/690/1-deck-gas-pizza-oven-gas-4/index.html"
-  },
-  "/commercial-kitchen/product/690/1-deck-gas-pizza-oven-gas-4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7rcnU+OaBFytw4+SkKdfeSY6rMI\"",
-    "mtime": "2024-12-16T10:03:11.305Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/690/1-deck-gas-pizza-oven-gas-4/_payload.json"
-  },
-  "/commercial-kitchen/product/691/c-50-conveyor-pizza-oven-tunnel-c-50/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-0s5Y82ozsjRsTUcxYB83k8wD/xk\"",
-    "mtime": "2024-12-16T10:02:59.022Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/691/c-50-conveyor-pizza-oven-tunnel-c-50/index.html"
-  },
-  "/commercial-kitchen/product/691/c-50-conveyor-pizza-oven-tunnel-c-50/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-459HmrX1BSVUUpy02rieJ68TaTM\"",
-    "mtime": "2024-12-16T10:03:11.335Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/691/c-50-conveyor-pizza-oven-tunnel-c-50/_payload.json"
-  },
-  "/commercial-kitchen/product/692/diesel-rotary-oven-b-1700-d3plc-b-1700/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-YaqUHZdFfh5kUCAr8D+EFVdjArw\"",
-    "mtime": "2024-12-16T10:03:05.987Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/692/diesel-rotary-oven-b-1700-d3plc-b-1700/index.html"
-  },
-  "/commercial-kitchen/product/692/diesel-rotary-oven-b-1700-d3plc-b-1700/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bnnQhOxlVY/ESzp8zal48kL5baw\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/692/diesel-rotary-oven-b-1700-d3plc-b-1700/_payload.json"
-  },
-  "/commercial-kitchen/product/693/rotary-oven-single-trolley-aerotherm-b-1100-b-1100/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-OBSi8GPt2obXZQsBd5UqPccO38k\"",
-    "mtime": "2024-12-16T10:03:05.955Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/693/rotary-oven-single-trolley-aerotherm-b-1100-b-1100/index.html"
-  },
-  "/commercial-kitchen/product/693/rotary-oven-single-trolley-aerotherm-b-1100-b-1100/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+iYNDN/0fuyJFFQpOJ4JMRC0Gpk\"",
-    "mtime": "2024-12-16T10:03:12.511Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/693/rotary-oven-single-trolley-aerotherm-b-1100-b-1100/_payload.json"
-  },
-  "/commercial-kitchen/product/697/baking-tray-pp7/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13281-47Q/6PEpPutCU+XcO4jFZXNWGas\"",
-    "mtime": "2024-12-16T10:02:59.046Z",
-    "size": 78465,
-    "path": "../public/commercial-kitchen/product/697/baking-tray-pp7/index.html"
-  },
-  "/commercial-kitchen/product/697/baking-tray-pp7/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DAEhniMS48d8ry6SaKszctg5Sp8\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/697/baking-tray-pp7/_payload.json"
-  },
-  "/commercial-kitchen/product/698/oven-stand-os/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13277-R2xMMRQ+rZWXt7VwOwVJ1oEBgJw\"",
-    "mtime": "2024-12-16T10:02:59.022Z",
-    "size": 78455,
-    "path": "../public/commercial-kitchen/product/698/oven-stand-os/index.html"
-  },
-  "/commercial-kitchen/product/698/oven-stand-os/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5ERrKBycmo8b/Onh4It/UGJKjT4\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/698/oven-stand-os/_payload.json"
-  },
-  "/commercial-kitchen/product/699/baguette-trays-big-mcb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-rPdPAqA79h9zGTv8sgAbT2/LiGM\"",
-    "mtime": "2024-12-16T10:02:59.023Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/699/baguette-trays-big-mcb/index.html"
-  },
-  "/commercial-kitchen/product/699/baguette-trays-big-mcb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/GLQFTNDU9cfFYOFg+T4eLGL+uo\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/699/baguette-trays-big-mcb/_payload.json"
-  },
-  "/commercial-kitchen/product/70/pastry-display-square-1500-fgdg-1500ls-3-fgdg10a-1500ls/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13343-3t1yCateDt/PK4HGlJgtXmLKP/4\"",
-    "mtime": "2024-12-16T10:02:57.935Z",
-    "size": 78659,
-    "path": "../public/commercial-kitchen/product/70/pastry-display-square-1500-fgdg-1500ls-3-fgdg10a-1500ls/index.html"
-  },
-  "/commercial-kitchen/product/70/pastry-display-square-1500-fgdg-1500ls-3-fgdg10a-1500ls/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TVclzQ3hv/6f6A1SOjdRbNDdrII\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/70/pastry-display-square-1500-fgdg-1500ls-3-fgdg10a-1500ls/_payload.json"
-  },
-  "/commercial-kitchen/product/700/baguette-trays-small-mcs/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-095jGdHTPgW1ngFpptS1aITEIDg\"",
-    "mtime": "2024-12-16T10:02:59.028Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/700/baguette-trays-small-mcs/index.html"
-  },
-  "/commercial-kitchen/product/700/baguette-trays-small-mcs/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-siyr9BmCcSsghJQUyWQy1BEVRP4\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/700/baguette-trays-small-mcs/_payload.json"
-  },
-  "/commercial-kitchen/product/703/bulk-brewer-tower-2x5-ltrs-cq-tower/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-msA/aWw9F2LWNL6YeYtc21IEtfM\"",
-    "mtime": "2024-12-16T10:02:56.655Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/703/bulk-brewer-tower-2x5-ltrs-cq-tower/index.html"
-  },
-  "/commercial-kitchen/product/703/bulk-brewer-tower-2x5-ltrs-cq-tower/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fob8M0LXHO7iB+gUJBAoOUrDA98\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/703/bulk-brewer-tower-2x5-ltrs-cq-tower/_payload.json"
-  },
-  "/commercial-kitchen/product/704/coffee-brewer-single-cater-1008620/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-m5i/Hkjpbhjpqug4SXwTWvcMXWs\"",
-    "mtime": "2024-12-16T10:02:56.611Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/704/coffee-brewer-single-cater-1008620/index.html"
-  },
-  "/commercial-kitchen/product/704/coffee-brewer-single-cater-1008620/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+Y4h5gXCSzyofOUj10lI40S7PbE\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/704/coffee-brewer-single-cater-1008620/_payload.json"
-  },
-  "/commercial-kitchen/product/705/coffee-brewer-double-cater-1008621/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-uFYJZXx8AghydKSW6AGWoKHIFNw\"",
-    "mtime": "2024-12-16T10:02:56.630Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/705/coffee-brewer-double-cater-1008621/index.html"
-  },
-  "/commercial-kitchen/product/705/coffee-brewer-double-cater-1008621/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-R6A1huCPK4OSjRrAyfek+4q/bcs\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/705/coffee-brewer-double-cater-1008621/_payload.json"
-  },
-  "/commercial-kitchen/product/707/coffee-brewer-with-2-decanters-cqm2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-997/EGcyCP69o8eX3vDYvWiDJRE\"",
-    "mtime": "2024-12-16T10:02:56.591Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/707/coffee-brewer-with-2-decanters-cqm2/index.html"
-  },
-  "/commercial-kitchen/product/707/coffee-brewer-with-2-decanters-cqm2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qL+Tf0A+Dq90A6cYJpVJdqD/GEs\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/707/coffee-brewer-with-2-decanters-cqm2/_payload.json"
-  },
-  "/commercial-kitchen/product/706/coffee-brewer-with-1-decanter-cqm1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-Aelze6kw7VsHPvUTm6JT/1FeEh4\"",
-    "mtime": "2024-12-16T10:02:56.574Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/706/coffee-brewer-with-1-decanter-cqm1/index.html"
-  },
-  "/commercial-kitchen/product/706/coffee-brewer-with-1-decanter-cqm1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Y++pXu7uLb5OCeFAMDmQPqpfxss\"",
-    "mtime": "2024-12-16T10:03:10.855Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/706/coffee-brewer-with-1-decanter-cqm1/_payload.json"
-  },
-  "/commercial-kitchen/product/708/sight-gauge-airpot-22l-1103184/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-MK/5N+zqKWIJ2JrDWfFP2o3nSkU\"",
-    "mtime": "2024-12-16T10:02:56.685Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/708/sight-gauge-airpot-22l-1103184/index.html"
-  },
-  "/commercial-kitchen/product/708/sight-gauge-airpot-22l-1103184/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7Y51SM/MkJuCf/bcKpOb+E7Acgw\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/708/sight-gauge-airpot-22l-1103184/_payload.json"
-  },
-  "/commercial-kitchen/product/709/thermos-verculator-19ltr-1103256/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-8thjSfKL1Nlti/I0FRDZo5L2Y7Y\"",
-    "mtime": "2024-12-16T10:02:56.673Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/709/thermos-verculator-19ltr-1103256/index.html"
-  },
-  "/commercial-kitchen/product/709/thermos-verculator-19ltr-1103256/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CSUVBQAyBGtPVR/M8pRiHXRcWpg\"",
-    "mtime": "2024-12-16T10:03:10.865Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/709/thermos-verculator-19ltr-1103256/_payload.json"
-  },
-  "/commercial-kitchen/product/71/pastry-display-square-1500-fgdg-1500lsd-3-fgdg-1500lsd-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13348-g8kyqpLHYw3CWSBm2YiXAHcDaVU\"",
-    "mtime": "2024-12-16T10:02:57.959Z",
-    "size": 78664,
-    "path": "../public/commercial-kitchen/product/71/pastry-display-square-1500-fgdg-1500lsd-3-fgdg-1500lsd-3/index.html"
-  },
-  "/commercial-kitchen/product/71/pastry-display-square-1500-fgdg-1500lsd-3-fgdg-1500lsd-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JYLvUGYGwak6jaPEogweGkHiVow\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/71/pastry-display-square-1500-fgdg-1500lsd-3-fgdg-1500lsd-3/_payload.json"
-  },
-  "/commercial-kitchen/product/711/automatic-coffee-machine-egro-zero-egro-zero/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-hutWQVcnz9y00UpKBRFnwiKzU14\"",
-    "mtime": "2024-12-16T10:02:56.421Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/711/automatic-coffee-machine-egro-zero-egro-zero/index.html"
-  },
-  "/commercial-kitchen/product/711/automatic-coffee-machine-egro-zero-egro-zero/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-++KbTn9cJgf6y3QdPMTvosqMkZM\"",
-    "mtime": "2024-12-16T10:03:10.795Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/711/automatic-coffee-machine-egro-zero-egro-zero/_payload.json"
-  },
-  "/commercial-kitchen/product/710/filter-papers-std/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-Ghl3fIVYaFCqgufNewivw36r6r0\"",
-    "mtime": "2024-12-16T10:02:56.813Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/710/filter-papers-std/index.html"
-  },
-  "/commercial-kitchen/product/710/filter-papers-std/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WhPENjzqZIKB261Hdi5GO597EnI\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/710/filter-papers-std/_payload.json"
-  },
-  "/commercial-kitchen/product/713/stainless-steel-coffee-tamper-std-ss/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-dehEGjGwI8iftv/V5DAGOeJClzE\"",
-    "mtime": "2024-12-16T10:02:56.774Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/713/stainless-steel-coffee-tamper-std-ss/index.html"
-  },
-  "/commercial-kitchen/product/713/stainless-steel-coffee-tamper-std-ss/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-O8SR3zOPAD12rAQTwIgoEZ8r4IQ\"",
-    "mtime": "2024-12-16T10:03:10.902Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/713/stainless-steel-coffee-tamper-std-ss/_payload.json"
-  },
-  "/commercial-kitchen/product/714/pvc-coffee-tamper-std-pvc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-wCqHZw0xkbCV5isFWLGEFgOx8Po\"",
-    "mtime": "2024-12-16T10:02:56.788Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/714/pvc-coffee-tamper-std-pvc/index.html"
-  },
-  "/commercial-kitchen/product/714/pvc-coffee-tamper-std-pvc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IIlMWsINinmVM86pf9z1/CdBiJQ\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/714/pvc-coffee-tamper-std-pvc/_payload.json"
-  },
-  "/commercial-kitchen/product/712/espresso-machine-microbar-ii-simonelli-microbar-ii/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-T+L3/Pwo2bDZJ0uym7DFDjb4d4Y\"",
-    "mtime": "2024-12-16T10:02:56.445Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/712/espresso-machine-microbar-ii-simonelli-microbar-ii/index.html"
-  },
-  "/commercial-kitchen/product/712/espresso-machine-microbar-ii-simonelli-microbar-ii/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NH6gts5p9xGkEGidGdMUdnK/+uY\"",
-    "mtime": "2024-12-16T10:03:10.795Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/712/espresso-machine-microbar-ii-simonelli-microbar-ii/_payload.json"
-  },
-  "/commercial-kitchen/product/716/coffee-knockbox-sskb-350t/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-w64I03l+YiKAIiQZqm7uccrATN4\"",
-    "mtime": "2024-12-16T10:02:56.801Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/716/coffee-knockbox-sskb-350t/index.html"
-  },
-  "/commercial-kitchen/product/716/coffee-knockbox-sskb-350t/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1t5vjxWupurtfmlDxh75hJZg5J8\"",
-    "mtime": "2024-12-16T10:03:10.919Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/716/coffee-knockbox-sskb-350t/_payload.json"
-  },
-  "/commercial-kitchen/product/717/spiral-dough-mixer-ibt-20l-ibt-20l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-y33M5BQ9hOojwE7kaG9rLJIwBMs\"",
-    "mtime": "2024-12-16T10:02:59.187Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/717/spiral-dough-mixer-ibt-20l-ibt-20l/index.html"
-  },
-  "/commercial-kitchen/product/717/spiral-dough-mixer-ibt-20l-ibt-20l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NVTxxGyJ7AM9ukmPpjaXng9qGlk\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/717/spiral-dough-mixer-ibt-20l-ibt-20l/_payload.json"
-  },
-  "/commercial-kitchen/product/718/spiral-dough-mixer-ibt-30l-ibt-30l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-k3lgu1+0YJzKTp5ApxGdECV5XNw\"",
-    "mtime": "2024-12-16T10:02:59.216Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/718/spiral-dough-mixer-ibt-30l-ibt-30l/index.html"
-  },
-  "/commercial-kitchen/product/718/spiral-dough-mixer-ibt-30l-ibt-30l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CgV1N8WX+uDFe250/c1RkhCHgZM\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/718/spiral-dough-mixer-ibt-30l-ibt-30l/_payload.json"
-  },
-  "/commercial-kitchen/product/72/pastry-display-square-1800-fgdg-1800ls-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-Kf/EKnSSIs8KP1URA+CFwNaLbfM\"",
-    "mtime": "2024-12-16T10:02:57.971Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/72/pastry-display-square-1800-fgdg-1800ls-3/index.html"
-  },
-  "/commercial-kitchen/product/72/pastry-display-square-1800-fgdg-1800ls-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U4/l/S79bvZodFYimfc8o3+tZsc\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/72/pastry-display-square-1800-fgdg-1800ls-3/_payload.json"
-  },
-  "/commercial-kitchen/product/719/spiral-dough-mixer-ibt-40l-ibt-40l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-S/ygSwiPRaNWcibKuI3WOhf7ks8\"",
-    "mtime": "2024-12-16T10:02:59.216Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/719/spiral-dough-mixer-ibt-40l-ibt-40l/index.html"
-  },
-  "/commercial-kitchen/product/719/spiral-dough-mixer-ibt-40l-ibt-40l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JTJVKISVuAfLZfVC6vpKm0VD+Uw\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/719/spiral-dough-mixer-ibt-40l-ibt-40l/_payload.json"
-  },
-  "/commercial-kitchen/product/720/spiral-dough-mixer-ibt-50l-ibt-50l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-a2YR9I0rYQpq+zbh5Nx/QvdhTmA\"",
-    "mtime": "2024-12-16T10:02:59.216Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/720/spiral-dough-mixer-ibt-50l-ibt-50l/index.html"
-  },
-  "/commercial-kitchen/product/720/spiral-dough-mixer-ibt-50l-ibt-50l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1JUUyRcVa90lUU/ZGUFbVvB0eak\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/720/spiral-dough-mixer-ibt-50l-ibt-50l/_payload.json"
-  },
-  "/commercial-kitchen/product/721/spiral-dough-mixer-ibt-60l-ibt-60l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-ob/0+0xlM7TURxvhlkqMtGFOqaQ\"",
-    "mtime": "2024-12-16T10:02:59.254Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/721/spiral-dough-mixer-ibt-60l-ibt-60l/index.html"
-  },
-  "/commercial-kitchen/product/721/spiral-dough-mixer-ibt-60l-ibt-60l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6NjRP8bNmNK84USlHfmMKYEXxmM\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/721/spiral-dough-mixer-ibt-60l-ibt-60l/_payload.json"
-  },
-  "/commercial-kitchen/product/722/spiral-dough-mixer-hy-05-50l-hy-05-50l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-e3TGZNQaS2TX6YMYlKAttw47UJc\"",
-    "mtime": "2024-12-16T10:02:59.277Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/722/spiral-dough-mixer-hy-05-50l-hy-05-50l/index.html"
-  },
-  "/commercial-kitchen/product/722/spiral-dough-mixer-hy-05-50l-hy-05-50l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Zu4ecuwEbtriFSGRyqmK1fBsM/8\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/722/spiral-dough-mixer-hy-05-50l-hy-05-50l/_payload.json"
-  },
-  "/commercial-kitchen/product/723/spiral-dough-mixer-sh-03-60l-sh-03-60l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-hmGfuSFRr+/iWKXvd66FUPjREfA\"",
-    "mtime": "2024-12-16T10:02:59.301Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/723/spiral-dough-mixer-sh-03-60l-sh-03-60l/index.html"
-  },
-  "/commercial-kitchen/product/723/spiral-dough-mixer-sh-03-60l-sh-03-60l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VtElFNJtIBZErIenVKwonTbi/18\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/723/spiral-dough-mixer-sh-03-60l-sh-03-60l/_payload.json"
-  },
-  "/commercial-kitchen/product/724/spiral-dough-mixer-150kg-sh-03-60l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-TKgOwq5ZSEgc2xUHiqFBoNSesb8\"",
-    "mtime": "2024-12-16T10:02:59.357Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/724/spiral-dough-mixer-150kg-sh-03-60l/index.html"
-  },
-  "/commercial-kitchen/product/724/spiral-dough-mixer-150kg-sh-03-60l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Sczw35vVc7MRZjkHQ4+uEmNTF24\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/724/spiral-dough-mixer-150kg-sh-03-60l/_payload.json"
-  },
-  "/commercial-kitchen/product/726/planetary-dough-mixer-b20ga-b20ga/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-w5k2U7sgGdEjgzinV8gFfFkyMSk\"",
-    "mtime": "2024-12-16T10:02:59.123Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/726/planetary-dough-mixer-b20ga-b20ga/index.html"
-  },
-  "/commercial-kitchen/product/726/planetary-dough-mixer-b20ga-b20ga/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9ALp2yzV3F5NvYcAmzOb02UM2qo\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/726/planetary-dough-mixer-b20ga-b20ga/_payload.json"
-  },
-  "/commercial-kitchen/product/725/planetary-dough-mixer-b10ga-b10ga/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-acXGV/Bz2UCIMW56BOkfPPDHCtU\"",
-    "mtime": "2024-12-16T10:02:59.127Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/725/planetary-dough-mixer-b10ga-b10ga/index.html"
-  },
-  "/commercial-kitchen/product/725/planetary-dough-mixer-b10ga-b10ga/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sm1jFMJFn3mgoiIdKxmS7Fh9RHg\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/725/planetary-dough-mixer-b10ga-b10ga/_payload.json"
-  },
-  "/commercial-kitchen/product/727/planetary-spiral-dough-mixer-hk-b7-hk-b7/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-4Z8smTd4wVVYFZIx/VJFoxIiuVs\"",
-    "mtime": "2024-12-16T10:02:59.106Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/727/planetary-spiral-dough-mixer-hk-b7-hk-b7/index.html"
-  },
-  "/commercial-kitchen/product/727/planetary-spiral-dough-mixer-hk-b7-hk-b7/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RTffgEcMLQMyWwiVeuWSOpemWKc\"",
-    "mtime": "2024-12-16T10:03:11.366Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/727/planetary-spiral-dough-mixer-hk-b7-hk-b7/_payload.json"
-  },
-  "/commercial-kitchen/product/73/meat-display-counter-2000-s80200vvc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132df-V6ZJsXHuHadDceuu2XWKPGw41Kk\"",
-    "mtime": "2024-12-16T10:03:07.715Z",
-    "size": 78559,
-    "path": "../public/commercial-kitchen/product/73/meat-display-counter-2000-s80200vvc/index.html"
-  },
-  "/commercial-kitchen/product/73/meat-display-counter-2000-s80200vvc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-I3QTHoSBlzG4JVGjK1AXMHLruQw\"",
-    "mtime": "2024-12-16T10:03:12.826Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/73/meat-display-counter-2000-s80200vvc/_payload.json"
-  },
-  "/commercial-kitchen/product/728/bench-sheeter-forma-sfkb500-sfkb500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-PqvoTugDKQK01OoBIfp+qfnjx04\"",
-    "mtime": "2024-12-16T10:03:06.055Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/728/bench-sheeter-forma-sfkb500-sfkb500/index.html"
-  },
-  "/commercial-kitchen/product/728/bench-sheeter-forma-sfkb500-sfkb500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iW5yBUXeL7uZBJdr+FCIjjOnqDM\"",
-    "mtime": "2024-12-16T10:03:12.518Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/728/bench-sheeter-forma-sfkb500-sfkb500/_payload.json"
-  },
-  "/commercial-kitchen/product/729/free-standing-dough-sheeter-sfk5001000-sfk5001000/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-P/cdXsp66DYeFcHPo4WoouRTzhg\"",
-    "mtime": "2024-12-16T10:03:06.061Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/729/free-standing-dough-sheeter-sfk5001000-sfk5001000/index.html"
-  },
-  "/commercial-kitchen/product/729/free-standing-dough-sheeter-sfk5001000-sfk5001000/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VyZ3IE5MJrYedRmewmVwgYWM/bk\"",
-    "mtime": "2024-12-16T10:03:12.518Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/729/free-standing-dough-sheeter-sfk5001000-sfk5001000/_payload.json"
-  },
-  "/commercial-kitchen/product/730/vegetable-processor-without-disc-paie/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-AQ3izNu1mE4l8aqe5rKVaj5NpTo\"",
-    "mtime": "2024-12-16T10:03:05.836Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/730/vegetable-processor-without-disc-paie/index.html"
-  },
-  "/commercial-kitchen/product/730/vegetable-processor-without-disc-paie/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6n9Ywv5B/hWyEPscOwRzw5HCyvI\"",
-    "mtime": "2024-12-16T10:03:12.492Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/730/vegetable-processor-without-disc-paie/_payload.json"
-  },
-  "/commercial-kitchen/product/731/vegetable-processor-with-6-disc-combo-pa-7le/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-2egeY5FCsonGLuHqb6eRtfKlwBQ\"",
-    "mtime": "2024-12-16T10:03:05.881Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/731/vegetable-processor-with-6-disc-combo-pa-7le/index.html"
-  },
-  "/commercial-kitchen/product/731/vegetable-processor-with-6-disc-combo-pa-7le/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fgGbDjKZKw3pL18RMK8MAww3IWI\"",
-    "mtime": "2024-12-16T10:03:12.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/731/vegetable-processor-with-6-disc-combo-pa-7le/_payload.json"
-  },
-  "/commercial-kitchen/product/732/vegetable-processor-emp-300-emp-300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-6l2Eeq20eSGqfq5rpf77ZzuZ57E\"",
-    "mtime": "2024-12-16T10:03:05.877Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/732/vegetable-processor-emp-300-emp-300/index.html"
-  },
-  "/commercial-kitchen/product/732/vegetable-processor-emp-300-emp-300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VNMveMt3JiLz+eqjjOINAcpyQOg\"",
-    "mtime": "2024-12-16T10:03:12.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/732/vegetable-processor-emp-300-emp-300/_payload.json"
-  },
-  "/commercial-kitchen/product/734/potato-peeler-50-kg-pp50/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-025T6v3ZMtxeS5Rs7CkkjlI6yqo\"",
-    "mtime": "2024-12-16T10:03:05.836Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/734/potato-peeler-50-kg-pp50/index.html"
-  },
-  "/commercial-kitchen/product/734/potato-peeler-50-kg-pp50/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4E9HHKOoKkG8I33BXi8cKcjNKvo\"",
-    "mtime": "2024-12-16T10:03:12.492Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/734/potato-peeler-50-kg-pp50/_payload.json"
-  },
-  "/commercial-kitchen/product/733/vegetable-processor-sqc205-sqc205/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-alvOGuFgarFRerGPvcArtaYqQd8\"",
-    "mtime": "2024-12-16T10:03:05.877Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/733/vegetable-processor-sqc205-sqc205/index.html"
-  },
-  "/commercial-kitchen/product/733/vegetable-processor-sqc205-sqc205/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iJo14xYku4M8TZ3MV/5KHTeGq/Q\"",
-    "mtime": "2024-12-16T10:03:12.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/733/vegetable-processor-sqc205-sqc205/_payload.json"
-  },
-  "/commercial-kitchen/product/736/potato-peeler-10-kg-pp10/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-tOGbrtqtCpmUqJfYDp23ACQOnMg\"",
-    "mtime": "2024-12-16T10:03:05.765Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/736/potato-peeler-10-kg-pp10/index.html"
-  },
-  "/commercial-kitchen/product/736/potato-peeler-10-kg-pp10/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dIbMYml+uSvtP5RVbkN9hjIXABQ\"",
-    "mtime": "2024-12-16T10:03:12.483Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/736/potato-peeler-10-kg-pp10/_payload.json"
-  },
-  "/commercial-kitchen/product/737/potato-masher-spm-spm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-JLjHdfASVJ/0vC963t1vQJCFHF8\"",
-    "mtime": "2024-12-16T10:03:07.725Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/737/potato-masher-spm-spm/index.html"
-  },
-  "/commercial-kitchen/product/737/potato-masher-spm-spm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uwaYMe71K8kJe06fR1d5CbLHBeA\"",
-    "mtime": "2024-12-16T10:03:12.826Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/737/potato-masher-spm-spm/_payload.json"
-  },
-  "/commercial-kitchen/product/735/potato-peeler-30-kg-pp30/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-ShAq/7laOAxX80lNWghRJWv9WEU\"",
-    "mtime": "2024-12-16T10:03:05.765Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/735/potato-peeler-30-kg-pp30/index.html"
-  },
-  "/commercial-kitchen/product/735/potato-peeler-30-kg-pp30/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-o0A81DiUCR9LUsWfslMnq++TY0Y\"",
-    "mtime": "2024-12-16T10:03:12.480Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/735/potato-peeler-30-kg-pp30/_payload.json"
-  },
-  "/commercial-kitchen/product/738/potato-chipper-on-stand-systematic-jspcc-08-jspcc-08/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333a-fkoHfWgDdi7Norqy/fh8VzlVQ5o\"",
-    "mtime": "2024-12-16T10:03:05.844Z",
-    "size": 78650,
-    "path": "../public/commercial-kitchen/product/738/potato-chipper-on-stand-systematic-jspcc-08-jspcc-08/index.html"
-  },
-  "/commercial-kitchen/product/738/potato-chipper-on-stand-systematic-jspcc-08-jspcc-08/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uZrkEQw3YeKj8QfzspCVP2gW2Io\"",
-    "mtime": "2024-12-16T10:03:12.494Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/738/potato-chipper-on-stand-systematic-jspcc-08-jspcc-08/_payload.json"
-  },
-  "/commercial-kitchen/product/739/graters-rq-150-rq-150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-9n5a7uGQgGrvTXe+S62T3Xb/dek\"",
-    "mtime": "2024-12-16T10:03:07.735Z",
-    "size": 78495,
-    "path": "../public/commercial-kitchen/product/739/graters-rq-150-rq-150/index.html"
-  },
-  "/commercial-kitchen/product/739/graters-rq-150-rq-150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CBn8+ApYh3s/eA85YhUko7WyuC8\"",
-    "mtime": "2024-12-16T10:03:12.832Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/739/graters-rq-150-rq-150/_payload.json"
-  },
-  "/commercial-kitchen/product/74/pastry-display-square-1500-evok-evok150v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-jJBBx6PFIDyzcJsvSTYPfAocBZ8\"",
-    "mtime": "2024-12-16T10:02:58.004Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/74/pastry-display-square-1500-evok-evok150v/index.html"
-  },
-  "/commercial-kitchen/product/74/pastry-display-square-1500-evok-evok150v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-yGEziElRfDx0jQeAsMeRKOeDc5M\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/74/pastry-display-square-1500-evok-evok150v/_payload.json"
-  },
-  "/commercial-kitchen/product/740/cutter-mixer-emp-350-emp350/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-OWgor2vLpWj+IvirhiqzscHiFjA\"",
-    "mtime": "2024-12-16T10:03:07.916Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/740/cutter-mixer-emp-350-emp350/index.html"
-  },
-  "/commercial-kitchen/product/740/cutter-mixer-emp-350-emp350/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PNcUMqEMnhqoHtFTFcoNlrxlUX8\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/740/cutter-mixer-emp-350-emp350/_payload.json"
-  },
-  "/commercial-kitchen/product/741/cutter-mixer-sd09-sd09/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-CxZLwAAJy7+FhUySRmI1jR8iGfU\"",
-    "mtime": "2024-12-16T10:03:07.935Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/741/cutter-mixer-sd09-sd09/index.html"
-  },
-  "/commercial-kitchen/product/741/cutter-mixer-sd09-sd09/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Nc4zQMiJkkKooQ77FSHzIO0Pbrk\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/741/cutter-mixer-sd09-sd09/_payload.json"
-  },
-  "/commercial-kitchen/product/745/neutral-cupboard-sliding-door-ncbdc1107-ncbdc1107/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-h/PMNoiFgzhzPwXcn0YcShsgC6A\"",
-    "mtime": "2024-12-16T10:03:00.664Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/745/neutral-cupboard-sliding-door-ncbdc1107-ncbdc1107/index.html"
-  },
-  "/commercial-kitchen/product/745/neutral-cupboard-sliding-door-ncbdc1107-ncbdc1107/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+OrxrvQU9TB9JbvLA6KrtID/n9s\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/745/neutral-cupboard-sliding-door-ncbdc1107-ncbdc1107/_payload.json"
-  },
-  "/commercial-kitchen/product/746/neutral-cupboard-sliding-door-ncbdc1507-ncbdc1507/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-pqxnQA1R6wKeIudJnMRgwRUSWZc\"",
-    "mtime": "2024-12-16T10:03:00.672Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/746/neutral-cupboard-sliding-door-ncbdc1507-ncbdc1507/index.html"
-  },
-  "/commercial-kitchen/product/746/neutral-cupboard-sliding-door-ncbdc1507-ncbdc1507/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5SECu3suY/aTbQMoJ88amXLG/Rw\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/746/neutral-cupboard-sliding-door-ncbdc1507-ncbdc1507/_payload.json"
-  },
-  "/commercial-kitchen/product/747/neutral-cupboard-sliding-door-ncbdc1807-ncbdc1807/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-KVbBQuBWYAu7BJQLS1hD//7pu9M\"",
-    "mtime": "2024-12-16T10:03:00.733Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/747/neutral-cupboard-sliding-door-ncbdc1807-ncbdc1807/index.html"
-  },
-  "/commercial-kitchen/product/747/neutral-cupboard-sliding-door-ncbdc1807-ncbdc1807/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gUEPZo1W8ey0GAnO8XIU93XnEeY\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/747/neutral-cupboard-sliding-door-ncbdc1807-ncbdc1807/_payload.json"
-  },
-  "/commercial-kitchen/product/748/neutral-cupboard-sliding-door-ncbdc2007-ncbdc2007/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-fbXR1QnmN/DF4Q3UFyUOqUuPEuM\"",
-    "mtime": "2024-12-16T10:03:00.750Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/748/neutral-cupboard-sliding-door-ncbdc2007-ncbdc2007/index.html"
-  },
-  "/commercial-kitchen/product/748/neutral-cupboard-sliding-door-ncbdc2007-ncbdc2007/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-miZ72FakcWqu3wUF0bgNS591Um4\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/748/neutral-cupboard-sliding-door-ncbdc2007-ncbdc2007/_payload.json"
-  },
-  "/commercial-kitchen/product/75/pastry-display-square-1800-evok-evok180v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-W3AWYAuU8TFZ+qsxxr0nPfNcqow\"",
-    "mtime": "2024-12-16T10:02:58.022Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/75/pastry-display-square-1800-evok-evok180v/index.html"
-  },
-  "/commercial-kitchen/product/75/pastry-display-square-1800-evok-evok180v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-c2tVc2sycJPgZ0AF5/hs1o6DszI\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/75/pastry-display-square-1800-evok-evok180v/_payload.json"
-  },
-  "/commercial-kitchen/product/750/open-cupboard-ncbdo150-ncbdo150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-LxpqLBvw3ILaMTC8fL/g8XiLHyo\"",
-    "mtime": "2024-12-16T10:03:00.943Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/750/open-cupboard-ncbdo150-ncbdo150/index.html"
-  },
-  "/commercial-kitchen/product/750/open-cupboard-ncbdo150-ncbdo150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WYy+pgHQwTlwVLsoTbEz66r9lao\"",
-    "mtime": "2024-12-16T10:03:11.665Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/750/open-cupboard-ncbdo150-ncbdo150/_payload.json"
-  },
-  "/commercial-kitchen/product/749/open-cupboard-ncbdo110-ncbdo110/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-rCRQhlnzmHqCYkkka8TeehTQIMI\"",
-    "mtime": "2024-12-16T10:03:00.930Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/749/open-cupboard-ncbdo110-ncbdo110/index.html"
-  },
-  "/commercial-kitchen/product/749/open-cupboard-ncbdo110-ncbdo110/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-q37WRdlZ//rtE67UIZIKFFcHSJE\"",
-    "mtime": "2024-12-16T10:03:11.661Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/749/open-cupboard-ncbdo110-ncbdo110/_payload.json"
-  },
-  "/commercial-kitchen/product/751/open-cupboard-ncbdo180-ncbdo180/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-EhlpH89TDBPkJJe21ANqqtGB4yI\"",
-    "mtime": "2024-12-16T10:03:00.965Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/751/open-cupboard-ncbdo180-ncbdo180/index.html"
-  },
-  "/commercial-kitchen/product/751/open-cupboard-ncbdo180-ncbdo180/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jgu3XATS06y143/X2lQ1oUMw2A0\"",
-    "mtime": "2024-12-16T10:03:11.674Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/751/open-cupboard-ncbdo180-ncbdo180/_payload.json"
-  },
-  "/commercial-kitchen/product/753/hot-cupboard-hcbd1107-hcbd1107/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-Iz7w5SOuGsp5jKPivkzQbdXBIwk\"",
-    "mtime": "2024-12-16T10:03:00.772Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/753/hot-cupboard-hcbd1107-hcbd1107/index.html"
-  },
-  "/commercial-kitchen/product/753/hot-cupboard-hcbd1107-hcbd1107/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-J5RL1sdOqOfeLTSvB3GNrCEnImA\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/753/hot-cupboard-hcbd1107-hcbd1107/_payload.json"
-  },
-  "/commercial-kitchen/product/752/open-cupboard-ncbdo200-ncbdo200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-5vHo3iIGJjx+3WQ8doxpOAHCw1E\"",
-    "mtime": "2024-12-16T10:03:01.007Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/752/open-cupboard-ncbdo200-ncbdo200/index.html"
-  },
-  "/commercial-kitchen/product/752/open-cupboard-ncbdo200-ncbdo200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jP72o5iGVuyYnVwEe+9Jh9F0ulU\"",
-    "mtime": "2024-12-16T10:03:11.674Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/752/open-cupboard-ncbdo200-ncbdo200/_payload.json"
-  },
-  "/commercial-kitchen/product/754/hot-cupboard-hcbd1507-hcbd1507/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-FlbllmmHyFJmS1RULCzBYFB1WaA\"",
-    "mtime": "2024-12-16T10:03:00.763Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/754/hot-cupboard-hcbd1507-hcbd1507/index.html"
-  },
-  "/commercial-kitchen/product/754/hot-cupboard-hcbd1507-hcbd1507/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YFPhlvmodSE+89ytEUwsbtwdEuU\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/754/hot-cupboard-hcbd1507-hcbd1507/_payload.json"
-  },
-  "/commercial-kitchen/product/755/hot-cupboard-hcbd1807-hcbd1807/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-cENEPwwsvtFZSAHFkslFqT8bJ+E\"",
-    "mtime": "2024-12-16T10:03:00.825Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/755/hot-cupboard-hcbd1807-hcbd1807/index.html"
-  },
-  "/commercial-kitchen/product/755/hot-cupboard-hcbd1807-hcbd1807/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JEjogQgoGKm+m7z8MyYxYIxs+Lc\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/755/hot-cupboard-hcbd1807-hcbd1807/_payload.json"
-  },
-  "/commercial-kitchen/product/756/hot-cupboard-hcbd2007-hcbd2007/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-o/631F0iq6F7o2IyujxfuFGO98I\"",
-    "mtime": "2024-12-16T10:03:00.835Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/756/hot-cupboard-hcbd2007-hcbd2007/index.html"
-  },
-  "/commercial-kitchen/product/756/hot-cupboard-hcbd2007-hcbd2007/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ymj2/HjepeIwWPTx80gu/uKHyMg\"",
-    "mtime": "2024-12-16T10:03:11.635Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/756/hot-cupboard-hcbd2007-hcbd2007/_payload.json"
-  },
-  "/commercial-kitchen/product/76/pastry-display-square-900-evok-evok90v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-190bKisNIzpQNj6VlcJJ79TvJa4\"",
-    "mtime": "2024-12-16T10:02:57.979Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/76/pastry-display-square-900-evok-evok90v/index.html"
-  },
-  "/commercial-kitchen/product/76/pastry-display-square-900-evok-evok90v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dnNjnwmFoLk4ggUZOQxFLvTVMBU\"",
-    "mtime": "2024-12-16T10:03:11.077Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/76/pastry-display-square-900-evok-evok90v/_payload.json"
-  },
-  "/commercial-kitchen/product/774/worktop-central-type-ct1106r-ct1106r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-eqbbCM0tR5lWJNrdMO/1+v1P0FM\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/774/worktop-central-type-ct1106r-ct1106r/index.html"
-  },
-  "/commercial-kitchen/product/774/worktop-central-type-ct1106r-ct1106r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-vKqoUfZxuR7ly0BAGdmQAnG0RC0\"",
-    "mtime": "2024-12-16T10:03:11.435Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/774/worktop-central-type-ct1106r-ct1106r/_payload.json"
-  },
-  "/commercial-kitchen/product/775/worktop-central-type-ct1506r-ct1506r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-K9OgHZC6EBLKJTxjCQLK6LRIaU8\"",
-    "mtime": "2024-12-16T10:02:59.377Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/775/worktop-central-type-ct1506r-ct1506r/index.html"
-  },
-  "/commercial-kitchen/product/775/worktop-central-type-ct1506r-ct1506r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RsFxNXi2hP1qbBuiFi9SMS4sp+Y\"",
-    "mtime": "2024-12-16T10:03:11.385Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/775/worktop-central-type-ct1506r-ct1506r/_payload.json"
-  },
-  "/commercial-kitchen/product/776/worktop-central-type-ct1806r-ct1806r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-jZW++Zd8SmyHiQ5gyDy1/GRJBKg\"",
-    "mtime": "2024-12-16T10:02:59.385Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/776/worktop-central-type-ct1806r-ct1806r/index.html"
-  },
-  "/commercial-kitchen/product/776/worktop-central-type-ct1806r-ct1806r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-p8yPa3ODWVJm74XfvyF8Ux52bF0\"",
-    "mtime": "2024-12-16T10:03:11.410Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/776/worktop-central-type-ct1806r-ct1806r/_payload.json"
-  },
-  "/commercial-kitchen/product/778/worktop-central-type-ct2306r-ct2006r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-vrWDcKpjzlp5iNdqZGVcSgRQHoA\"",
-    "mtime": "2024-12-16T10:02:59.478Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/778/worktop-central-type-ct2306r-ct2006r/index.html"
-  },
-  "/commercial-kitchen/product/778/worktop-central-type-ct2306r-ct2006r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tzPK44lsbIJXVGRC8qQ0Okt0154\"",
-    "mtime": "2024-12-16T10:03:11.443Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/778/worktop-central-type-ct2306r-ct2006r/_payload.json"
-  },
-  "/commercial-kitchen/product/777/worktop-central-type-ct2006r-ct2006r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-3jNk6eWeWEXJsMy9KvEPyDeCmd8\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/777/worktop-central-type-ct2006r-ct2006r/index.html"
-  },
-  "/commercial-kitchen/product/777/worktop-central-type-ct2006r-ct2006r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jI0xhK0VXf2OG0g8U2ukjdHpY2g\"",
-    "mtime": "2024-12-16T10:03:11.435Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/777/worktop-central-type-ct2006r-ct2006r/_payload.json"
-  },
-  "/commercial-kitchen/product/779/worktop-central-type-ct1106r2u-ct1106r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-1C2K4kt3x+qUJzZANYTVVIIJQ0w\"",
-    "mtime": "2024-12-16T10:02:59.478Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/779/worktop-central-type-ct1106r2u-ct1106r2u/index.html"
-  },
-  "/commercial-kitchen/product/779/worktop-central-type-ct1106r2u-ct1106r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oN49X19APl/lDAN6F3JMnunerTU\"",
-    "mtime": "2024-12-16T10:03:11.442Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/779/worktop-central-type-ct1106r2u-ct1106r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/780/worktop-central-type-ct1506r2u-ct1506r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-KAuDHmPnXtJFfaeLIYQc2dlTRxE\"",
-    "mtime": "2024-12-16T10:02:59.561Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/780/worktop-central-type-ct1506r2u-ct1506r2u/index.html"
-  },
-  "/commercial-kitchen/product/780/worktop-central-type-ct1506r2u-ct1506r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9LM/Zx460oWi/SNodGHcKHI89qw\"",
-    "mtime": "2024-12-16T10:03:11.443Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/780/worktop-central-type-ct1506r2u-ct1506r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/781/worktop-central-type-ct1806r2u-ct1806r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-hdm1ESHOiuGvmNCgQPkeVQb7gvc\"",
-    "mtime": "2024-12-16T10:02:59.596Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/781/worktop-central-type-ct1806r2u-ct1806r2u/index.html"
-  },
-  "/commercial-kitchen/product/781/worktop-central-type-ct1806r2u-ct1806r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RE0awuF6UK3JvWWOa+O2r4d6rk0\"",
-    "mtime": "2024-12-16T10:03:11.443Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/781/worktop-central-type-ct1806r2u-ct1806r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/782/worktop-central-type-ct2006r2u-ct2006r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-ZdCjA7LauPqRWvo+N0ZIBd+YY44\"",
-    "mtime": "2024-12-16T10:02:59.596Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/782/worktop-central-type-ct2006r2u-ct2006r2u/index.html"
-  },
-  "/commercial-kitchen/product/782/worktop-central-type-ct2006r2u-ct2006r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dWGt2UEDKIc5Rbep9u9HqKo2I6s\"",
-    "mtime": "2024-12-16T10:03:11.445Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/782/worktop-central-type-ct2006r2u-ct2006r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/783/worktop-central-type-ct2306r2u-ct2306r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-oWgK9A3P45Bz1R4+7FUwMo299gE\"",
-    "mtime": "2024-12-16T10:02:59.611Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/783/worktop-central-type-ct2306r2u-ct2306r2u/index.html"
-  },
-  "/commercial-kitchen/product/783/worktop-central-type-ct2306r2u-ct2306r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+ZMHeabOTYzBXKSBtetWghhsLow\"",
-    "mtime": "2024-12-16T10:03:11.450Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/783/worktop-central-type-ct2306r2u-ct2306r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/784/worktop-wall-type-wt1106r-wt1106r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-kCaaXy6J9xaZ9pR0P9R5cEGVY1E\"",
-    "mtime": "2024-12-16T10:02:59.627Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/784/worktop-wall-type-wt1106r-wt1106r/index.html"
-  },
-  "/commercial-kitchen/product/784/worktop-wall-type-wt1106r-wt1106r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-16c6/EQbeuxyqdWosCV0cgaotbo\"",
-    "mtime": "2024-12-16T10:03:11.450Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/784/worktop-wall-type-wt1106r-wt1106r/_payload.json"
-  },
-  "/commercial-kitchen/product/785/worktop-worktop-type-wt1506r-wt1506r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-OE5mbqMBT/pxIyqchPRn/TNmpis\"",
-    "mtime": "2024-12-16T10:02:59.657Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/785/worktop-worktop-type-wt1506r-wt1506r/index.html"
-  },
-  "/commercial-kitchen/product/785/worktop-worktop-type-wt1506r-wt1506r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ve85IDWMJXZrTTS1DltxbsYdrCQ\"",
-    "mtime": "2024-12-16T10:03:11.450Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/785/worktop-worktop-type-wt1506r-wt1506r/_payload.json"
-  },
-  "/commercial-kitchen/product/786/worktop-central-type-wt1806r-wt1806r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-nFFYyAU8a4+NAewp4df1DkjzCQ0\"",
-    "mtime": "2024-12-16T10:02:59.673Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/786/worktop-central-type-wt1806r-wt1806r/index.html"
-  },
-  "/commercial-kitchen/product/786/worktop-central-type-wt1806r-wt1806r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Tm6Fly9UmcBg/Nx4Ggi8xhYbqJg\"",
-    "mtime": "2024-12-16T10:03:11.450Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/786/worktop-central-type-wt1806r-wt1806r/_payload.json"
-  },
-  "/commercial-kitchen/product/787/worktop-wall-type-wt2006r-wt2006r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-xa0IUad9npEu0q3Uzgnu1rJ6O6M\"",
-    "mtime": "2024-12-16T10:02:59.697Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/787/worktop-wall-type-wt2006r-wt2006r/index.html"
-  },
-  "/commercial-kitchen/product/787/worktop-wall-type-wt2006r-wt2006r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cI4auuXdfsikdsKIkxBgG9Oe6NM\"",
-    "mtime": "2024-12-16T10:03:11.457Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/787/worktop-wall-type-wt2006r-wt2006r/_payload.json"
-  },
-  "/commercial-kitchen/product/788/worktop-wall-type-ct2306r-wt2306r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-Bffwncql/qSSSy45SUBScJpqqtg\"",
-    "mtime": "2024-12-16T10:02:59.697Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/788/worktop-wall-type-ct2306r-wt2306r/index.html"
-  },
-  "/commercial-kitchen/product/788/worktop-wall-type-ct2306r-wt2306r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ee06Hc6mRD2BIEIKZ9bVSwmUMwg\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/788/worktop-wall-type-ct2306r-wt2306r/_payload.json"
-  },
-  "/commercial-kitchen/product/789/worktop-wall-type-wt1106r2u-wt1106r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-uPVeKcRKiCpvRisSDDjLOPmYknc\"",
-    "mtime": "2024-12-16T10:02:59.709Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/789/worktop-wall-type-wt1106r2u-wt1106r2u/index.html"
-  },
-  "/commercial-kitchen/product/789/worktop-wall-type-wt1106r2u-wt1106r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1ofrXfh7xMPdnlxW4LoEIKolWLA\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/789/worktop-wall-type-wt1106r2u-wt1106r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/790/worktop-wall-type-wt1506r2u-wt1506r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-/Vq80ZnpwJjVuramm6JgWgobeyk\"",
-    "mtime": "2024-12-16T10:02:59.730Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/790/worktop-wall-type-wt1506r2u-wt1506r2u/index.html"
-  },
-  "/commercial-kitchen/product/790/worktop-wall-type-wt1506r2u-wt1506r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bnMmR0g0JwvvP1oLzr62vTdMEl8\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/790/worktop-wall-type-wt1506r2u-wt1506r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/791/worktop-wall-type-wt1806r2u-wt1806r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-VxooiizT6cu8PzJVeGnJCfHjM9o\"",
-    "mtime": "2024-12-16T10:02:59.743Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/791/worktop-wall-type-wt1806r2u-wt1806r2u/index.html"
-  },
-  "/commercial-kitchen/product/791/worktop-wall-type-wt1806r2u-wt1806r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8Lw6Z4Ge6NscOaaKx1mMXHTamfE\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/791/worktop-wall-type-wt1806r2u-wt1806r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/792/worktop-wall-type-wt2006r2u-wt2006r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-8F2mVh63O43A1iKJlaj3SVItip4\"",
-    "mtime": "2024-12-16T10:02:59.727Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/792/worktop-wall-type-wt2006r2u-wt2006r2u/index.html"
-  },
-  "/commercial-kitchen/product/792/worktop-wall-type-wt2006r2u-wt2006r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hLNWdQ+IsbXHJsflq+5A5alBsOU\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/792/worktop-wall-type-wt2006r2u-wt2006r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/793/worktop-wall-type-wt2306r2u-wt2306r2u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-Ce/3ZhpQk2cAWdsQ47D98RoWwhM\"",
-    "mtime": "2024-12-16T10:02:59.809Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/793/worktop-wall-type-wt2306r2u-wt2306r2u/index.html"
-  },
-  "/commercial-kitchen/product/793/worktop-wall-type-wt2306r2u-wt2306r2u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qtWLT1Y5O6SufL8rnQNUUqnnuhI\"",
-    "mtime": "2024-12-16T10:03:11.475Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/793/worktop-wall-type-wt2306r2u-wt2306r2u/_payload.json"
-  },
-  "/commercial-kitchen/product/794/pastry-preparation-table-pt1507s-pt1507r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-u0ebaZMrqEc+nk0V6Zy8ZvqXRII\"",
-    "mtime": "2024-12-16T10:02:59.809Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/794/pastry-preparation-table-pt1507s-pt1507r/index.html"
-  },
-  "/commercial-kitchen/product/794/pastry-preparation-table-pt1507s-pt1507r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IeIC4Np+x8c7rFAXINuoT3MRssk\"",
-    "mtime": "2024-12-16T10:03:11.473Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/794/pastry-preparation-table-pt1507s-pt1507r/_payload.json"
-  },
-  "/commercial-kitchen/product/795/pastry-preparation-table-pt1807s-pt1807r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-ISFEOHVd6fyL/IUkFwY8BSBMs9U\"",
-    "mtime": "2024-12-16T10:02:59.812Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/795/pastry-preparation-table-pt1807s-pt1807r/index.html"
-  },
-  "/commercial-kitchen/product/795/pastry-preparation-table-pt1807s-pt1807r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-b8ECcJxgrRgZYx5N8JOQ9QvrskQ\"",
-    "mtime": "2024-12-16T10:03:11.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/795/pastry-preparation-table-pt1807s-pt1807r/_payload.json"
-  },
-  "/commercial-kitchen/product/796/pastry-preparation-table-pt2007s-pt2007r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-IY7/Ux5Yc9R0Mvu6QjAHFUhwJIo\"",
-    "mtime": "2024-12-16T10:02:59.809Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/796/pastry-preparation-table-pt2007s-pt2007r/index.html"
-  },
-  "/commercial-kitchen/product/796/pastry-preparation-table-pt2007s-pt2007r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7XaBPkEick4EoXYPFaN/C3lxnYk\"",
-    "mtime": "2024-12-16T10:03:11.490Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/796/pastry-preparation-table-pt2007s-pt2007r/_payload.json"
-  },
-  "/commercial-kitchen/product/797/receiving-table-rt1206r-rt1206r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-70Y0gx+I5pDZVZWw3p6pf5OwqWQ\"",
-    "mtime": "2024-12-16T10:02:59.910Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/797/receiving-table-rt1206r-rt1206r/index.html"
-  },
-  "/commercial-kitchen/product/797/receiving-table-rt1206r-rt1206r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oPHlsewgH3NnwJUD3XoydUOTT8s\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/797/receiving-table-rt1206r-rt1206r/_payload.json"
-  },
-  "/commercial-kitchen/product/798/receiving-table-rt1506r-rt1506r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-edsz0cb8sGeuwfJpwpUgff0qZOA\"",
-    "mtime": "2024-12-16T10:02:59.826Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/798/receiving-table-rt1506r-rt1506r/index.html"
-  },
-  "/commercial-kitchen/product/798/receiving-table-rt1506r-rt1506r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jr1qXN7AC05BvQQm5uouuO09nvA\"",
-    "mtime": "2024-12-16T10:03:11.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/798/receiving-table-rt1506r-rt1506r/_payload.json"
-  },
-  "/commercial-kitchen/product/799/receiving-table-rt2106r-rt2106r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-zqUpH/T00r7Nrp1HS+fAbsQSDhE\"",
-    "mtime": "2024-12-16T10:02:59.858Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/799/receiving-table-rt2106r-rt2106r/index.html"
-  },
-  "/commercial-kitchen/product/799/receiving-table-rt2106r-rt2106r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-87WEQAVophFwFMLL3ZPfhd2RUsM\"",
-    "mtime": "2024-12-16T10:03:11.501Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/799/receiving-table-rt2106r-rt2106r/_payload.json"
-  },
-  "/commercial-kitchen/product/800/receiving-table-with-overshelf-rto1207r-rto1207r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-QTQ8ABhCSw99BQwBkOr/4/F6IXI\"",
-    "mtime": "2024-12-16T10:02:59.900Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/800/receiving-table-with-overshelf-rto1207r-rto1207r/index.html"
-  },
-  "/commercial-kitchen/product/800/receiving-table-with-overshelf-rto1207r-rto1207r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zw51G7cwF8BGNBpixNQDt282Bps\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/800/receiving-table-with-overshelf-rto1207r-rto1207r/_payload.json"
-  },
-  "/commercial-kitchen/product/801/receiving-table-with-overshelf-rto1607r-rto1607r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-F3h+XLCKcjVFhpxtxzyKJ7KfFB0\"",
-    "mtime": "2024-12-16T10:02:59.885Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/801/receiving-table-with-overshelf-rto1607r-rto1607r/index.html"
-  },
-  "/commercial-kitchen/product/801/receiving-table-with-overshelf-rto1607r-rto1607r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-70Hw+jDptIGUaTEyg1uk/mPqhnk\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/801/receiving-table-with-overshelf-rto1607r-rto1607r/_payload.json"
-  },
-  "/commercial-kitchen/product/802/receiving-table-with-overshelf-rto2107r-rto2107r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-rs9+Y3NAeazt7FhCoUu1SywnREQ\"",
-    "mtime": "2024-12-16T10:02:59.910Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/802/receiving-table-with-overshelf-rto2107r-rto2107r/index.html"
-  },
-  "/commercial-kitchen/product/802/receiving-table-with-overshelf-rto2107r-rto2107r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gbQJ8qGG5tEd7RYT2n8FiicDbQA\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/802/receiving-table-with-overshelf-rto2107r-rto2107r/_payload.json"
-  },
-  "/commercial-kitchen/product/803/runout-table-rot1207r-rto1207r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-wuIDbpEXKrPLC9Q6lVN56qmcEDA\"",
-    "mtime": "2024-12-16T10:02:59.935Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/803/runout-table-rot1207r-rto1207r/index.html"
-  },
-  "/commercial-kitchen/product/803/runout-table-rot1207r-rto1207r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rNK9NqaJz1M7whNxqwHmp4eSjV4\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/803/runout-table-rot1207r-rto1207r/_payload.json"
-  },
-  "/commercial-kitchen/product/804/runout-table-rot1507r-rto1507r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-Yve9V4SI9JpdwYKK5lJE2urA50Y\"",
-    "mtime": "2024-12-16T10:02:59.945Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/804/runout-table-rot1507r-rto1507r/index.html"
-  },
-  "/commercial-kitchen/product/804/runout-table-rot1507r-rto1507r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ucCzuBHCpI6dVYtkzpybjAG1KLo\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/804/runout-table-rot1507r-rto1507r/_payload.json"
-  },
-  "/commercial-kitchen/product/805/runout-table-rot1807r-rto1807r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-ZXAPTHpauAlQ4Cuj1ZBRgnH47hY\"",
-    "mtime": "2024-12-16T10:02:59.945Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/805/runout-table-rot1807r-rto1807r/index.html"
-  },
-  "/commercial-kitchen/product/805/runout-table-rot1807r-rto1807r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TTfcJmpVzyvCFq5YRwOBjz4XXOc\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/805/runout-table-rot1807r-rto1807r/_payload.json"
-  },
-  "/commercial-kitchen/product/806/handwash-trough-hwt1204-model-no-hwt1204/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-zuSmCOj2akwMXnnicLr5KxPR1ic\"",
-    "mtime": "2024-12-16T10:03:00.282Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/806/handwash-trough-hwt1204-model-no-hwt1204/index.html"
-  },
-  "/commercial-kitchen/product/806/handwash-trough-hwt1204-model-no-hwt1204/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-t6J0cytakWG3I7TYzPw5kqR6OPQ\"",
-    "mtime": "2024-12-16T10:03:11.561Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/806/handwash-trough-hwt1204-model-no-hwt1204/_payload.json"
-  },
-  "/commercial-kitchen/product/807/handwash-trough-hwt1504-hwt1504/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-I8Bnu58UV8eC8xYsZ4L6utGaJ1E\"",
-    "mtime": "2024-12-16T10:03:00.303Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/807/handwash-trough-hwt1504-hwt1504/index.html"
-  },
-  "/commercial-kitchen/product/807/handwash-trough-hwt1504-hwt1504/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-o2WJHCBCTs+hRmUS3LwEHAwlar0\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/807/handwash-trough-hwt1504-hwt1504/_payload.json"
-  },
-  "/commercial-kitchen/product/808/handwash-trough-hwt1804-hwt1804/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-kWVdc1C4FyBLfbxhaseYkxTIlR8\"",
-    "mtime": "2024-12-16T10:03:00.316Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/808/handwash-trough-hwt1804-hwt1804/index.html"
-  },
-  "/commercial-kitchen/product/808/handwash-trough-hwt1804-hwt1804/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XlQqSaQRGGx4tPi7A1DQmLoZByU\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/808/handwash-trough-hwt1804-hwt1804/_payload.json"
-  },
-  "/commercial-kitchen/product/809/handwash-trough-hwt2004-hwt2004/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-HbiYs/AQzE2J8SQNHq4wq36X9ic\"",
-    "mtime": "2024-12-16T10:03:00.322Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/809/handwash-trough-hwt2004-hwt2004/index.html"
-  },
-  "/commercial-kitchen/product/809/handwash-trough-hwt2004-hwt2004/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OJEfT9XGpvZ35mMtJjR3h+5z0Jc\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/809/handwash-trough-hwt2004-hwt2004/_payload.json"
-  },
-  "/commercial-kitchen/product/810/single-bowl-sink-ssb1206r-ssb1206r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-uTIwlLb4kyVtbQwJSCkWFK04JI4\"",
-    "mtime": "2024-12-16T10:02:59.945Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/810/single-bowl-sink-ssb1206r-ssb1206r/index.html"
-  },
-  "/commercial-kitchen/product/810/single-bowl-sink-ssb1206r-ssb1206r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7sGeKExQRZsB1wg+mPSxRHoaOuU\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/810/single-bowl-sink-ssb1206r-ssb1206r/_payload.json"
-  },
-  "/commercial-kitchen/product/811/single-bowl-sink-ssb1506r-ssb1506r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-s4MFZOVEIQLP4cg/Bh7xkFM+RHk\"",
-    "mtime": "2024-12-16T10:02:59.945Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/811/single-bowl-sink-ssb1506r-ssb1506r/index.html"
-  },
-  "/commercial-kitchen/product/811/single-bowl-sink-ssb1506r-ssb1506r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iS2ebsH5nr1Pl7uz143y96hiPbg\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/811/single-bowl-sink-ssb1506r-ssb1506r/_payload.json"
-  },
-  "/commercial-kitchen/product/812/single-bowl-sink-ssb1806r-ssb1806r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-3WRVf/Ll1/+kYgHcyOQ1Y6imQoA\"",
-    "mtime": "2024-12-16T10:02:59.965Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/812/single-bowl-sink-ssb1806r-ssb1806r/index.html"
-  },
-  "/commercial-kitchen/product/812/single-bowl-sink-ssb1806r-ssb1806r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KUab9uVLOz1E8ZnH0kT64O76Uuc\"",
-    "mtime": "2024-12-16T10:03:11.505Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/812/single-bowl-sink-ssb1806r-ssb1806r/_payload.json"
-  },
-  "/commercial-kitchen/product/813/single-bowl-sink-ssb2006r-ssb2006r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-+oU/g2ads+5dHM+o8JcELYZdZKI\"",
-    "mtime": "2024-12-16T10:03:00.049Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/813/single-bowl-sink-ssb2006r-ssb2006r/index.html"
-  },
-  "/commercial-kitchen/product/813/single-bowl-sink-ssb2006r-ssb2006r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8oiMciPhGFpSK8cqstHefYHCxXU\"",
-    "mtime": "2024-12-16T10:03:11.514Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/813/single-bowl-sink-ssb2006r-ssb2006r/_payload.json"
-  },
-  "/commercial-kitchen/product/814/double-bowl-sink-sdb1206r-sdb1206r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-3ghjAX8WhkCe7vzDhaCO3RQGyTo\"",
-    "mtime": "2024-12-16T10:03:00.060Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/814/double-bowl-sink-sdb1206r-sdb1206r/index.html"
-  },
-  "/commercial-kitchen/product/814/double-bowl-sink-sdb1206r-sdb1206r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tXRi/jxIsOsOpJVCsSAEM+dv/K4\"",
-    "mtime": "2024-12-16T10:03:11.514Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/814/double-bowl-sink-sdb1206r-sdb1206r/_payload.json"
-  },
-  "/commercial-kitchen/product/815/double-bowl-sink-sdb1506r-sdb1506r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-H+oUlN4ZvNcZMQCUsByfekGQXAk\"",
-    "mtime": "2024-12-16T10:03:00.070Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/815/double-bowl-sink-sdb1506r-sdb1506r/index.html"
-  },
-  "/commercial-kitchen/product/815/double-bowl-sink-sdb1506r-sdb1506r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OC1p28wzztYmsQSuteODyjpK3dM\"",
-    "mtime": "2024-12-16T10:03:11.514Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/815/double-bowl-sink-sdb1506r-sdb1506r/_payload.json"
-  },
-  "/commercial-kitchen/product/817/double-bowl-sink-sdb2006r-sdb2006r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-eNvsqLhAG9pPEXw1iLJ/B/GVuoM\"",
-    "mtime": "2024-12-16T10:03:00.075Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/817/double-bowl-sink-sdb2006r-sdb2006r/index.html"
-  },
-  "/commercial-kitchen/product/817/double-bowl-sink-sdb2006r-sdb2006r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Y+PFdoXNNqIks4fX8ZPHFnlBUJU\"",
-    "mtime": "2024-12-16T10:03:11.516Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/817/double-bowl-sink-sdb2006r-sdb2006r/_payload.json"
-  },
-  "/commercial-kitchen/product/818/pre-rinse-double-bowl-sink-sdbpr1207r-sdbpr1207r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-OHLgeIjbF+Z9FT34sCnFZ5VM2o4\"",
-    "mtime": "2024-12-16T10:03:00.189Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/818/pre-rinse-double-bowl-sink-sdbpr1207r-sdbpr1207r/index.html"
-  },
-  "/commercial-kitchen/product/818/pre-rinse-double-bowl-sink-sdbpr1207r-sdbpr1207r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-6OgZ3JkoX9VnSxRdISDJ/mBidGA\"",
-    "mtime": "2024-12-16T10:03:11.541Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/818/pre-rinse-double-bowl-sink-sdbpr1207r-sdbpr1207r/_payload.json"
-  },
-  "/commercial-kitchen/product/816/double-bowl-sink-sdb1806r-sdb1806r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-9hB/OtM3Nlbdu/INpvx8fiJDzN8\"",
-    "mtime": "2024-12-16T10:03:00.071Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/816/double-bowl-sink-sdb1806r-sdb1806r/index.html"
-  },
-  "/commercial-kitchen/product/816/double-bowl-sink-sdb1806r-sdb1806r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oMIqOG+zZW9h+pxr7SobBbmwc6w\"",
-    "mtime": "2024-12-16T10:03:11.516Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/816/double-bowl-sink-sdb1806r-sdb1806r/_payload.json"
-  },
-  "/commercial-kitchen/product/819/pre-rinse-single-bowl-sink-sspr1207r-ssspr1207r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-EkarP1UJSOp0OW4toIqvEfef5n4\"",
-    "mtime": "2024-12-16T10:03:00.101Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/819/pre-rinse-single-bowl-sink-sspr1207r-ssspr1207r/index.html"
-  },
-  "/commercial-kitchen/product/819/pre-rinse-single-bowl-sink-sspr1207r-ssspr1207r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ut/Ul0nRw7JGcFpFEErHshENk8M\"",
-    "mtime": "2024-12-16T10:03:11.535Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/819/pre-rinse-single-bowl-sink-sspr1207r-ssspr1207r/_payload.json"
-  },
-  "/commercial-kitchen/product/82/ice-cube-machine-35-kg-self-feed-zbj-35pe/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fd-pgs+TjQ3lkrdMhsKP8gIPHiL1X4\"",
-    "mtime": "2024-12-16T10:03:03.956Z",
-    "size": 78589,
-    "path": "../public/commercial-kitchen/product/82/ice-cube-machine-35-kg-self-feed-zbj-35pe/index.html"
-  },
-  "/commercial-kitchen/product/82/ice-cube-machine-35-kg-self-feed-zbj-35pe/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-i+UO0RbNn0mZxbrKcDibuw7o6UE\"",
-    "mtime": "2024-12-16T10:03:12.190Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/82/ice-cube-machine-35-kg-self-feed-zbj-35pe/_payload.json"
-  },
-  "/commercial-kitchen/product/820/pre-rinse-double-bowl-sink-sdbpr1507r-sdbpr1507r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-e1Ws3wHrnOLdSrD6mbi4mFDxp2E\"",
-    "mtime": "2024-12-16T10:03:00.164Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/820/pre-rinse-double-bowl-sink-sdbpr1507r-sdbpr1507r/index.html"
-  },
-  "/commercial-kitchen/product/820/pre-rinse-double-bowl-sink-sdbpr1507r-sdbpr1507r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZMXYQaX/712T7TAczfX6c0hLyVI\"",
-    "mtime": "2024-12-16T10:03:11.535Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/820/pre-rinse-double-bowl-sink-sdbpr1507r-sdbpr1507r/_payload.json"
-  },
-  "/commercial-kitchen/product/821/pre-rinse-double-bowl-sink-sdbpr1807r-sdbpr1807r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-JSALhC1XbnDRSpFsWoww1Lcvx8g\"",
-    "mtime": "2024-12-16T10:03:00.200Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/821/pre-rinse-double-bowl-sink-sdbpr1807r-sdbpr1807r/index.html"
-  },
-  "/commercial-kitchen/product/821/pre-rinse-double-bowl-sink-sdbpr1807r-sdbpr1807r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JGy9ej/uraOg9Iq4ARCDmZIGUUE\"",
-    "mtime": "2024-12-16T10:03:11.541Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/821/pre-rinse-double-bowl-sink-sdbpr1807r-sdbpr1807r/_payload.json"
-  },
-  "/commercial-kitchen/product/822/pot-wash-sink-sdbpw1207r-sdbpw1207r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-JpNnBDEzeYrJ/azgOOb2HCbWzO8\"",
-    "mtime": "2024-12-16T10:03:00.200Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/822/pot-wash-sink-sdbpw1207r-sdbpw1207r/index.html"
-  },
-  "/commercial-kitchen/product/822/pot-wash-sink-sdbpw1207r-sdbpw1207r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cSnWtcIaocqpFCO7zvvOvD2A8j0\"",
-    "mtime": "2024-12-16T10:03:11.543Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/822/pot-wash-sink-sdbpw1207r-sdbpw1207r/_payload.json"
-  },
-  "/commercial-kitchen/product/824/pot-wash-sink-sdbpw1807r-sdbpw1807r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-IMrnhgiBa2okI6GgjzLTzOtsvQ8\"",
-    "mtime": "2024-12-16T10:03:00.200Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/824/pot-wash-sink-sdbpw1807r-sdbpw1807r/index.html"
-  },
-  "/commercial-kitchen/product/824/pot-wash-sink-sdbpw1807r-sdbpw1807r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-N2a2erKlhALGNBwlyw/mdPIsDpg\"",
-    "mtime": "2024-12-16T10:03:11.541Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/824/pot-wash-sink-sdbpw1807r-sdbpw1807r/_payload.json"
-  },
-  "/commercial-kitchen/product/823/pot-wash-sink-sdbpw1507r-sdbpw1507r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-SLfusjSWmkhf6QH1KqZre62oxW0\"",
-    "mtime": "2024-12-16T10:03:00.201Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/823/pot-wash-sink-sdbpw1507r-sdbpw1507r/index.html"
-  },
-  "/commercial-kitchen/product/823/pot-wash-sink-sdbpw1507r-sdbpw1507r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+5sE0TkOf8PIS7lbITU+fseOv4U\"",
-    "mtime": "2024-12-16T10:03:11.547Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/823/pot-wash-sink-sdbpw1507r-sdbpw1507r/_payload.json"
-  },
-  "/commercial-kitchen/product/825/pot-wash-sink-sdbpw1806r-stbpw1806r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-h6xDXUHXzF7uibQ//wMQa0r7H5I\"",
-    "mtime": "2024-12-16T10:03:00.215Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/825/pot-wash-sink-sdbpw1806r-stbpw1806r/index.html"
-  },
-  "/commercial-kitchen/product/825/pot-wash-sink-sdbpw1806r-stbpw1806r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-l+hQUL42hrzzqC1eEFrG5APJXr8\"",
-    "mtime": "2024-12-16T10:03:11.560Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/825/pot-wash-sink-sdbpw1806r-stbpw1806r/_payload.json"
-  },
-  "/commercial-kitchen/product/826/pot-wash-sink-stbpw2306r-stbpw2306r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-lJ93ATetL4/We5IQ8dHztu6uw9w\"",
-    "mtime": "2024-12-16T10:03:00.285Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/826/pot-wash-sink-stbpw2306r-stbpw2306r/index.html"
-  },
-  "/commercial-kitchen/product/826/pot-wash-sink-stbpw2306r-stbpw2306r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QJ48PpvEOubHBC4DvTCOmvaUuvg\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/826/pot-wash-sink-stbpw2306r-stbpw2306r/_payload.json"
-  },
-  "/commercial-kitchen/product/827/single-bowl-sink-with-cupboard-scb-1500/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-fcv1rHhQK7+K5IATWudL88ahRKw\"",
-    "mtime": "2024-12-16T10:03:00.282Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/827/single-bowl-sink-with-cupboard-scb-1500/index.html"
-  },
-  "/commercial-kitchen/product/827/single-bowl-sink-with-cupboard-scb-1500/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZY0dGSNAwEaO1RauhS5p+MI9tj4\"",
-    "mtime": "2024-12-16T10:03:11.560Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/827/single-bowl-sink-with-cupboard-scb-1500/_payload.json"
-  },
-  "/commercial-kitchen/product/829/stainless-steel-janitor-sink-sj7007r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-XlpJr8rUS3s0e3dZupQEKhvcJ7k\"",
-    "mtime": "2024-12-16T10:03:00.369Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/829/stainless-steel-janitor-sink-sj7007r/index.html"
-  },
-  "/commercial-kitchen/product/829/stainless-steel-janitor-sink-sj7007r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KYvDtpmHEZRbHAknwqKdhF5DI10\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/829/stainless-steel-janitor-sink-sj7007r/_payload.json"
-  },
-  "/commercial-kitchen/product/83/ice-cube-machine-zb-40s-osion-zb-40s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e4-72nXLTmMC+rpyjSHCaQyByiscbo\"",
-    "mtime": "2024-12-16T10:03:03.981Z",
-    "size": 78564,
-    "path": "../public/commercial-kitchen/product/83/ice-cube-machine-zb-40s-osion-zb-40s/index.html"
-  },
-  "/commercial-kitchen/product/83/ice-cube-machine-zb-40s-osion-zb-40s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Qm/ypJ5I2hPzlWO1rudJlkm1YzQ\"",
-    "mtime": "2024-12-16T10:03:12.205Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/83/ice-cube-machine-zb-40s-osion-zb-40s/_payload.json"
-  },
-  "/commercial-kitchen/product/828/stainless-steel-sluish-sink-sscb-1600/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-6PRBhP7ieSa7Ah9G3ZLRVY8nFUE\"",
-    "mtime": "2024-12-16T10:03:00.282Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/828/stainless-steel-sluish-sink-sscb-1600/index.html"
-  },
-  "/commercial-kitchen/product/828/stainless-steel-sluish-sink-sscb-1600/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-7wOkckK/0oSP4URUerT0OQtQsVY\"",
-    "mtime": "2024-12-16T10:03:11.560Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/828/stainless-steel-sluish-sink-sscb-1600/_payload.json"
-  },
-  "/commercial-kitchen/product/830/handwash-basin-shwb400r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-1/Rt6sp0LeL0++oOa7yiN0xCFNw\"",
-    "mtime": "2024-12-16T10:03:00.414Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/830/handwash-basin-shwb400r/index.html"
-  },
-  "/commercial-kitchen/product/830/handwash-basin-shwb400r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-L6NHTnLn4ul+DB4XwZve6DlOXAU\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/830/handwash-basin-shwb400r/_payload.json"
-  },
-  "/commercial-kitchen/product/831/bogey-trolley-60-bgt60/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-xAi8mFXvlL+b6iBLebiY7zBFJ8k\"",
-    "mtime": "2024-12-16T10:03:01.062Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/831/bogey-trolley-60-bgt60/index.html"
-  },
-  "/commercial-kitchen/product/831/bogey-trolley-60-bgt60/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-I03m6/sfpAtfPYMOrl0PcG1MAs4\"",
-    "mtime": "2024-12-16T10:03:11.685Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/831/bogey-trolley-60-bgt60/_payload.json"
-  },
-  "/commercial-kitchen/product/832/bogey-trolley-90-bgt90/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-P7Slh8lSQclrQeIe5glkY4fRfa8\"",
-    "mtime": "2024-12-16T10:03:01.062Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/832/bogey-trolley-90-bgt90/index.html"
-  },
-  "/commercial-kitchen/product/832/bogey-trolley-90-bgt90/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KD0enk6AUuPyWuHDMyxBAh9OKYk\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/832/bogey-trolley-90-bgt90/_payload.json"
-  },
-  "/commercial-kitchen/product/833/low-boy-trolley-lb4-lb4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-/xCbri/X7ZS0UIw0V01u6+fbLcY\"",
-    "mtime": "2024-12-16T10:03:01.077Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/833/low-boy-trolley-lb4-lb4/index.html"
-  },
-  "/commercial-kitchen/product/833/low-boy-trolley-lb4-lb4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-heSZmoceC8sQ6/HXnm8hx6iGQYU\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/833/low-boy-trolley-lb4-lb4/_payload.json"
-  },
-  "/commercial-kitchen/product/834/low-boy-trolley-lb5-lb5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-5+9irPAc/V1xV/BYlXr/LqO7SEI\"",
-    "mtime": "2024-12-16T10:03:01.099Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/834/low-boy-trolley-lb5-lb5/index.html"
-  },
-  "/commercial-kitchen/product/834/low-boy-trolley-lb5-lb5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UZfbVgmwcjC/mnL+eGVGt2TsFTA\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/834/low-boy-trolley-lb5-lb5/_payload.json"
-  },
-  "/commercial-kitchen/product/836/general-purpose-trolley-gp6-gp6/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-fmW/6Yp+D0erukOi0zv/Xt7Wx4Q\"",
-    "mtime": "2024-12-16T10:03:01.115Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/836/general-purpose-trolley-gp6-gp6/index.html"
-  },
-  "/commercial-kitchen/product/836/general-purpose-trolley-gp6-gp6/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AAoL7/Ec8gqgZ9NDl8Q+x2koJQM\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/836/general-purpose-trolley-gp6-gp6/_payload.json"
-  },
-  "/commercial-kitchen/product/835/low-boy-trolley-lb6-lb6/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-61q4kSw75DqkVkAWC5j16ZlN4f8\"",
-    "mtime": "2024-12-16T10:03:01.106Z",
-    "size": 78505,
-    "path": "../public/commercial-kitchen/product/835/low-boy-trolley-lb6-lb6/index.html"
-  },
-  "/commercial-kitchen/product/835/low-boy-trolley-lb6-lb6/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-z7xCzzo2N2ydQyADHA12y6Npfss\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/835/low-boy-trolley-lb6-lb6/_payload.json"
-  },
-  "/commercial-kitchen/product/837/general-purpose-trolley-gp8-gp8/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-LqvLXi0Iru++mfJJ4GqLj4CUkIA\"",
-    "mtime": "2024-12-16T10:03:01.166Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/837/general-purpose-trolley-gp8-gp8/index.html"
-  },
-  "/commercial-kitchen/product/837/general-purpose-trolley-gp8-gp8/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-v+7cqiMT1EZ764hq0XZ6+D6gHhQ\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/837/general-purpose-trolley-gp8-gp8/_payload.json"
-  },
-  "/commercial-kitchen/product/838/tall-boy-trolley-tbtdw-dishwash-500-dw5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-NWvQC9ucZuOG8sg38eh/5OaJ6T4\"",
-    "mtime": "2024-12-16T10:03:01.222Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/838/tall-boy-trolley-tbtdw-dishwash-500-dw5/index.html"
-  },
-  "/commercial-kitchen/product/838/tall-boy-trolley-tbtdw-dishwash-500-dw5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9tHq/lmhKYZokJE1q5l+z7Mp7QI\"",
-    "mtime": "2024-12-16T10:03:11.705Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/838/tall-boy-trolley-tbtdw-dishwash-500-dw5/_payload.json"
-  },
-  "/commercial-kitchen/product/839/tall-boy-trolley-tbtdw-dishwash-465-dw4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-EeMeHhBMA8N5v+gd/Aw7adOGJoY\"",
-    "mtime": "2024-12-16T10:03:01.222Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/839/tall-boy-trolley-tbtdw-dishwash-465-dw4/index.html"
-  },
-  "/commercial-kitchen/product/839/tall-boy-trolley-tbtdw-dishwash-465-dw4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5X+gkWYGPxnqtp7RlQAvlrb+EM0\"",
-    "mtime": "2024-12-16T10:03:11.713Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/839/tall-boy-trolley-tbtdw-dishwash-465-dw4/_payload.json"
-  },
-  "/commercial-kitchen/product/84/ice-cube-machine-zb-60s-osion-zbj-60p/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e9-ZBwWDltMkSQ4qyda8f3B6FXGQqU\"",
-    "mtime": "2024-12-16T10:03:03.994Z",
-    "size": 78569,
-    "path": "../public/commercial-kitchen/product/84/ice-cube-machine-zb-60s-osion-zbj-60p/index.html"
-  },
-  "/commercial-kitchen/product/84/ice-cube-machine-zb-60s-osion-zbj-60p/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-I6SwV3jEMsWfIuseugYbtMBwjdY\"",
-    "mtime": "2024-12-16T10:03:12.205Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/84/ice-cube-machine-zb-60s-osion-zbj-60p/_payload.json"
-  },
-  "/commercial-kitchen/product/840/floor-trap-ft2002-ft2002/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-At2R4xHVma9CVIoheYZY6eM1oDI\"",
-    "mtime": "2024-12-16T10:03:04.353Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/840/floor-trap-ft2002-ft2002/index.html"
-  },
-  "/commercial-kitchen/product/840/floor-trap-ft2002-ft2002/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-lIlY7WnJ2ns5DFE4pDmH7S8P/4k\"",
-    "mtime": "2024-12-16T10:03:12.267Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/840/floor-trap-ft2002-ft2002/_payload.json"
-  },
-  "/commercial-kitchen/product/841/floor-trap-ft4002-ft4002/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-BENUgTi20jUVsmBFkeXBv0BADbU\"",
-    "mtime": "2024-12-16T10:03:04.401Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/841/floor-trap-ft4002-ft4002/index.html"
-  },
-  "/commercial-kitchen/product/841/floor-trap-ft4002-ft4002/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uhFCShPFTsCcHBx5/lh2mn08BG8\"",
-    "mtime": "2024-12-16T10:03:12.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/841/floor-trap-ft4002-ft4002/_payload.json"
-  },
-  "/commercial-kitchen/product/842/floor-trap-ft525-ft525/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-QWVs9yJrqlobTWGNGbs+dxTjRWA\"",
-    "mtime": "2024-12-16T10:03:04.415Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/842/floor-trap-ft525-ft525/index.html"
-  },
-  "/commercial-kitchen/product/842/floor-trap-ft525-ft525/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DzI59/cFMgWSPj0PWhag6SIFqq0\"",
-    "mtime": "2024-12-16T10:03:12.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/842/floor-trap-ft525-ft525/_payload.json"
-  },
-  "/commercial-kitchen/product/843/grease-trap-gt5004-2-gt5004-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-q78djog4Q3XxsAnC3kvHsbzaImY\"",
-    "mtime": "2024-12-16T10:03:04.349Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/843/grease-trap-gt5004-2-gt5004-2/index.html"
-  },
-  "/commercial-kitchen/product/843/grease-trap-gt5004-2-gt5004-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4yIRp6qBkfXIl9r49zPjpb/lbIk\"",
-    "mtime": "2024-12-16T10:03:12.264Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/843/grease-trap-gt5004-2-gt5004-2/_payload.json"
-  },
-  "/commercial-kitchen/product/844/grease-trap-gt9004-3-gt9004-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-CxjifDV44WpDNF1GbRXHS2pBzZ8\"",
-    "mtime": "2024-12-16T10:03:04.342Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/844/grease-trap-gt9004-3-gt9004-3/index.html"
-  },
-  "/commercial-kitchen/product/844/grease-trap-gt9004-3-gt9004-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-x2Fvz0TzD4ltKFAEghj/h6M+3gk\"",
-    "mtime": "2024-12-16T10:03:12.263Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/844/grease-trap-gt9004-3-gt9004-3/_payload.json"
-  },
-  "/commercial-kitchen/product/846/overshelf-single-tier-ctp1500-01-ctp1500-01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-s+FBVi2inUZzAnTKFtekwkFlOM8\"",
-    "mtime": "2024-12-16T10:03:01.025Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/846/overshelf-single-tier-ctp1500-01-ctp1500-01/index.html"
-  },
-  "/commercial-kitchen/product/846/overshelf-single-tier-ctp1500-01-ctp1500-01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Vm6D50W1e4rdski0gn4yN/T9wEk\"",
-    "mtime": "2024-12-16T10:03:11.685Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/846/overshelf-single-tier-ctp1500-01-ctp1500-01/_payload.json"
-  },
-  "/commercial-kitchen/product/847/overshelf-single-tier-ctp1800-01-ctp1800-01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-zmCX8niYrk1VhpIGMiRZpjWhRbo\"",
-    "mtime": "2024-12-16T10:03:01.025Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/847/overshelf-single-tier-ctp1800-01-ctp1800-01/index.html"
-  },
-  "/commercial-kitchen/product/847/overshelf-single-tier-ctp1800-01-ctp1800-01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ctQUgJjcgQsBQzMlSz8/OL8f4gE\"",
-    "mtime": "2024-12-16T10:03:11.675Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/847/overshelf-single-tier-ctp1800-01-ctp1800-01/_payload.json"
-  },
-  "/commercial-kitchen/product/845/overshelf-single-tier-ctp1100-01-ctp1100-01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-THeHZ/MuqF82yto8Sy/AD56Ze1o\"",
-    "mtime": "2024-12-16T10:03:01.025Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/845/overshelf-single-tier-ctp1100-01-ctp1100-01/index.html"
-  },
-  "/commercial-kitchen/product/845/overshelf-single-tier-ctp1100-01-ctp1100-01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-onEMf8ggi/FIEUFHyw0EjPcPJJE\"",
-    "mtime": "2024-12-16T10:03:11.674Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/845/overshelf-single-tier-ctp1100-01-ctp1100-01/_payload.json"
-  },
-  "/commercial-kitchen/product/848/overshelf-2-tier-ctp1100-02-ctp1100-02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-GzArUr9pN7vNrFvpORcz8PeZqwQ\"",
-    "mtime": "2024-12-16T10:03:01.048Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/848/overshelf-2-tier-ctp1100-02-ctp1100-02/index.html"
-  },
-  "/commercial-kitchen/product/848/overshelf-2-tier-ctp1100-02-ctp1100-02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cFMdPuGTj2JCEeFc/DCsIYiw4G4\"",
-    "mtime": "2024-12-16T10:03:11.685Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/848/overshelf-2-tier-ctp1100-02-ctp1100-02/_payload.json"
-  },
-  "/commercial-kitchen/product/849/overshelf-2-tier-ctp1500-02-ctp1500-02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-54DXA6KTxKZn/s7uVN9wNXPFR8I\"",
-    "mtime": "2024-12-16T10:03:01.061Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/849/overshelf-2-tier-ctp1500-02-ctp1500-02/index.html"
-  },
-  "/commercial-kitchen/product/849/overshelf-2-tier-ctp1500-02-ctp1500-02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hlJ+/eJchC+lTFDA6l0teXrc518\"",
-    "mtime": "2024-12-16T10:03:11.685Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/849/overshelf-2-tier-ctp1500-02-ctp1500-02/_payload.json"
-  },
-  "/commercial-kitchen/product/85/ice-cube-machine-zb-80s-osion-zb-80s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e4-Il5398HnSxxaCvU0eNsQ3rW2Zx4\"",
-    "mtime": "2024-12-16T10:03:04.034Z",
-    "size": 78564,
-    "path": "../public/commercial-kitchen/product/85/ice-cube-machine-zb-80s-osion-zb-80s/index.html"
-  },
-  "/commercial-kitchen/product/85/ice-cube-machine-zb-80s-osion-zb-80s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CAG712xJS3iJU7gJNGIlYaLdcoA\"",
-    "mtime": "2024-12-16T10:03:12.205Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/85/ice-cube-machine-zb-80s-osion-zb-80s/_payload.json"
-  },
-  "/commercial-kitchen/product/850/overshelf-2-tier-ctp1800-02-ctp1800-02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-5EEJRBLYIdQh3AWiRSbomLWOIIc\"",
-    "mtime": "2024-12-16T10:03:01.062Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/850/overshelf-2-tier-ctp1800-02-ctp1800-02/index.html"
-  },
-  "/commercial-kitchen/product/850/overshelf-2-tier-ctp1800-02-ctp1800-02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5LG+hqBQQOjU0OeQiT8UoSB+sj8\"",
-    "mtime": "2024-12-16T10:03:11.700Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/850/overshelf-2-tier-ctp1800-02-ctp1800-02/_payload.json"
-  },
-  "/commercial-kitchen/product/851/cocktail-unit-ctu110-ctu110/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-V+WQvdUp4//ZIbem0zQdo2HsHMs\"",
-    "mtime": "2024-12-16T10:03:07.213Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/851/cocktail-unit-ctu110-ctu110/index.html"
-  },
-  "/commercial-kitchen/product/851/cocktail-unit-ctu110-ctu110/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-fzwuj447exHUSXNk5pCgEdUQwZE\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/851/cocktail-unit-ctu110-ctu110/_payload.json"
-  },
-  "/commercial-kitchen/product/852/cocktail-unit-ctu150-ctu150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-PwbdYd4do06+gI2cIrIkRt241DI\"",
-    "mtime": "2024-12-16T10:03:07.197Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/852/cocktail-unit-ctu150-ctu150/index.html"
-  },
-  "/commercial-kitchen/product/852/cocktail-unit-ctu150-ctu150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-IDewJnd/GRuKHAfExCWxBWbC2J4\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/852/cocktail-unit-ctu150-ctu150/_payload.json"
-  },
-  "/commercial-kitchen/product/853/cocktail-unit-ctu180-ctu180/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-PNKiOBqXdNX14k0RqleiRaKo91c\"",
-    "mtime": "2024-12-16T10:03:07.255Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/853/cocktail-unit-ctu180-ctu180/index.html"
-  },
-  "/commercial-kitchen/product/853/cocktail-unit-ctu180-ctu180/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-N9gXYUYvfBrzO6hxk1mQzO0jVxE\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/853/cocktail-unit-ctu180-ctu180/_payload.json"
-  },
-  "/commercial-kitchen/product/854/cocktail-unit-ctu-200-ctu200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-yPlVmPv4IC3ix0IyzxM4DjYIu9c\"",
-    "mtime": "2024-12-16T10:03:07.285Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/854/cocktail-unit-ctu-200-ctu200/index.html"
-  },
-  "/commercial-kitchen/product/854/cocktail-unit-ctu-200-ctu200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jbDiZfktA8nb8dsc7jUA5NvImwY\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/854/cocktail-unit-ctu-200-ctu200/_payload.json"
-  },
-  "/commercial-kitchen/product/855/drop-in-cocktail-unit-ctu150d-ctu150d/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-2xHG8ODuza71s36x/OMT/liwJJU\"",
-    "mtime": "2024-12-16T10:03:07.188Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/855/drop-in-cocktail-unit-ctu150d-ctu150d/index.html"
-  },
-  "/commercial-kitchen/product/855/drop-in-cocktail-unit-ctu150d-ctu150d/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cbUmjzWNTj2wZs/XScVZ/jJXNcI\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/855/drop-in-cocktail-unit-ctu150d-ctu150d/_payload.json"
-  },
-  "/commercial-kitchen/product/856/drop-in-cocktail-unit-ctu180d-ctu180d/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-niUEkTCUyi/JWsxtH2vxI8wU5tE\"",
-    "mtime": "2024-12-16T10:03:07.199Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/856/drop-in-cocktail-unit-ctu180d-ctu180d/index.html"
-  },
-  "/commercial-kitchen/product/856/drop-in-cocktail-unit-ctu180d-ctu180d/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-HN+xESycmt05Ufk2tLXDn78oGDU\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/856/drop-in-cocktail-unit-ctu180d-ctu180d/_payload.json"
-  },
-  "/commercial-kitchen/product/857/cocktail-unit-with-cupboard-ctu110cb-ctu110cb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-K/M9/l9G4uUjplgSdnRBwtqBjyA\"",
-    "mtime": "2024-12-16T10:03:07.297Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/857/cocktail-unit-with-cupboard-ctu110cb-ctu110cb/index.html"
-  },
-  "/commercial-kitchen/product/857/cocktail-unit-with-cupboard-ctu110cb-ctu110cb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-whMGIx5XbdCBd7O2Z7bNyXMMjHE\"",
-    "mtime": "2024-12-16T10:03:12.708Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/857/cocktail-unit-with-cupboard-ctu110cb-ctu110cb/_payload.json"
-  },
-  "/commercial-kitchen/product/858/cocktail-unit-with-cupboard-ctu150cb-ctu150cb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-8IY8U9UW4IlSZ1LOs2I8Ka4lils\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/858/cocktail-unit-with-cupboard-ctu150cb-ctu150cb/index.html"
-  },
-  "/commercial-kitchen/product/858/cocktail-unit-with-cupboard-ctu150cb-ctu150cb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-szyVHeTTDB17DTBFssDv1gh1iUk\"",
-    "mtime": "2024-12-16T10:03:12.716Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/858/cocktail-unit-with-cupboard-ctu150cb-ctu150cb/_payload.json"
-  },
-  "/commercial-kitchen/product/859/cocktail-unit-with-cupboard-ctu200cb-ctu200cb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-jGaVSI65NCV7mtJeK9Pyv/C7HXs\"",
-    "mtime": "2024-12-16T10:03:07.305Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/859/cocktail-unit-with-cupboard-ctu200cb-ctu200cb/index.html"
-  },
-  "/commercial-kitchen/product/859/cocktail-unit-with-cupboard-ctu200cb-ctu200cb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0DfxOf+6htqbDs3G6bIEDJ1oc50\"",
-    "mtime": "2024-12-16T10:03:12.709Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/859/cocktail-unit-with-cupboard-ctu200cb-ctu200cb/_payload.json"
-  },
-  "/commercial-kitchen/product/86/ice-cube-machine-zb-160s-osion-zb-160s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ee-PiTfmJO42qYT9Ih96q3a53AWCMg\"",
-    "mtime": "2024-12-16T10:03:04.034Z",
-    "size": 78574,
-    "path": "../public/commercial-kitchen/product/86/ice-cube-machine-zb-160s-osion-zb-160s/index.html"
-  },
-  "/commercial-kitchen/product/86/ice-cube-machine-zb-160s-osion-zb-160s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oY+qZidLGYxjpV3xThax/FB/A9c\"",
-    "mtime": "2024-12-16T10:03:12.205Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/86/ice-cube-machine-zb-160s-osion-zb-160s/_payload.json"
-  },
-  "/commercial-kitchen/product/860/steam-boiler-gas-200kg-lss028-yq/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-PN6aBtpDdy0TGoqWzH80UylzEco\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/860/steam-boiler-gas-200kg-lss028-yq/index.html"
-  },
-  "/commercial-kitchen/product/860/steam-boiler-gas-200kg-lss028-yq/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZxCXft1JhLanuff5R1Tm28xV8wk\"",
-    "mtime": "2024-12-16T10:03:12.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/860/steam-boiler-gas-200kg-lss028-yq/_payload.json"
-  },
-  "/commercial-kitchen/product/861/double-jacketed-200-litres-dj200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-0VEi6qYvkDyoUeHa9AgdDD3vt9E\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/861/double-jacketed-200-litres-dj200/index.html"
-  },
-  "/commercial-kitchen/product/861/double-jacketed-200-litres-dj200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4BoEUNia5PJMX+CCI8YvAR132Xc\"",
-    "mtime": "2024-12-16T10:03:12.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/861/double-jacketed-200-litres-dj200/_payload.json"
-  },
-  "/commercial-kitchen/product/863/double-jacketed-400-litres-dj400/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-wTsuWZuax24xxJTXk5whuo/Yr1Q\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/863/double-jacketed-400-litres-dj400/index.html"
-  },
-  "/commercial-kitchen/product/863/double-jacketed-400-litres-dj400/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+ZiVgtVLsfOI17C0iLZEjODTLPQ\"",
-    "mtime": "2024-12-16T10:03:12.984Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/863/double-jacketed-400-litres-dj400/_payload.json"
-  },
-  "/commercial-kitchen/product/862/double-jacketed-300-litres-dj300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-y7vySr22JtiDkwgoF5jtWW+2FaM\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/862/double-jacketed-300-litres-dj300/index.html"
-  },
-  "/commercial-kitchen/product/862/double-jacketed-300-litres-dj300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-nle6LDQht+XZsMWmoqgxyD4niDg\"",
-    "mtime": "2024-12-16T10:03:12.975Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/862/double-jacketed-300-litres-dj300/_payload.json"
-  },
-  "/commercial-kitchen/product/864/direct-injection-vessel-150-litres-di150/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-CDAhK5He9SWr+YFtWA4nGuSs7KM\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/864/direct-injection-vessel-150-litres-di150/index.html"
-  },
-  "/commercial-kitchen/product/864/direct-injection-vessel-150-litres-di150/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gMJhmwaqLbaDjU2ewSezYot46Po\"",
-    "mtime": "2024-12-16T10:03:12.985Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/864/direct-injection-vessel-150-litres-di150/_payload.json"
-  },
-  "/commercial-kitchen/product/866/direct-injection-vessel-250-litres-di250/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-7sTvZ1jQTNnKee7ehRrN4scsyrc\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/866/direct-injection-vessel-250-litres-di250/index.html"
-  },
-  "/commercial-kitchen/product/866/direct-injection-vessel-250-litres-di250/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1A2cD3KicbSQY/9L83WBLjaIzXk\"",
-    "mtime": "2024-12-16T10:03:12.986Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/866/direct-injection-vessel-250-litres-di250/_payload.json"
-  },
-  "/commercial-kitchen/product/865/direct-injection-vessel-200-litres-di200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-6AkFacqljAfuiiy2rqunV3vgzSQ\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/865/direct-injection-vessel-200-litres-di200/index.html"
-  },
-  "/commercial-kitchen/product/865/direct-injection-vessel-200-litres-di200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-EAFg/csqDSkXGpG1PhSWsD5MT5g\"",
-    "mtime": "2024-12-16T10:03:12.984Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/865/direct-injection-vessel-200-litres-di200/_payload.json"
-  },
-  "/commercial-kitchen/product/867/rofo-drain-24o-hb-200v/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-NRExRiIQay4+TaHTJ/AkoVePkWI\"",
-    "mtime": "2024-12-16T10:03:04.496Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/867/rofo-drain-24o-hb-200v/index.html"
-  },
-  "/commercial-kitchen/product/867/rofo-drain-24o-hb-200v/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SqjxYAROyYY6FgEjmjd9MhufSuY\"",
-    "mtime": "2024-12-16T10:03:12.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/867/rofo-drain-24o-hb-200v/_payload.json"
-  },
-  "/commercial-kitchen/product/87/ice-cube-machine-zb-230s-osion-zbj-230s/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-l3nkb+yO4D4D3FhOVLPQvp3aJPk\"",
-    "mtime": "2024-12-16T10:03:04.035Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/87/ice-cube-machine-zb-230s-osion-zbj-230s/index.html"
-  },
-  "/commercial-kitchen/product/87/ice-cube-machine-zb-230s-osion-zbj-230s/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KvYztHs0vpGx6j3oTeM2l2F5iJk\"",
-    "mtime": "2024-12-16T10:03:12.217Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/87/ice-cube-machine-zb-230s-osion-zbj-230s/_payload.json"
-  },
-  "/commercial-kitchen/product/868/stainless-steel-dustbin-db-3507-db-3507/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-TefKKBPYwVxbHwW5EXNBK+zXQDk\"",
-    "mtime": "2024-12-16T10:03:01.258Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/868/stainless-steel-dustbin-db-3507-db-3507/index.html"
-  },
-  "/commercial-kitchen/product/868/stainless-steel-dustbin-db-3507-db-3507/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uBM9/l+y22yaMMOaRRkwsBMgfx4\"",
-    "mtime": "2024-12-16T10:03:11.713Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/868/stainless-steel-dustbin-db-3507-db-3507/_payload.json"
-  },
-  "/commercial-kitchen/product/869/stainless-steel-dustbin-db-3508-db-3508/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-V9kxAm2OANU3Tjcg8c45pvTUzaA\"",
-    "mtime": "2024-12-16T10:03:01.258Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/869/stainless-steel-dustbin-db-3508-db-3508/index.html"
-  },
-  "/commercial-kitchen/product/869/stainless-steel-dustbin-db-3508-db-3508/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Tiql2MctRnh/XPm+SMsvbLW1uhQ\"",
-    "mtime": "2024-12-16T10:03:11.713Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/869/stainless-steel-dustbin-db-3508-db-3508/_payload.json"
-  },
-  "/commercial-kitchen/product/870/stainless-steel-pedal-type-dustbin-db-ped/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-7drC2DKn6n3pVs1FStlZuJlJDAc\"",
-    "mtime": "2024-12-16T10:03:01.306Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/870/stainless-steel-pedal-type-dustbin-db-ped/index.html"
-  },
-  "/commercial-kitchen/product/870/stainless-steel-pedal-type-dustbin-db-ped/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bOjR5hJyYuu3OwFILOkf596n9/M\"",
-    "mtime": "2024-12-16T10:03:11.735Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/870/stainless-steel-pedal-type-dustbin-db-ped/_payload.json"
-  },
-  "/commercial-kitchen/product/871/partitioned-dust-bin-with-compartments-db-pat/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-yr5Ko9LOBPdBBJWf2Uy715lM8Ro\"",
-    "mtime": "2024-12-16T10:03:01.292Z",
-    "size": 78615,
-    "path": "../public/commercial-kitchen/product/871/partitioned-dust-bin-with-compartments-db-pat/index.html"
-  },
-  "/commercial-kitchen/product/871/partitioned-dust-bin-with-compartments-db-pat/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Lasb0snxqNSrfte3VuXHA7txu3E\"",
-    "mtime": "2024-12-16T10:03:11.714Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/871/partitioned-dust-bin-with-compartments-db-pat/_payload.json"
-  },
-  "/commercial-kitchen/product/872/dust-bin-with-3-colour-coded-compartments-db-col/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-3FViiJWoKh4CTVob1sNFlH+JWz0\"",
-    "mtime": "2024-12-16T10:03:01.319Z",
-    "size": 78630,
-    "path": "../public/commercial-kitchen/product/872/dust-bin-with-3-colour-coded-compartments-db-col/index.html"
-  },
-  "/commercial-kitchen/product/872/dust-bin-with-3-colour-coded-compartments-db-col/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DYTQsDamAgjU3D/EobNOLIDfjBQ\"",
-    "mtime": "2024-12-16T10:03:11.735Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/872/dust-bin-with-3-colour-coded-compartments-db-col/_payload.json"
-  },
-  "/commercial-kitchen/product/874/self-sufficient-sink-knee-press-sshw600kp/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-mDEoYH9kkMelohc6XW+b0Vt9OAA\"",
-    "mtime": "2024-12-16T10:03:00.510Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/874/self-sufficient-sink-knee-press-sshw600kp/index.html"
-  },
-  "/commercial-kitchen/product/874/self-sufficient-sink-knee-press-sshw600kp/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tepqrLMzhEegnU76ZvrJJP+wYN0\"",
-    "mtime": "2024-12-16T10:03:11.602Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/874/self-sufficient-sink-knee-press-sshw600kp/_payload.json"
-  },
-  "/commercial-kitchen/product/873/self-sufficient-sink-sensor-sshw600bd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-Q4rvPL6jc34XxHGdkO+iJIptvnU\"",
-    "mtime": "2024-12-16T10:03:00.449Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/873/self-sufficient-sink-sensor-sshw600bd/index.html"
-  },
-  "/commercial-kitchen/product/873/self-sufficient-sink-sensor-sshw600bd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ZjVWCbhJMQke2C32FmRtWYwDRtw\"",
-    "mtime": "2024-12-16T10:03:11.581Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/873/self-sufficient-sink-sensor-sshw600bd/_payload.json"
-  },
-  "/commercial-kitchen/product/875/hand-wash-basin-knee-press-blghwbk/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-8E3dwZFr6a9Fcq5zU1a2HFoQFSo\"",
-    "mtime": "2024-12-16T10:03:00.414Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/875/hand-wash-basin-knee-press-blghwbk/index.html"
-  },
-  "/commercial-kitchen/product/875/hand-wash-basin-knee-press-blghwbk/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-09NLzDNFajB9AKGaPs6mUgoGMv8\"",
-    "mtime": "2024-12-16T10:03:11.567Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/875/hand-wash-basin-knee-press-blghwbk/_payload.json"
-  },
-  "/commercial-kitchen/product/877/stainless-steel-wall-mounted-trough-sink-wmts1205/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-vPojSfIWktAQpsyLXbBkpGFTlLs\"",
-    "mtime": "2024-12-16T10:03:00.414Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/877/stainless-steel-wall-mounted-trough-sink-wmts1205/index.html"
-  },
-  "/commercial-kitchen/product/877/stainless-steel-wall-mounted-trough-sink-wmts1205/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oIeMuDUZc1dHHHFWV9TW9r0qSGI\"",
-    "mtime": "2024-12-16T10:03:11.578Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/877/stainless-steel-wall-mounted-trough-sink-wmts1205/_payload.json"
-  },
-  "/commercial-kitchen/product/876/stainless-steel-free-standing-double-trough-sink-sdbts1107/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13358-p3+0KwxQ0+4nznXUOfRzh+LVZRg\"",
-    "mtime": "2024-12-16T10:03:00.442Z",
-    "size": 78680,
-    "path": "../public/commercial-kitchen/product/876/stainless-steel-free-standing-double-trough-sink-sdbts1107/index.html"
-  },
-  "/commercial-kitchen/product/876/stainless-steel-free-standing-double-trough-sink-sdbts1107/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-XrZYd8YqKoVxjTK1FO3GlnIGinM\"",
-    "mtime": "2024-12-16T10:03:11.578Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/876/stainless-steel-free-standing-double-trough-sink-sdbts1107/_payload.json"
-  },
-  "/commercial-kitchen/product/878/four-sections-knee-press-wall-mounted-trough-sink-wmts2404-wmts2404/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13385-6ORIpMcd2LYAZOe/6He9ISd39JY\"",
-    "mtime": "2024-12-16T10:03:00.428Z",
-    "size": 78725,
-    "path": "../public/commercial-kitchen/product/878/four-sections-knee-press-wall-mounted-trough-sink-wmts2404-wmts2404/index.html"
-  },
-  "/commercial-kitchen/product/878/four-sections-knee-press-wall-mounted-trough-sink-wmts2404-wmts2404/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-u0CrzLPuY2XOlR7hUt/SvDav0As\"",
-    "mtime": "2024-12-16T10:03:11.578Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/878/four-sections-knee-press-wall-mounted-trough-sink-wmts2404-wmts2404/_payload.json"
-  },
-  "/commercial-kitchen/product/88/ice-cube-machine-zbj-300l-osion-zbj-300l/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f8-OMjRGgUdby+Jd6/iIo/tIVRa50c\"",
-    "mtime": "2024-12-16T10:03:04.035Z",
-    "size": 78584,
-    "path": "../public/commercial-kitchen/product/88/ice-cube-machine-zbj-300l-osion-zbj-300l/index.html"
-  },
-  "/commercial-kitchen/product/88/ice-cube-machine-zbj-300l-osion-zbj-300l/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gZ+Lseww9Xh7TQ2BP3F4iZomvpk\"",
-    "mtime": "2024-12-16T10:03:12.217Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/88/ice-cube-machine-zbj-300l-osion-zbj-300l/_payload.json"
-  },
-  "/commercial-kitchen/product/879/combi-self-sufficient-upright-hygiene-station-wmts2404/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-9jZvF1Vceii9u4lmOsmDnkBIX/s\"",
-    "mtime": "2024-12-16T10:03:00.492Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/879/combi-self-sufficient-upright-hygiene-station-wmts2404/index.html"
-  },
-  "/commercial-kitchen/product/879/combi-self-sufficient-upright-hygiene-station-wmts2404/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-j0cJtOtwe9z1+Hd086DotjThSa0\"",
-    "mtime": "2024-12-16T10:03:11.602Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/879/combi-self-sufficient-upright-hygiene-station-wmts2404/_payload.json"
-  },
-  "/commercial-kitchen/product/880/insect-killer-tb-40w/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329a-cYTdPS4B2/rJrY9UlFoWT9GqSLY\"",
-    "mtime": "2024-12-16T10:03:04.525Z",
-    "size": 78490,
-    "path": "../public/commercial-kitchen/product/880/insect-killer-tb-40w/index.html"
-  },
-  "/commercial-kitchen/product/880/insect-killer-tb-40w/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qH1lyWQpdEjptsoJ/4BpWxOeOMw\"",
-    "mtime": "2024-12-16T10:03:12.285Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/880/insect-killer-tb-40w/_payload.json"
-  },
-  "/commercial-kitchen/product/885/coffee-box-ctb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1327c-4YHAi/1Z15pnAKxTag/CBoPHnTk\"",
-    "mtime": "2024-12-16T10:03:08.686Z",
-    "size": 78460,
-    "path": "../public/commercial-kitchen/product/885/coffee-box-ctb/index.html"
-  },
-  "/commercial-kitchen/product/885/coffee-box-ctb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OxQg9nd/Eempd6KlkF+zDdFzMeM\"",
-    "mtime": "2024-12-16T10:03:12.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/885/coffee-box-ctb/_payload.json"
-  },
-  "/commercial-kitchen/product/886/coffee-bucks-cb2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-EKIV8M4AGm329E51c1WWL3qOp2U\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78470,
-    "path": "../public/commercial-kitchen/product/886/coffee-bucks-cb2/index.html"
-  },
-  "/commercial-kitchen/product/886/coffee-bucks-cb2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/T5Opg6fGL3xgJ3HzIh+BINwI4c\"",
-    "mtime": "2024-12-16T10:03:12.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/886/coffee-bucks-cb2/_payload.json"
-  },
-  "/commercial-kitchen/product/887/coffee-tuktuk-cb2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-PlVEC9zl0uQ4QbWQLU/B59vSO2k\"",
-    "mtime": "2024-12-16T10:03:08.565Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/887/coffee-tuktuk-cb2/index.html"
-  },
-  "/commercial-kitchen/product/887/coffee-tuktuk-cb2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-wWdClC4yJen1++y0AcwFc4r9SjM\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/887/coffee-tuktuk-cb2/_payload.json"
-  },
-  "/commercial-kitchen/product/888/grill-trailer-gt32/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-/9iD8j6gYed6AlKcXrGsb7QH/T0\"",
-    "mtime": "2024-12-16T10:03:08.525Z",
-    "size": 78480,
-    "path": "../public/commercial-kitchen/product/888/grill-trailer-gt32/index.html"
-  },
-  "/commercial-kitchen/product/888/grill-trailer-gt32/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DcR1rkPPS1i5GCdsMTwuHVoH4Hk\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/888/grill-trailer-gt32/_payload.json"
-  },
-  "/commercial-kitchen/product/884/coffee-trailer-ct32/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-bhtkOnx0eCyfNdPWPupqNQsV318\"",
-    "mtime": "2024-12-16T10:03:08.535Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/884/coffee-trailer-ct32/index.html"
-  },
-  "/commercial-kitchen/product/884/coffee-trailer-ct32/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MmAUuXxGZPdmWdeZtc1w6QldtIc\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/884/coffee-trailer-ct32/_payload.json"
-  },
-  "/commercial-kitchen/product/889/nyama-grill-ctb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13281-lbtAzOKx2GLyPmjZmMtRpoS0yik\"",
-    "mtime": "2024-12-16T10:03:08.686Z",
-    "size": 78465,
-    "path": "../public/commercial-kitchen/product/889/nyama-grill-ctb/index.html"
-  },
-  "/commercial-kitchen/product/889/nyama-grill-ctb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zFzzFSoGO0/3foIk4uvDJAEly7E\"",
-    "mtime": "2024-12-16T10:03:12.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/889/nyama-grill-ctb/_payload.json"
-  },
-  "/commercial-kitchen/product/891/bar-trailer-bt32/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-niTwMXjuqe387ksmvZcUk/sa/4A\"",
-    "mtime": "2024-12-16T10:03:08.565Z",
-    "size": 78470,
-    "path": "../public/commercial-kitchen/product/891/bar-trailer-bt32/index.html"
-  },
-  "/commercial-kitchen/product/891/bar-trailer-bt32/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bTTA45uATFrzzlG186oLnTvUxYA\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/891/bar-trailer-bt32/_payload.json"
-  },
-  "/commercial-kitchen/product/890/safari-kitchen-sk/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-BVQAIMqGeZ5kUntXJyYDEdmGaTc\"",
-    "mtime": "2024-12-16T10:03:08.613Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/890/safari-kitchen-sk/index.html"
-  },
-  "/commercial-kitchen/product/890/safari-kitchen-sk/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4nkSkNHBu03AzZZ0FdCYf0p4q8c\"",
-    "mtime": "2024-12-16T10:03:12.935Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/890/safari-kitchen-sk/_payload.json"
-  },
-  "/commercial-kitchen/product/895/ice-cream-cart-icc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-kOejcOwiVAs/wT2GiErGzX6972s\"",
-    "mtime": "2024-12-16T10:03:08.597Z",
-    "size": 78480,
-    "path": "../public/commercial-kitchen/product/895/ice-cream-cart-icc/index.html"
-  },
-  "/commercial-kitchen/product/895/ice-cream-cart-icc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uVlsPxO7vzjQXZ3PR5frUKWXnwo\"",
-    "mtime": "2024-12-16T10:03:12.935Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/895/ice-cream-cart-icc/_payload.json"
-  },
-  "/commercial-kitchen/product/896/gelato-box-gb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13277-W5Tnk4m7uUMbIuaxrWXyd8+Cgh0\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78455,
-    "path": "../public/commercial-kitchen/product/896/gelato-box-gb/index.html"
-  },
-  "/commercial-kitchen/product/896/gelato-box-gb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iMSvdCIn9fPlUn8BI7JbBmLzGZ4\"",
-    "mtime": "2024-12-16T10:03:12.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/896/gelato-box-gb/_payload.json"
-  },
-  "/commercial-kitchen/product/897/40ft-containerized-kitchen-40ftc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-arQU22K5PCRgKKDAVF9FNtPazzw\"",
-    "mtime": "2024-12-16T10:03:08.613Z",
-    "size": 78550,
-    "path": "../public/commercial-kitchen/product/897/40ft-containerized-kitchen-40ftc/index.html"
-  },
-  "/commercial-kitchen/product/897/40ft-containerized-kitchen-40ftc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OGiwwTuZQSGUM6GK3joztlSadm0\"",
-    "mtime": "2024-12-16T10:03:12.944Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/897/40ft-containerized-kitchen-40ftc/_payload.json"
-  },
-  "/commercial-kitchen/product/892/beer-box-ctb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13272-Ohr2epMCAXzsc/Bva9OLtACEtxg\"",
-    "mtime": "2024-12-16T10:03:08.700Z",
-    "size": 78450,
-    "path": "../public/commercial-kitchen/product/892/beer-box-ctb/index.html"
-  },
-  "/commercial-kitchen/product/892/beer-box-ctb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+oXMLPDJJ6S8dmIB3Amr43D/Zz0\"",
-    "mtime": "2024-12-16T10:03:12.968Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/892/beer-box-ctb/_payload.json"
-  },
-  "/commercial-kitchen/product/898/20ft-containerized-laundromat-20ftc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-dE+Mr4L/s0HOqbOhxPLFzs9/Pyc\"",
-    "mtime": "2024-12-16T10:03:08.625Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/898/20ft-containerized-laundromat-20ftc/index.html"
-  },
-  "/commercial-kitchen/product/898/20ft-containerized-laundromat-20ftc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-q9rSGeJQkOM0fdtILHuLX1vPLbc\"",
-    "mtime": "2024-12-16T10:03:12.955Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/898/20ft-containerized-laundromat-20ftc/_payload.json"
-  },
-  "/commercial-kitchen/product/899/containerized-butchery-20ftcb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-tmuzhSfp9iD8oh/JBAETW7V7f04\"",
-    "mtime": "2024-12-16T10:03:08.613Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/899/containerized-butchery-20ftcb/index.html"
-  },
-  "/commercial-kitchen/product/899/containerized-butchery-20ftcb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ijihUalv7zLBKfjxYSrPheVSSLQ\"",
-    "mtime": "2024-12-16T10:03:12.935Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/899/containerized-butchery-20ftcb/_payload.json"
-  },
-  "/commercial-kitchen/product/900/food-truck-ft/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13277-+4l9+ZaRUKZ8bQRvIMh7RCXEM9A\"",
-    "mtime": "2024-12-16T10:03:08.505Z",
-    "size": 78455,
-    "path": "../public/commercial-kitchen/product/900/food-truck-ft/index.html"
-  },
-  "/commercial-kitchen/product/900/food-truck-ft/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iyrVvho7iDwVqPtvxmIPykhRC4Y\"",
-    "mtime": "2024-12-16T10:03:12.929Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/900/food-truck-ft/_payload.json"
-  },
-  "/commercial-kitchen/product/90/ice-cube-machine-29-kgs-brema-cb-249a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e9-CQ8dgLe5BzTKlzQhHDTsDmhhu0w\"",
-    "mtime": "2024-12-16T10:03:04.069Z",
-    "size": 78569,
-    "path": "../public/commercial-kitchen/product/90/ice-cube-machine-29-kgs-brema-cb-249a/index.html"
-  },
-  "/commercial-kitchen/product/90/ice-cube-machine-29-kgs-brema-cb-249a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KD0c3zeFBaesO0KSr5iC7f2+l1I\"",
-    "mtime": "2024-12-16T10:03:12.217Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/90/ice-cube-machine-29-kgs-brema-cb-249a/_payload.json"
-  },
-  "/commercial-kitchen/product/902/bread-slicer-sm302nw-sm302nw/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-VuFbMRdsvC4sFar1Ek/0sakksF0\"",
-    "mtime": "2024-12-16T10:02:59.357Z",
-    "size": 78530,
-    "path": "../public/commercial-kitchen/product/902/bread-slicer-sm302nw-sm302nw/index.html"
-  },
-  "/commercial-kitchen/product/902/bread-slicer-sm302nw-sm302nw/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Zz5Ny2lfRTlgHtMzKtWyRESrAYs\"",
-    "mtime": "2024-12-16T10:03:11.380Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/902/bread-slicer-sm302nw-sm302nw/_payload.json"
-  },
-  "/commercial-kitchen/product/903/knife-sterilizer-empbst001/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-7EyKCXJJMpdLrGHAr6vehHG6nqM\"",
-    "mtime": "2024-12-16T10:03:07.983Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/903/knife-sterilizer-empbst001/index.html"
-  },
-  "/commercial-kitchen/product/903/knife-sterilizer-empbst001/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tujBYfky7/zqVvwYoJ1DKhudDDY\"",
-    "mtime": "2024-12-16T10:03:12.868Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/903/knife-sterilizer-empbst001/_payload.json"
-  },
-  "/commercial-kitchen/product/907/single-contact-grill-psr-ld-psr-ld/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-tbNx6Kc42EE4rfZelVOJRPcv/Z8\"",
-    "mtime": "2024-12-16T10:03:03.144Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/907/single-contact-grill-psr-ld-psr-ld/index.html"
-  },
-  "/commercial-kitchen/product/907/single-contact-grill-psr-ld-psr-ld/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xtjh1erNvj/O2sWKGE84sy13iUo\"",
-    "mtime": "2024-12-16T10:03:12.032Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/907/single-contact-grill-psr-ld-psr-ld/_payload.json"
-  },
-  "/commercial-kitchen/product/908/single-contact-grill-pmr-ld-pmr-ld/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-uWAimlf0lrRG9eS5fQ+j9Lj6eCg\"",
-    "mtime": "2024-12-16T10:03:03.118Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/908/single-contact-grill-pmr-ld-pmr-ld/index.html"
-  },
-  "/commercial-kitchen/product/908/single-contact-grill-pmr-ld-pmr-ld/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-G4YbyJLVco/GMQXnlc+Z05Rx+Pk\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/908/single-contact-grill-pmr-ld-pmr-ld/_payload.json"
-  },
-  "/commercial-kitchen/product/909/double-contact-grill-pdr-ld-pdr-ld/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-M0PMVtolFjvCyccdCZkUNElip/Q\"",
-    "mtime": "2024-12-16T10:03:03.144Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/909/double-contact-grill-pdr-ld-pdr-ld/index.html"
-  },
-  "/commercial-kitchen/product/909/double-contact-grill-pdr-ld-pdr-ld/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U3rR9Pr6O0XtCkoL1cMt1ZwrrRg\"",
-    "mtime": "2024-12-16T10:03:12.041Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/909/double-contact-grill-pdr-ld-pdr-ld/_payload.json"
-  },
-  "/commercial-kitchen/product/911/sushi-showcase-1500-fgss1500lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-3cfTqs9KKR6jnzzc2eHAz5rYiAs\"",
-    "mtime": "2024-12-16T10:03:07.688Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/911/sushi-showcase-1500-fgss1500lm/index.html"
-  },
-  "/commercial-kitchen/product/911/sushi-showcase-1500-fgss1500lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mkNHvc0jnNfm7qXBr5KU6m79cn4\"",
-    "mtime": "2024-12-16T10:03:12.801Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/911/sushi-showcase-1500-fgss1500lm/_payload.json"
-  },
-  "/commercial-kitchen/product/910/sushi-showcase-1200-fgss1200lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-1LKr2fUHYUnXe0EZvegHs0ICJKE\"",
-    "mtime": "2024-12-16T10:03:07.688Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/910/sushi-showcase-1200-fgss1200lm/index.html"
-  },
-  "/commercial-kitchen/product/910/sushi-showcase-1200-fgss1200lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QnOeUlpr8Tmrob2KnYQlnP2Ee58\"",
-    "mtime": "2024-12-16T10:03:12.800Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/910/sushi-showcase-1200-fgss1200lm/_payload.json"
-  },
-  "/commercial-kitchen/product/91/ice-cube-machine-44-kgs-brema-cb-416a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e9-RfKatfvwkmV4QmazOz3z2jsL+7U\"",
-    "mtime": "2024-12-16T10:03:04.081Z",
-    "size": 78569,
-    "path": "../public/commercial-kitchen/product/91/ice-cube-machine-44-kgs-brema-cb-416a/index.html"
-  },
-  "/commercial-kitchen/product/91/ice-cube-machine-44-kgs-brema-cb-416a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+linQ1+9+UvVXC5fbNobX0Pl/m0\"",
-    "mtime": "2024-12-16T10:03:12.227Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/91/ice-cube-machine-44-kgs-brema-cb-416a/_payload.json"
-  },
-  "/commercial-kitchen/product/912/sushi-showcase-1800-fgss1800lm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-JhotAyFPwZ6nH2vMD0gpwqvn7VU\"",
-    "mtime": "2024-12-16T10:03:07.705Z",
-    "size": 78540,
-    "path": "../public/commercial-kitchen/product/912/sushi-showcase-1800-fgss1800lm/index.html"
-  },
-  "/commercial-kitchen/product/912/sushi-showcase-1800-fgss1800lm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MQXt2CkBWvXq0VNp21sHed+6WWo\"",
-    "mtime": "2024-12-16T10:03:12.800Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/912/sushi-showcase-1800-fgss1800lm/_payload.json"
-  },
-  "/commercial-kitchen/product/914/white-flat-plate-square-wfprs/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-BhtejBhmKmBIZJ7JPMS8vTJTzq4\"",
-    "mtime": "2024-12-16T10:03:08.925Z",
-    "size": 78535,
-    "path": "../public/commercial-kitchen/product/914/white-flat-plate-square-wfprs/index.html"
-  },
-  "/commercial-kitchen/product/914/white-flat-plate-square-wfprs/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5P4Rc6deq+tttJdAOfJSK6bUnNw\"",
-    "mtime": "2024-12-16T10:03:13.025Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/914/white-flat-plate-square-wfprs/_payload.json"
-  },
-  "/commercial-kitchen/product/913/white-flat-plate-round-wfpr/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-gRH3Dw23Hm/7/JwqShIxVMK2/ac\"",
-    "mtime": "2024-12-16T10:03:08.923Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/913/white-flat-plate-round-wfpr/index.html"
-  },
-  "/commercial-kitchen/product/913/white-flat-plate-round-wfpr/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-P78N3NzN5fQaZvrjTombAS+zLjc\"",
-    "mtime": "2024-12-16T10:03:13.025Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/913/white-flat-plate-round-wfpr/_payload.json"
-  },
-  "/commercial-kitchen/product/915/white-flat-plate-rectangular-wfprect/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-zCrLKskI57NprnaTV7NJ18FcFpI\"",
-    "mtime": "2024-12-16T10:03:08.925Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/915/white-flat-plate-rectangular-wfprect/index.html"
-  },
-  "/commercial-kitchen/product/915/white-flat-plate-rectangular-wfprect/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JwPLpTrouqZCR/C+Zil9t20PlpM\"",
-    "mtime": "2024-12-16T10:03:13.025Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/915/white-flat-plate-rectangular-wfprect/_payload.json"
-  },
-  "/commercial-kitchen/product/916/square-bowl-wfpoval/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-DF+nzawW/J/2jbCj2/FwL63FQWo\"",
-    "mtime": "2024-12-16T10:03:09.025Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/916/square-bowl-wfpoval/index.html"
-  },
-  "/commercial-kitchen/product/916/square-bowl-wfpoval/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2pAMZpq8VONUsGjqBoz6ttcLRJc\"",
-    "mtime": "2024-12-16T10:03:13.029Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/916/square-bowl-wfpoval/_payload.json"
-  },
-  "/commercial-kitchen/product/917/espresso-cups-esp/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-5v+AuY+bh8X5YWAiYW0AUqJvfnE\"",
-    "mtime": "2024-12-16T10:03:09.057Z",
-    "size": 78475,
-    "path": "../public/commercial-kitchen/product/917/espresso-cups-esp/index.html"
-  },
-  "/commercial-kitchen/product/917/espresso-cups-esp/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Uci/LO7FxfM3GgGyHRE+bDqXkBc\"",
-    "mtime": "2024-12-16T10:03:13.035Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/917/espresso-cups-esp/_payload.json"
-  },
-  "/commercial-kitchen/product/918/coffee--demitasse-cups-cof/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-fklxQWcEHG1fAHoo9cVehh3fzwY\"",
-    "mtime": "2024-12-16T10:03:09.119Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/918/coffee--demitasse-cups-cof/index.html"
-  },
-  "/commercial-kitchen/product/918/coffee--demitasse-cups-cof/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ejXFS38aekZNsmRgWzLKb/MRU2E\"",
-    "mtime": "2024-12-16T10:03:13.035Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/918/coffee--demitasse-cups-cof/_payload.json"
-  },
-  "/commercial-kitchen/product/919/stackable-cups-stackable/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-SvY+HPgJCQzCCU8JE9ZBm0vCUBg\"",
-    "mtime": "2024-12-16T10:03:09.119Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/919/stackable-cups-stackable/index.html"
-  },
-  "/commercial-kitchen/product/919/stackable-cups-stackable/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eSlBVIyBMsLxBtxjbvEfzz6pwCg\"",
-    "mtime": "2024-12-16T10:03:13.035Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/919/stackable-cups-stackable/_payload.json"
-  },
-  "/commercial-kitchen/product/920/small-dishes-sd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13281-JGCAG1LV5Ft+mArvPMbJhRSUEcc\"",
-    "mtime": "2024-12-16T10:03:09.119Z",
-    "size": 78465,
-    "path": "../public/commercial-kitchen/product/920/small-dishes-sd/index.html"
-  },
-  "/commercial-kitchen/product/920/small-dishes-sd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CmYYfreG6fbiwPKTfxe7+RXR2ww\"",
-    "mtime": "2024-12-16T10:03:13.035Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/920/small-dishes-sd/_payload.json"
-  },
-  "/commercial-kitchen/product/92/ice-cube-machine-67-kgs-brema-cb-640a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e9-iFGbk54dCQFR4o1ljH5kLHOCztg\"",
-    "mtime": "2024-12-16T10:03:04.112Z",
-    "size": 78569,
-    "path": "../public/commercial-kitchen/product/92/ice-cube-machine-67-kgs-brema-cb-640a/index.html"
-  },
-  "/commercial-kitchen/product/92/ice-cube-machine-67-kgs-brema-cb-640a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MbfUIwL1hSS3f0qRYVztXRl8W38\"",
-    "mtime": "2024-12-16T10:03:12.235Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/92/ice-cube-machine-67-kgs-brema-cb-640a/_payload.json"
-  },
-  "/commercial-kitchen/product/921/creamers-cr/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1326d-gcC+1M4ek1WoUoyBdHcxlXq4h4w\"",
-    "mtime": "2024-12-16T10:03:09.134Z",
-    "size": 78445,
-    "path": "../public/commercial-kitchen/product/921/creamers-cr/index.html"
-  },
-  "/commercial-kitchen/product/921/creamers-cr/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9u8qoDbpQbEE5HYfzMskbX71pMo\"",
-    "mtime": "2024-12-16T10:03:13.046Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/921/creamers-cr/_payload.json"
-  },
-  "/commercial-kitchen/product/922/coffee-pots-with-lids-cpl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-1nKOtI2kiixHop3E8fm6kpgCXVU\"",
-    "mtime": "2024-12-16T10:03:09.119Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/922/coffee-pots-with-lids-cpl/index.html"
-  },
-  "/commercial-kitchen/product/922/coffee-pots-with-lids-cpl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-a2B8avs88rVI8Noz7yk7ujRs9so\"",
-    "mtime": "2024-12-16T10:03:13.046Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/922/coffee-pots-with-lids-cpl/_payload.json"
-  },
-  "/commercial-kitchen/product/923/sugar-tea-bag-holders-stb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-Aj0mngqQuQrH4TozeB7NR72MY2w\"",
-    "mtime": "2024-12-16T10:03:09.195Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/923/sugar-tea-bag-holders-stb/index.html"
-  },
-  "/commercial-kitchen/product/923/sugar-tea-bag-holders-stb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-K6BIvUT858M04QNbgeJaPYhokG8\"",
-    "mtime": "2024-12-16T10:03:13.046Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/923/sugar-tea-bag-holders-stb/_payload.json"
-  },
-  "/commercial-kitchen/product/932/stainless-steel-frying-pan-fp245-fp245/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-jxL0E88A8u+zLV5/FPPpP9ATzec\"",
-    "mtime": "2024-12-16T10:03:09.200Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/932/stainless-steel-frying-pan-fp245-fp245/index.html"
-  },
-  "/commercial-kitchen/product/932/stainless-steel-frying-pan-fp245-fp245/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MqrwjeygJPcqS7+bQAM5tJvg/E0\"",
-    "mtime": "2024-12-16T10:03:13.046Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/932/stainless-steel-frying-pan-fp245-fp245/_payload.json"
-  },
-  "/commercial-kitchen/product/93/ice-cube-machine-95kgs-brema-cb-955a-hc/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-wztp8xq4/MZlmNnaB88G0buPkAQ\"",
-    "mtime": "2024-12-16T10:03:04.115Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/93/ice-cube-machine-95kgs-brema-cb-955a-hc/index.html"
-  },
-  "/commercial-kitchen/product/93/ice-cube-machine-95kgs-brema-cb-955a-hc/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-FNs1/o2UsKjm+SLyFA+V2oJKtmE\"",
-    "mtime": "2024-12-16T10:03:12.235Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/93/ice-cube-machine-95kgs-brema-cb-955a-hc/_payload.json"
-  },
-  "/commercial-kitchen/product/94/ice-cube-machine-155-kgs-brema-cb-1565a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f3-mQiszBmbW/mRx+teM8c1YUZrF8Y\"",
-    "mtime": "2024-12-16T10:03:04.112Z",
-    "size": 78579,
-    "path": "../public/commercial-kitchen/product/94/ice-cube-machine-155-kgs-brema-cb-1565a/index.html"
-  },
-  "/commercial-kitchen/product/94/ice-cube-machine-155-kgs-brema-cb-1565a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kNAZ/noyKxJkRHp817lsgxHU3+k\"",
-    "mtime": "2024-12-16T10:03:12.235Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/94/ice-cube-machine-155-kgs-brema-cb-1565a/_payload.json"
-  },
-  "/commercial-kitchen/product/940/white-steccoflex-classic-silicone-mould-gel-01-classic/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-GTN6oWxj55UCw/qIAJwuRtxCH0Y\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/940/white-steccoflex-classic-silicone-mould-gel-01-classic/index.html"
-  },
-  "/commercial-kitchen/product/940/white-steccoflex-classic-silicone-mould-gel-01-classic/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YcdReMViwOcLHgY08i18ENH76wo\"",
-    "mtime": "2024-12-16T10:03:12.678Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/940/white-steccoflex-classic-silicone-mould-gel-01-classic/_payload.json"
-  },
-  "/commercial-kitchen/product/941/4-rectangular-log-black-silicone-mould-sq016/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-QKLb90znl4p4qsrY3mAfZzpJFC8\"",
-    "mtime": "2024-12-16T10:03:06.165Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/941/4-rectangular-log-black-silicone-mould-sq016/index.html"
-  },
-  "/commercial-kitchen/product/941/4-rectangular-log-black-silicone-mould-sq016/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MkobACpj69q4fnzNM7zSOLg5Fzg\"",
-    "mtime": "2024-12-16T10:03:12.554Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/941/4-rectangular-log-black-silicone-mould-sq016/_payload.json"
-  },
-  "/commercial-kitchen/product/943/77-mini-charlotte-black-silicone-mould-sq034/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-k3PKlu+2SmyDxt+mu2kZNZQJt7Y\"",
-    "mtime": "2024-12-16T10:03:06.179Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/943/77-mini-charlotte-black-silicone-mould-sq034/index.html"
-  },
-  "/commercial-kitchen/product/943/77-mini-charlotte-black-silicone-mould-sq034/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+sSwxTWT3ny1FOvzx5blCXQ7L7s\"",
-    "mtime": "2024-12-16T10:03:12.554Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/943/77-mini-charlotte-black-silicone-mould-sq034/_payload.json"
-  },
-  "/commercial-kitchen/product/942/70mini-heart-black-silicone-mould-sq032/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-sboUVbKPw9u6eHMTDL72lernNy0\"",
-    "mtime": "2024-12-16T10:03:06.178Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/942/70mini-heart-black-silicone-mould-sq032/index.html"
-  },
-  "/commercial-kitchen/product/942/70mini-heart-black-silicone-mould-sq032/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-j+yudBQcb1NH1BMJHOdUyGjjoAc\"",
-    "mtime": "2024-12-16T10:03:12.554Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/942/70mini-heart-black-silicone-mould-sq032/_payload.json"
-  },
-  "/commercial-kitchen/product/946/terracotta-siliconflex-savarins-sf012/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-L2o8GsoSk21za2VnV4I06oZC5/4\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/946/terracotta-siliconflex-savarins-sf012/index.html"
-  },
-  "/commercial-kitchen/product/946/terracotta-siliconflex-savarins-sf012/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-StYuT+QSIw5aGnpoWcQddu3ZJ9Y\"",
-    "mtime": "2024-12-16T10:03:12.668Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/946/terracotta-siliconflex-savarins-sf012/_payload.json"
-  },
-  "/commercial-kitchen/product/944/terracotta-siliconflex-half-spheres-sf001/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-PfbAkEYEHc5QQ8ypkzyuKFuQhd0\"",
-    "mtime": "2024-12-16T10:03:06.185Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/944/terracotta-siliconflex-half-spheres-sf001/index.html"
-  },
-  "/commercial-kitchen/product/944/terracotta-siliconflex-half-spheres-sf001/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1K6t317GSECB1SxfaRclDhsee5A\"",
-    "mtime": "2024-12-16T10:03:12.556Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/944/terracotta-siliconflex-half-spheres-sf001/_payload.json"
-  },
-  "/commercial-kitchen/product/945/terracotta-silconeflex-pyramids-sf008/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-y8Z39NiPLbrlUwSSiSHERbKkcRw\"",
-    "mtime": "2024-12-16T10:03:06.220Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/945/terracotta-silconeflex-pyramids-sf008/index.html"
-  },
-  "/commercial-kitchen/product/945/terracotta-silconeflex-pyramids-sf008/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-CJMca53lH/Szsxw6CJg3+nu4M4Q\"",
-    "mtime": "2024-12-16T10:03:12.568Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/945/terracotta-silconeflex-pyramids-sf008/_payload.json"
-  },
-  "/commercial-kitchen/product/947/terracotta-siliconflex--tartlets-sf013/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-4THuC0wKkFLyaWnULaWliVvryrE\"",
-    "mtime": "2024-12-16T10:03:07.067Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/947/terracotta-siliconflex--tartlets-sf013/index.html"
-  },
-  "/commercial-kitchen/product/947/terracotta-siliconflex--tartlets-sf013/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-P+sA0pdLisQQmQWfOvpUBU/X19I\"",
-    "mtime": "2024-12-16T10:03:12.695Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/947/terracotta-siliconflex--tartlets-sf013/_payload.json"
-  },
-  "/commercial-kitchen/product/948/terracotta-siliconflex--baba-mini-sf019/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-ZRe0HpLRg6JlWymIVBKI0VdD7LI\"",
-    "mtime": "2024-12-16T10:03:06.275Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/948/terracotta-siliconflex--baba-mini-sf019/index.html"
-  },
-  "/commercial-kitchen/product/948/terracotta-siliconflex--baba-mini-sf019/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8egDrA2gXUBrY54Z+beoPhjjYFo\"",
-    "mtime": "2024-12-16T10:03:12.568Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/948/terracotta-siliconflex--baba-mini-sf019/_payload.json"
-  },
-  "/commercial-kitchen/product/949/terracotta-siliconflex-petits-fours-sf027/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-gP+3D/eWX1rrk/SePT69tj0nIcs\"",
-    "mtime": "2024-12-16T10:03:06.297Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/949/terracotta-siliconflex-petits-fours-sf027/index.html"
-  },
-  "/commercial-kitchen/product/949/terracotta-siliconflex-petits-fours-sf027/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MSIht3AnK1ej1GrNZC48WLnZj7g\"",
-    "mtime": "2024-12-16T10:03:12.582Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/949/terracotta-siliconflex-petits-fours-sf027/_payload.json"
-  },
-  "/commercial-kitchen/product/95/ice-cube-machine-300-kgs-brema-c300a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e4-zuR5CystXxM14vKJiYSWmM6IYew\"",
-    "mtime": "2024-12-16T10:03:04.129Z",
-    "size": 78564,
-    "path": "../public/commercial-kitchen/product/95/ice-cube-machine-300-kgs-brema-c300a/index.html"
-  },
-  "/commercial-kitchen/product/95/ice-cube-machine-300-kgs-brema-c300a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xNF0+eyEr2Q9zKR2h3uF4PwBW/s\"",
-    "mtime": "2024-12-16T10:03:12.244Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/95/ice-cube-machine-300-kgs-brema-c300a/_payload.json"
-  },
-  "/commercial-kitchen/product/950/terracotta-siliconflex-big-bordelais-sf050/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-1NCSUz9Hvt2GPbeG0f9wqi1ZLfI\"",
-    "mtime": "2024-12-16T10:03:06.320Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/950/terracotta-siliconflex-big-bordelais-sf050/index.html"
-  },
-  "/commercial-kitchen/product/950/terracotta-siliconflex-big-bordelais-sf050/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0R4DCmnVGTHZaW1M2GSGQap0b5g\"",
-    "mtime": "2024-12-16T10:03:12.582Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/950/terracotta-siliconflex-big-bordelais-sf050/_payload.json"
-  },
-  "/commercial-kitchen/product/951/terracotta-siliconflex--heart-sf040/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-F3vipzuC4+ro5EkWbMw9TjXcZNA\"",
-    "mtime": "2024-12-16T10:03:06.365Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/951/terracotta-siliconflex--heart-sf040/index.html"
-  },
-  "/commercial-kitchen/product/951/terracotta-siliconflex--heart-sf040/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DYGBszym6sZIeLrdJwKBLOQ3fz8\"",
-    "mtime": "2024-12-16T10:03:12.582Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/951/terracotta-siliconflex--heart-sf040/_payload.json"
-  },
-  "/commercial-kitchen/product/953/terracotta-siliconflex-daisy-sf056/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-qgiYUskqx7DTJMeRbGFPVqGNjeI\"",
-    "mtime": "2024-12-16T10:03:06.385Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/953/terracotta-siliconflex-daisy-sf056/index.html"
-  },
-  "/commercial-kitchen/product/953/terracotta-siliconflex-daisy-sf056/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-O/faZ3syin5KC43ElsZkv2tkcqE\"",
-    "mtime": "2024-12-16T10:03:12.583Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/953/terracotta-siliconflex-daisy-sf056/_payload.json"
-  },
-  "/commercial-kitchen/product/952/terracotta-siliconflex-half-egg-sf041/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ef-Gpo+9cz4gfN5Hp99tZYdGAo7MaQ\"",
-    "mtime": "2024-12-16T10:03:06.370Z",
-    "size": 78575,
-    "path": "../public/commercial-kitchen/product/952/terracotta-siliconflex-half-egg-sf041/index.html"
-  },
-  "/commercial-kitchen/product/952/terracotta-siliconflex-half-egg-sf041/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KwrasCotgAQClaqYguWOeshq7vs\"",
-    "mtime": "2024-12-16T10:03:12.582Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/952/terracotta-siliconflex-half-egg-sf041/_payload.json"
-  },
-  "/commercial-kitchen/product/954/terracotta-siliconflex-gugelhopf-sf058/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-7WX45b8e8GijaSg3/3yFeIsNpjA\"",
-    "mtime": "2024-12-16T10:03:06.388Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/954/terracotta-siliconflex-gugelhopf-sf058/index.html"
-  },
-  "/commercial-kitchen/product/954/terracotta-siliconflex-gugelhopf-sf058/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kThAv4fFTFkeGUcBD6MRFQVkDfk\"",
-    "mtime": "2024-12-16T10:03:12.583Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/954/terracotta-siliconflex-gugelhopf-sf058/_payload.json"
-  },
-  "/commercial-kitchen/product/957/terracotta-siliconflex-roses-sf077/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e0-ThvRKzaHmPBBY8lPEzqzUm9Ru94\"",
-    "mtime": "2024-12-16T10:03:06.483Z",
-    "size": 78560,
-    "path": "../public/commercial-kitchen/product/957/terracotta-siliconflex-roses-sf077/index.html"
-  },
-  "/commercial-kitchen/product/957/terracotta-siliconflex-roses-sf077/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ceAtoCVth4UkUy1LNLtk+7kwqDk\"",
-    "mtime": "2024-12-16T10:03:12.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/957/terracotta-siliconflex-roses-sf077/_payload.json"
-  },
-  "/commercial-kitchen/product/955/terracotta-siliconflex-croix-occitane-sf070/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-qBcbNy+bC3M0gumgqbzlPcs0x2c\"",
-    "mtime": "2024-12-16T10:03:06.432Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/955/terracotta-siliconflex-croix-occitane-sf070/index.html"
-  },
-  "/commercial-kitchen/product/955/terracotta-siliconflex-croix-occitane-sf070/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eJxbA1ixBUTtfm0NXUEWGF7BJjA\"",
-    "mtime": "2024-12-16T10:03:12.593Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/955/terracotta-siliconflex-croix-occitane-sf070/_payload.json"
-  },
-  "/commercial-kitchen/product/958/terracotta-siliconflex-medium-square-savarin-sf081/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-8gzvSP68MmqIi3PcMyjSxcTC2y4\"",
-    "mtime": "2024-12-16T10:03:06.483Z",
-    "size": 78640,
-    "path": "../public/commercial-kitchen/product/958/terracotta-siliconflex-medium-square-savarin-sf081/index.html"
-  },
-  "/commercial-kitchen/product/958/terracotta-siliconflex-medium-square-savarin-sf081/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tjj2bv3zz2JHl4dpdr0w7gmXObM\"",
-    "mtime": "2024-12-16T10:03:12.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/958/terracotta-siliconflex-medium-square-savarin-sf081/_payload.json"
-  },
-  "/commercial-kitchen/product/956/terracotta-siliconflex-small-roses-sf074/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-xT8k1VPHlqItspAKvbzoglKYCrs\"",
-    "mtime": "2024-12-16T10:03:06.483Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/956/terracotta-siliconflex-small-roses-sf074/index.html"
-  },
-  "/commercial-kitchen/product/956/terracotta-siliconflex-small-roses-sf074/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-75nUaRa10hCxkdwRO+pz2whlm4k\"",
-    "mtime": "2024-12-16T10:03:12.610Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/956/terracotta-siliconflex-small-roses-sf074/_payload.json"
-  },
-  "/commercial-kitchen/product/959/terracotta-siliconflex-square-savarin-sf082/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-ZlbURbgWkvWBTiAKErWb+qIBYYw\"",
-    "mtime": "2024-12-16T10:03:06.590Z",
-    "size": 78605,
-    "path": "../public/commercial-kitchen/product/959/terracotta-siliconflex-square-savarin-sf082/index.html"
-  },
-  "/commercial-kitchen/product/959/terracotta-siliconflex-square-savarin-sf082/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-npASAs9D9rZ/rxnsD/aWrc+MQog\"",
-    "mtime": "2024-12-16T10:03:12.611Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/959/terracotta-siliconflex-square-savarin-sf082/_payload.json"
-  },
-  "/commercial-kitchen/product/960/terracotta-siliconflex-medium-heart-savarin-sf088/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1332b-J/KUxmEnh8S0BJMcn1IVJ21qtDE\"",
-    "mtime": "2024-12-16T10:03:06.599Z",
-    "size": 78635,
-    "path": "../public/commercial-kitchen/product/960/terracotta-siliconflex-medium-heart-savarin-sf088/index.html"
-  },
-  "/commercial-kitchen/product/960/terracotta-siliconflex-medium-heart-savarin-sf088/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-JRbk+QtNlWdcnvwMFTQkITTql58\"",
-    "mtime": "2024-12-16T10:03:12.614Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/960/terracotta-siliconflex-medium-heart-savarin-sf088/_payload.json"
-  },
-  "/commercial-kitchen/product/961/terracotta-siliconflex-gingerbread-man-sf106/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-rjHFsoMXzHbZtyhwmyyon5lFVyU\"",
-    "mtime": "2024-12-16T10:03:06.599Z",
-    "size": 78610,
-    "path": "../public/commercial-kitchen/product/961/terracotta-siliconflex-gingerbread-man-sf106/index.html"
-  },
-  "/commercial-kitchen/product/961/terracotta-siliconflex-gingerbread-man-sf106/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BfS/apkNkakF4acK9f82RiBo3xI\"",
-    "mtime": "2024-12-16T10:03:12.617Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/961/terracotta-siliconflex-gingerbread-man-sf106/_payload.json"
-  },
-  "/commercial-kitchen/product/962/terracotta-siliconflex-gold-star-sf107/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-FsS9rW76UYWVo1zipbz6cJE6WYo\"",
-    "mtime": "2024-12-16T10:03:06.605Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/962/terracotta-siliconflex-gold-star-sf107/index.html"
-  },
-  "/commercial-kitchen/product/962/terracotta-siliconflex-gold-star-sf107/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uED6Dr5Hfo5bcuUVkarjRIb/Ztw\"",
-    "mtime": "2024-12-16T10:03:12.617Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/962/terracotta-siliconflex-gold-star-sf107/_payload.json"
-  },
-  "/commercial-kitchen/product/963/uniflex-round-pan-with-safe-ring-sft180/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-NPNxtBNRkk5dcqLkYzieDtXjGxg\"",
-    "mtime": "2024-12-16T10:03:06.605Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/963/uniflex-round-pan-with-safe-ring-sft180/index.html"
-  },
-  "/commercial-kitchen/product/963/uniflex-round-pan-with-safe-ring-sft180/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-/EaaGicYcZ8TfL5GzORaPyjCp0g\"",
-    "mtime": "2024-12-16T10:03:12.617Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/963/uniflex-round-pan-with-safe-ring-sft180/_payload.json"
-  },
-  "/commercial-kitchen/product/964/uniflex-round-pan-with-safe-ring-sft226-sft226/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-NTsKLNqn04TPWvjfq5zsZHVDnxk\"",
-    "mtime": "2024-12-16T10:03:06.605Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/964/uniflex-round-pan-with-safe-ring-sft226-sft226/index.html"
-  },
-  "/commercial-kitchen/product/964/uniflex-round-pan-with-safe-ring-sft226-sft226/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UUl8nrqzmI/9+3ORwsn655wvcrk\"",
-    "mtime": "2024-12-16T10:03:12.617Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/964/uniflex-round-pan-with-safe-ring-sft226-sft226/_payload.json"
-  },
-  "/commercial-kitchen/product/965/uniflex-pine-tree-with-safe-ring-sft203/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-5Iuh8v5H36tEb+nes7mkuOmlMSM\"",
-    "mtime": "2024-12-16T10:03:06.615Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/965/uniflex-pine-tree-with-safe-ring-sft203/index.html"
-  },
-  "/commercial-kitchen/product/965/uniflex-pine-tree-with-safe-ring-sft203/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-KNNH/3nrnRaQVyzWH/HGPz9iC5c\"",
-    "mtime": "2024-12-16T10:03:12.631Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/965/uniflex-pine-tree-with-safe-ring-sft203/_payload.json"
-  },
-  "/commercial-kitchen/product/966/volume-16lts-sft204/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-p9rocx7OxXqJ7O8HHDJTIiwZoR8\"",
-    "mtime": "2024-12-16T10:03:06.615Z",
-    "size": 78485,
-    "path": "../public/commercial-kitchen/product/966/volume-16lts-sft204/index.html"
-  },
-  "/commercial-kitchen/product/966/volume-16lts-sft204/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ac3eq29g4M0ru6/4aRckVLIKebs\"",
-    "mtime": "2024-12-16T10:03:12.631Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/966/volume-16lts-sft204/_payload.json"
-  },
-  "/commercial-kitchen/product/967/red-uniflex-heart-with-safe-ring-sft210/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-c8S7kTn7QPLG7XfiPq4kP2mNfKI\"",
-    "mtime": "2024-12-16T10:03:06.685Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/967/red-uniflex-heart-with-safe-ring-sft210/index.html"
-  },
-  "/commercial-kitchen/product/967/red-uniflex-heart-with-safe-ring-sft210/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uAEy6BX1Q5+qjq/GUZ6nhKW5Rx4\"",
-    "mtime": "2024-12-16T10:03:12.631Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/967/red-uniflex-heart-with-safe-ring-sft210/_payload.json"
-  },
-  "/commercial-kitchen/product/969/red-uniflex-bake--roaste-with-safe-ring-sft300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-BFRJPsVzuubQqPM2GsuvyPB4q2M\"",
-    "mtime": "2024-12-16T10:03:06.712Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/969/red-uniflex-bake--roaste-with-safe-ring-sft300/index.html"
-  },
-  "/commercial-kitchen/product/969/red-uniflex-bake--roaste-with-safe-ring-sft300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rC+zNr6q1FGTwDMkHQTER/AnFb8\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/969/red-uniflex-bake--roaste-with-safe-ring-sft300/_payload.json"
-  },
-  "/commercial-kitchen/product/968/red-uniflex-savarin-cake-with-safe-ring-sft224/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-ydprWS02X+P35d9XCxNas+pt+y8\"",
-    "mtime": "2024-12-16T10:03:06.690Z",
-    "size": 78620,
-    "path": "../public/commercial-kitchen/product/968/red-uniflex-savarin-cake-with-safe-ring-sft224/index.html"
-  },
-  "/commercial-kitchen/product/968/red-uniflex-savarin-cake-with-safe-ring-sft224/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U+GGQYAPqHC3qZLczEU+mGegFus\"",
-    "mtime": "2024-12-16T10:03:12.632Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/968/red-uniflex-savarin-cake-with-safe-ring-sft224/_payload.json"
-  },
-  "/commercial-kitchen/product/970/red-uniflex-happy-birthday-sft301/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-ctKglbbxCH6BfGfSVwF+1217CM0\"",
-    "mtime": "2024-12-16T10:03:06.712Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/970/red-uniflex-happy-birthday-sft301/index.html"
-  },
-  "/commercial-kitchen/product/970/red-uniflex-happy-birthday-sft301/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-WovdAvrqohHLthPk1pb9HlLX80E\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/970/red-uniflex-happy-birthday-sft301/_payload.json"
-  },
-  "/commercial-kitchen/product/971/football-silicon-mould-with-handles-sft313/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13308-EdV6bxKSuCDVY+mckVwkY+KX18E\"",
-    "mtime": "2024-12-16T10:03:06.720Z",
-    "size": 78600,
-    "path": "../public/commercial-kitchen/product/971/football-silicon-mould-with-handles-sft313/index.html"
-  },
-  "/commercial-kitchen/product/971/football-silicon-mould-with-handles-sft313/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QiKcCE1nSNHWra8gWkzB3R7FbMM\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/971/football-silicon-mould-with-handles-sft313/_payload.json"
-  },
-  "/commercial-kitchen/product/972/terracotta-plum-cake-uniflex-sft330/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-6OYUp3XiA59azH3BqBYvDjw5e54\"",
-    "mtime": "2024-12-16T10:03:06.785Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/972/terracotta-plum-cake-uniflex-sft330/index.html"
-  },
-  "/commercial-kitchen/product/972/terracotta-plum-cake-uniflex-sft330/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0eDe3NrBFFLHHzLrtxZtnFh7vaU\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/972/terracotta-plum-cake-uniflex-sft330/_payload.json"
-  },
-  "/commercial-kitchen/product/973/red-flan-pan-uniflex-sft424/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-cq1uMXQJ6jP7JnH8KAar4MPu9Ow\"",
-    "mtime": "2024-12-16T10:03:06.802Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/973/red-flan-pan-uniflex-sft424/index.html"
-  },
-  "/commercial-kitchen/product/973/red-flan-pan-uniflex-sft424/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D6Bnj/SqCyL5x5WR52uBg0Xi+G0\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/973/red-flan-pan-uniflex-sft424/_payload.json"
-  },
-  "/commercial-kitchen/product/974/brown-monamour-mould-scg01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-kHcH+Q7a/lA5BJEzpnEabqYxAjs\"",
-    "mtime": "2024-12-16T10:03:06.785Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/974/brown-monamour-mould-scg01/index.html"
-  },
-  "/commercial-kitchen/product/974/brown-monamour-mould-scg01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-F2pqtYknsp1VxVtCoEoBpmBjyww\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/974/brown-monamour-mould-scg01/_payload.json"
-  },
-  "/commercial-kitchen/product/975/brown-cubo-mould-scg02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-mxCaKBKhpF7XMu2zxgI57ynbucw\"",
-    "mtime": "2024-12-16T10:03:06.803Z",
-    "size": 78500,
-    "path": "../public/commercial-kitchen/product/975/brown-cubo-mould-scg02/index.html"
-  },
-  "/commercial-kitchen/product/975/brown-cubo-mould-scg02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-E5B83L/p491HcCW/X6Ne4XFkBw4\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/975/brown-cubo-mould-scg02/_payload.json"
-  },
-  "/commercial-kitchen/product/976/brown-imperial-mould-half--spheres-scg03/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132fe-fCJZIrxSVeQAtrHeUFx2GPirxMA\"",
-    "mtime": "2024-12-16T10:03:07.446Z",
-    "size": 78590,
-    "path": "../public/commercial-kitchen/product/976/brown-imperial-mould-half--spheres-scg03/index.html"
-  },
-  "/commercial-kitchen/product/976/brown-imperial-mould-half--spheres-scg03/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5kDfrJaT75GMkKdEf/idcv3kiM8\"",
-    "mtime": "2024-12-16T10:03:12.759Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/976/brown-imperial-mould-half--spheres-scg03/_payload.json"
-  },
-  "/commercial-kitchen/product/977/brown-vertigo-mould-round-scg04/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-wWZsZFgbpEOvJ86ddOhT9+Eo3jA\"",
-    "mtime": "2024-12-16T10:03:06.803Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/977/brown-vertigo-mould-round-scg04/index.html"
-  },
-  "/commercial-kitchen/product/977/brown-vertigo-mould-round-scg04/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xnv1ehHPR7doL7j8KSWfMJuYVhA\"",
-    "mtime": "2024-12-16T10:03:12.643Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/977/brown-vertigo-mould-round-scg04/_payload.json"
-  },
-  "/commercial-kitchen/product/978/brown-easter-mould-scg05/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-7gCjcwicGMs5RKLlMCsFmsnsbvM\"",
-    "mtime": "2024-12-16T10:03:06.803Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/978/brown-easter-mould-scg05/index.html"
-  },
-  "/commercial-kitchen/product/978/brown-easter-mould-scg05/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ldeDbwEy0VG2J7fPJC1tvWfBkdI\"",
-    "mtime": "2024-12-16T10:03:12.645Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/978/brown-easter-mould-scg05/_payload.json"
-  },
-  "/commercial-kitchen/product/98/ice-cream-machine-turbo-mix-turbo-mix/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e9-7OfcDQ7SM5b4AeIU4u11kD6mG2A\"",
-    "mtime": "2024-12-16T10:03:07.446Z",
-    "size": 78569,
-    "path": "../public/commercial-kitchen/product/98/ice-cream-machine-turbo-mix-turbo-mix/index.html"
-  },
-  "/commercial-kitchen/product/98/ice-cream-machine-turbo-mix-turbo-mix/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SPn19548OndfqJsRlsv3eBoeW+Y\"",
-    "mtime": "2024-12-16T10:03:12.761Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/98/ice-cream-machine-turbo-mix-turbo-mix/_payload.json"
-  },
-  "/commercial-kitchen/product/979/brown-christmas-mould-scg06/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-x5Uz5Pdb8lFbS3U+cxMzThxR8gw\"",
-    "mtime": "2024-12-16T10:03:06.805Z",
-    "size": 78525,
-    "path": "../public/commercial-kitchen/product/979/brown-christmas-mould-scg06/index.html"
-  },
-  "/commercial-kitchen/product/979/brown-christmas-mould-scg06/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-o6G5rVOWvwqrKG0Ky7mbJKmNgYY\"",
-    "mtime": "2024-12-16T10:03:12.651Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/979/brown-christmas-mould-scg06/_payload.json"
-  },
-  "/commercial-kitchen/product/980/brown-praline-mould-scg07/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-NpNwR8trTVe2bzijx0NXsJGZU2s\"",
-    "mtime": "2024-12-16T10:03:06.841Z",
-    "size": 78515,
-    "path": "../public/commercial-kitchen/product/980/brown-praline-mould-scg07/index.html"
-  },
-  "/commercial-kitchen/product/980/brown-praline-mould-scg07/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-adWBFwytpz9ZKidx6DiQyBjJC0w\"",
-    "mtime": "2024-12-16T10:03:12.651Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/980/brown-praline-mould-scg07/_payload.json"
-  },
-  "/commercial-kitchen/product/981/brown-fleury-mould-scg08/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-uHFemHuXY1W0+aWW1vy92PLtfDU\"",
-    "mtime": "2024-12-16T10:03:06.916Z",
-    "size": 78510,
-    "path": "../public/commercial-kitchen/product/981/brown-fleury-mould-scg08/index.html"
-  },
-  "/commercial-kitchen/product/981/brown-fleury-mould-scg08/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pFrHa+H2wujBch6WPwn1keDmc0U\"",
-    "mtime": "2024-12-16T10:03:12.651Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/981/brown-fleury-mould-scg08/_payload.json"
-  },
-  "/commercial-kitchen/product/982/brown-mrginger-mould-scg12/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-rAsfQ1d+KkeW8ogaiZcYJFlO3KE\"",
-    "mtime": "2024-12-16T10:03:06.916Z",
-    "size": 78520,
-    "path": "../public/commercial-kitchen/product/982/brown-mrginger-mould-scg12/index.html"
-  },
-  "/commercial-kitchen/product/982/brown-mrginger-mould-scg12/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-D83OkL3ZGmHQoNE/eehT8I8J5bM\"",
-    "mtime": "2024-12-16T10:03:12.651Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/982/brown-mrginger-mould-scg12/_payload.json"
-  },
-  "/commercial-kitchen/product/983/brown-mood-mould-item-nr12-shape-mm-scg15/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-LkSc+alBSSn/OgHz1aL1qjF18EQ\"",
-    "mtime": "2024-12-16T10:03:06.951Z",
-    "size": 78595,
-    "path": "../public/commercial-kitchen/product/983/brown-mood-mould-item-nr12-shape-mm-scg15/index.html"
-  },
-  "/commercial-kitchen/product/983/brown-mood-mould-item-nr12-shape-mm-scg15/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-pVl9oPSvqVfKNZUUbcE85LZzlt8\"",
-    "mtime": "2024-12-16T10:03:12.666Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/983/brown-mood-mould-item-nr12-shape-mm-scg15/_payload.json"
-  },
-  "/commercial-kitchen/product/984/terracotta-tapis-roulade-02-troul02/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132e5-9iX+CuO5ABYKYjGO2KxPYXBB+rA\"",
-    "mtime": "2024-12-16T10:03:06.955Z",
-    "size": 78565,
-    "path": "../public/commercial-kitchen/product/984/terracotta-tapis-roulade-02-troul02/index.html"
-  },
-  "/commercial-kitchen/product/984/terracotta-tapis-roulade-02-troul02/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hZu9c0dpqvgJ8sk7sFI2UF00Y6c\"",
-    "mtime": "2024-12-16T10:03:12.668Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/984/terracotta-tapis-roulade-02-troul02/_payload.json"
-  },
-  "/commercial-kitchen/product/985/terracotta-silicone-baking-sheet-595x395mm-silicopat1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-v55d+67BmhKpDthHl2G1TXOIyNo\"",
-    "mtime": "2024-12-16T10:03:06.962Z",
-    "size": 78655,
-    "path": "../public/commercial-kitchen/product/985/terracotta-silicone-baking-sheet-595x395mm-silicopat1/index.html"
-  },
-  "/commercial-kitchen/product/985/terracotta-silicone-baking-sheet-595x395mm-silicopat1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YXQZ05WFPDkytlPvuIs/t14QPBQ\"",
-    "mtime": "2024-12-16T10:03:12.668Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/985/terracotta-silicone-baking-sheet-595x395mm-silicopat1/_payload.json"
-  },
-  "/commercial-kitchen/product/986/terracotta-baking-sheet-silicopat-7-300x400mm-silicopat7/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-Di+MDdCBbK3GBIfqsObnZ20p+Nk\"",
-    "mtime": "2024-12-16T10:03:07.046Z",
-    "size": 78670,
-    "path": "../public/commercial-kitchen/product/986/terracotta-baking-sheet-silicopat-7-300x400mm-silicopat7/index.html"
-  },
-  "/commercial-kitchen/product/986/terracotta-baking-sheet-silicopat-7-300x400mm-silicopat7/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-swjFdXI72UMu8zc7DnNMy711yBk\"",
-    "mtime": "2024-12-16T10:03:12.668Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/986/terracotta-baking-sheet-silicopat-7-300x400mm-silicopat7/_payload.json"
-  },
-  "/commercial-kitchen/product/987/pre-rinse-single-bowl-sink-sspr1507r-ssspr1507r/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13321-BesgN1gALFOdL0pBd3jrG/DEsvE\"",
-    "mtime": "2024-12-16T10:03:00.121Z",
-    "size": 78625,
-    "path": "../public/commercial-kitchen/product/987/pre-rinse-single-bowl-sink-sspr1507r-ssspr1507r/index.html"
-  },
-  "/commercial-kitchen/product/987/pre-rinse-single-bowl-sink-sspr1507r-ssspr1507r/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-M2uMDfz8DIusrUP6Kq0zwRkTBL8\"",
-    "mtime": "2024-12-16T10:03:11.535Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/987/pre-rinse-single-bowl-sink-sspr1507r-ssspr1507r/_payload.json"
-  },
-  "/commercial-kitchen/product/988/single-contact-grill-wpg150k-wpg150k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-7pCapLnKk+zwmVVLh1WKZ8JwbQ0\"",
-    "mtime": "2024-12-16T10:03:03.085Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/988/single-contact-grill-wpg150k-wpg150k/index.html"
-  },
-  "/commercial-kitchen/product/988/single-contact-grill-wpg150k-wpg150k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rXqVXh2Tw0aMD1NAXvNaCKrQ/SQ\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/988/single-contact-grill-wpg150k-wpg150k/_payload.json"
-  },
-  "/commercial-kitchen/product/989/triple-milk-shake-mixer-wdm360k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-TCi7jqMK5bejbYmF/O1iMtLbfg0\"",
-    "mtime": "2024-12-16T10:02:57.535Z",
-    "size": 78545,
-    "path": "../public/commercial-kitchen/product/989/triple-milk-shake-mixer-wdm360k/index.html"
-  },
-  "/commercial-kitchen/product/989/triple-milk-shake-mixer-wdm360k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AxubwvgMt1TOeakUyt4EaL8VwMw\"",
-    "mtime": "2024-12-16T10:03:11.027Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/989/triple-milk-shake-mixer-wdm360k/_payload.json"
-  },
-  "/commercial-kitchen/product/99/ice-cream-machine-maestro-2stelle-hcd-maestro-2stelle-hcd/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334d-K9G2ydiyLltoxwGw83bWGfnMnRU\"",
-    "mtime": "2024-12-16T10:03:07.483Z",
-    "size": 78669,
-    "path": "../public/commercial-kitchen/product/99/ice-cream-machine-maestro-2stelle-hcd-maestro-2stelle-hcd/index.html"
-  },
-  "/commercial-kitchen/product/99/ice-cream-machine-maestro-2stelle-hcd-maestro-2stelle-hcd/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8QOb+G4WTB9HA0CZ3KAqtcIRXjA\"",
-    "mtime": "2024-12-16T10:03:12.768Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/99/ice-cream-machine-maestro-2stelle-hcd-maestro-2stelle-hcd/_payload.json"
-  },
-  "/commercial-kitchen/product/991/double-italian-style-contact-grill-supremo-wpg300k-wpg300k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13358-G0AEs1tsTIV8FvOSiTv0N6qRqNY\"",
-    "mtime": "2024-12-16T10:03:03.118Z",
-    "size": 78680,
-    "path": "../public/commercial-kitchen/product/991/double-italian-style-contact-grill-supremo-wpg300k-wpg300k/index.html"
-  },
-  "/commercial-kitchen/product/991/double-italian-style-contact-grill-supremo-wpg300k-wpg300k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-nQXRZYKu4XxyFDji/TdiYb8qQdw\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/991/double-italian-style-contact-grill-supremo-wpg300k-wpg300k/_payload.json"
-  },
-  "/commercial-kitchen/product/990/double-contact-grill-wpg250k-wpg250k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ea-Hi9xzBvLJYbag9CkSDUni8xFUTo\"",
-    "mtime": "2024-12-16T10:03:03.118Z",
-    "size": 78570,
-    "path": "../public/commercial-kitchen/product/990/double-contact-grill-wpg250k-wpg250k/index.html"
-  },
-  "/commercial-kitchen/product/990/double-contact-grill-wpg250k-wpg250k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Ou4HwVn+agz0/NUHWqp9CmJz8Gc\"",
-    "mtime": "2024-12-16T10:03:12.031Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/990/double-contact-grill-wpg250k-wpg250k/_payload.json"
-  },
-  "/commercial-kitchen/product/992/spice-grinder-wsg60k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329a-G536NGvi6bY6rz6oWPDacGCVFRc\"",
-    "mtime": "2024-12-16T10:03:07.735Z",
-    "size": 78490,
-    "path": "../public/commercial-kitchen/product/992/spice-grinder-wsg60k/index.html"
-  },
-  "/commercial-kitchen/product/992/spice-grinder-wsg60k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ySYHFRPRAmyxEtPreb0JmLoamDI\"",
-    "mtime": "2024-12-16T10:03:12.835Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/992/spice-grinder-wsg60k/_payload.json"
-  },
-  "/commercial-kitchen/product/993/single-electric-crepe-machine-cm-1-cm-1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-QEigQPiisKRLqjM3ldrkJouKQH8\"",
-    "mtime": "2024-12-16T10:03:06.141Z",
-    "size": 78585,
-    "path": "../public/commercial-kitchen/product/993/single-electric-crepe-machine-cm-1-cm-1/index.html"
-  },
-  "/commercial-kitchen/product/993/single-electric-crepe-machine-cm-1-cm-1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-dKc+QEJhswx/g4dTtHFVLGNWY0Y\"",
-    "mtime": "2024-12-16T10:03:12.542Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/993/single-electric-crepe-machine-cm-1-cm-1/_payload.json"
-  },
-  "/commercial-kitchen/product/994/double-electric-crepe-machine-cm2-cm-2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f4-WMIjuABRgV6jCnSccLE4HKN4WKg\"",
-    "mtime": "2024-12-16T10:03:06.160Z",
-    "size": 78580,
-    "path": "../public/commercial-kitchen/product/994/double-electric-crepe-machine-cm2-cm-2/index.html"
-  },
-  "/commercial-kitchen/product/994/double-electric-crepe-machine-cm2-cm-2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rgE1oA1PQXE9IWbxEUtHzqBP2f0\"",
-    "mtime": "2024-12-16T10:03:12.543Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/994/double-electric-crepe-machine-cm2-cm-2/_payload.json"
-  },
-  "/commercial-kitchen/product/995/double-waffle-cone-maker-wwcm200k/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-CFwM2i2IPZv/5aCbJON1zYC36tg\"",
-    "mtime": "2024-12-16T10:03:06.109Z",
-    "size": 78555,
-    "path": "../public/commercial-kitchen/product/995/double-waffle-cone-maker-wwcm200k/index.html"
-  },
-  "/commercial-kitchen/product/995/double-waffle-cone-maker-wwcm200k/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-M4F7AOlnhTSe8+w+2TgwjvH5DzA\"",
-    "mtime": "2024-12-16T10:03:12.542Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/995/double-waffle-cone-maker-wwcm200k/_payload.json"
-  },
-  "/commercial-kitchen/product/996/electric-convection-oven-with-steam-10-tray-ekf1064-ud/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13344-8tVQitBnNvV/Aon9oFMLXE8qIVc\"",
-    "mtime": "2024-12-16T10:02:58.663Z",
-    "size": 78660,
-    "path": "../public/commercial-kitchen/product/996/electric-convection-oven-with-steam-10-tray-ekf1064-ud/index.html"
-  },
-  "/commercial-kitchen/product/996/electric-convection-oven-with-steam-10-tray-ekf1064-ud/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-gj1+PltbRkbHWU0vLGDfYjDqd4k\"",
-    "mtime": "2024-12-16T10:03:11.293Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/996/electric-convection-oven-with-steam-10-tray-ekf1064-ud/_payload.json"
-  },
-  "/commercial-kitchen/product/997/gas-convection-oven-with-steam-10-tray-ekf1064-g-ud/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13335-9IFWEszAY4UsBcBTn35undwrgBM\"",
-    "mtime": "2024-12-16T10:02:58.658Z",
-    "size": 78645,
-    "path": "../public/commercial-kitchen/product/997/gas-convection-oven-with-steam-10-tray-ekf1064-g-ud/index.html"
-  },
-  "/commercial-kitchen/product/997/gas-convection-oven-with-steam-10-tray-ekf1064-g-ud/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-alHJ/05DAgat+gtyFcy07fKmjuw\"",
-    "mtime": "2024-12-16T10:03:11.291Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/997/gas-convection-oven-with-steam-10-tray-ekf1064-g-ud/_payload.json"
-  },
-  "/commercial-kitchen/product/998/counter-chiller-engineering-version-1800700-plr-18n2fhb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-5WvVPKGaUmgzcgoeBec7aCGKn14\"",
-    "mtime": "2024-12-16T10:03:03.503Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/998/counter-chiller-engineering-version-1800700-plr-18n2fhb/index.html"
-  },
-  "/commercial-kitchen/product/998/counter-chiller-engineering-version-1800700-plr-18n2fhb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9ftCqrZ5Iz4AF560wF59y+33EqY\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/998/counter-chiller-engineering-version-1800700-plr-18n2fhb/_payload.json"
-  },
-  "/commercial-kitchen/product/999/counter-chiller-engineering-version-1500700-plr-15n2fhb/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13349-+Mo3uQB1ZP6lW3NWVoN1YJsvqtI\"",
-    "mtime": "2024-12-16T10:03:03.492Z",
-    "size": 78665,
-    "path": "../public/commercial-kitchen/product/999/counter-chiller-engineering-version-1500700-plr-15n2fhb/index.html"
-  },
-  "/commercial-kitchen/product/999/counter-chiller-engineering-version-1500700-plr-15n2fhb/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-h/FdxtNEajd+sj3obI0AVZ2Doro\"",
-    "mtime": "2024-12-16T10:03:12.097Z",
-    "size": 69,
-    "path": "../public/commercial-kitchen/product/999/counter-chiller-engineering-version-1500700-plr-15n2fhb/_payload.json"
-  },
-  "/laundry/product/1012/washing-machine-model-1-wmcm1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13296-xkW+q3EoPpKmY5dkXGtQjU1gqXE\"",
-    "mtime": "2024-12-16T10:02:56.156Z",
-    "size": 78486,
-    "path": "../public/laundry/product/1012/washing-machine-model-1-wmcm1/index.html"
-  },
-  "/laundry/product/1012/washing-machine-model-1-wmcm1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-jalqhTwFrCTP1YGVndKGP/ZcMzA\"",
-    "mtime": "2024-12-16T10:03:10.685Z",
-    "size": 69,
-    "path": "../public/laundry/product/1012/washing-machine-model-1-wmcm1/_payload.json"
-  },
-  "/laundry/product/1015/washing-machine-model-4-wmcm4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13296-NPYCwbx0w2YCTnWQD7Mw0SFsrK4\"",
-    "mtime": "2024-12-16T10:02:56.205Z",
-    "size": 78486,
-    "path": "../public/laundry/product/1015/washing-machine-model-4-wmcm4/index.html"
-  },
-  "/laundry/product/1015/washing-machine-model-4-wmcm4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-y+wjSAQocHfliOOLfhw4klE4UaY\"",
-    "mtime": "2024-12-16T10:03:10.684Z",
-    "size": 69,
-    "path": "../public/laundry/product/1015/washing-machine-model-4-wmcm4/_payload.json"
-  },
-  "/laundry/product/1013/washing-machine-model-2-wmcm2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13296-Qx/U+T4LOK8CO/t5AQV47/EcJ7U\"",
-    "mtime": "2024-12-16T10:02:56.181Z",
-    "size": 78486,
-    "path": "../public/laundry/product/1013/washing-machine-model-2-wmcm2/index.html"
-  },
-  "/laundry/product/1013/washing-machine-model-2-wmcm2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-OBZgkuGJv7+oVDwfEkqWjp/HM2s\"",
-    "mtime": "2024-12-16T10:03:10.682Z",
-    "size": 69,
-    "path": "../public/laundry/product/1013/washing-machine-model-2-wmcm2/_payload.json"
-  },
-  "/laundry/product/1014/washing-machine-model-3-wmcm3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13296-G1lvwl5ncQhHQUEDsJhzXVbkIMk\"",
-    "mtime": "2024-12-16T10:02:56.193Z",
-    "size": 78486,
-    "path": "../public/laundry/product/1014/washing-machine-model-3-wmcm3/index.html"
-  },
-  "/laundry/product/1014/washing-machine-model-3-wmcm3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-auDEasRm3wN9E7CxoptphcCUht4\"",
-    "mtime": "2024-12-16T10:03:10.682Z",
-    "size": 69,
-    "path": "../public/laundry/product/1014/washing-machine-model-3-wmcm3/_payload.json"
-  },
-  "/laundry/product/1022/centrifuge-model-1-cm1/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-VAY2ze5y3SMhxBMay5BfzJXHrH0\"",
-    "mtime": "2024-12-16T10:02:55.935Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1022/centrifuge-model-1-cm1/index.html"
-  },
-  "/laundry/product/1022/centrifuge-model-1-cm1/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-49eEKVnP2qHVudOUi6FZdHuev3I\"",
-    "mtime": "2024-12-16T10:03:10.619Z",
-    "size": 69,
-    "path": "../public/laundry/product/1022/centrifuge-model-1-cm1/_payload.json"
-  },
-  "/laundry/product/1023/centrifuge-model-2-cm2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-YPVjEWnLUbKEB9wV0I0rvpLLG0k\"",
-    "mtime": "2024-12-16T10:02:55.947Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1023/centrifuge-model-2-cm2/index.html"
-  },
-  "/laundry/product/1023/centrifuge-model-2-cm2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3D5VnbJRYSiU1Ay+BsObhaXcokI\"",
-    "mtime": "2024-12-16T10:03:10.619Z",
-    "size": 69,
-    "path": "../public/laundry/product/1023/centrifuge-model-2-cm2/_payload.json"
-  },
-  "/laundry/product/1024/centrifuge-model-3-cm3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-mVRun+EdKdRof2n7o5C+hfpVQFo\"",
-    "mtime": "2024-12-16T10:02:55.990Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1024/centrifuge-model-3-cm3/index.html"
-  },
-  "/laundry/product/1024/centrifuge-model-3-cm3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MfPB+mS2MjeeJeAkGPC3s0QBA7M\"",
-    "mtime": "2024-12-16T10:03:10.624Z",
-    "size": 69,
-    "path": "../public/laundry/product/1024/centrifuge-model-3-cm3/_payload.json"
-  },
-  "/laundry/product/1025/centrifuge-model-4-cm4/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-RWIaSwISe/CyZx+njhjykK4KEjU\"",
-    "mtime": "2024-12-16T10:02:56.020Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1025/centrifuge-model-4-cm4/index.html"
-  },
-  "/laundry/product/1025/centrifuge-model-4-cm4/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-kpvN8+DsZWK7sXUAQV78I8mNL9Y\"",
-    "mtime": "2024-12-16T10:03:10.632Z",
-    "size": 69,
-    "path": "../public/laundry/product/1025/centrifuge-model-4-cm4/_payload.json"
-  },
-  "/laundry/product/1026/centrifuge-model-5-cm5/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-+Q5IxmmJ+EtIHiWDs+okuldnQtE\"",
-    "mtime": "2024-12-16T10:02:56.039Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1026/centrifuge-model-5-cm5/index.html"
-  },
-  "/laundry/product/1026/centrifuge-model-5-cm5/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TpbfhTEdTbAbY2/JPe7bDcpOj2I\"",
-    "mtime": "2024-12-16T10:03:10.632Z",
-    "size": 69,
-    "path": "../public/laundry/product/1026/centrifuge-model-5-cm5/_payload.json"
-  },
-  "/laundry/product/1027/centrifuge-model-6-cm6/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13273-hiTHuF0KSolDnhdwZBYMbs8nDlU\"",
-    "mtime": "2024-12-16T10:02:56.111Z",
-    "size": 78451,
-    "path": "../public/laundry/product/1027/centrifuge-model-6-cm6/index.html"
-  },
-  "/laundry/product/1027/centrifuge-model-6-cm6/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-x8dYU+juWXqBN4qxPy3pqaEaSnA\"",
-    "mtime": "2024-12-16T10:03:10.670Z",
-    "size": 69,
-    "path": "../public/laundry/product/1027/centrifuge-model-6-cm6/_payload.json"
-  },
-  "/laundry/product/1028/automatic-finishing-machine-afm/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a0-16b0Ldn5rsxv20MquGei4B+inH0\"",
-    "mtime": "2024-12-16T10:02:56.138Z",
-    "size": 78496,
-    "path": "../public/laundry/product/1028/automatic-finishing-machine-afm/index.html"
-  },
-  "/laundry/product/1028/automatic-finishing-machine-afm/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Rzx9Bv/oDqrtBe+PzTBQFPlZxTk\"",
-    "mtime": "2024-12-16T10:03:10.682Z",
-    "size": 69,
-    "path": "../public/laundry/product/1028/automatic-finishing-machine-afm/_payload.json"
-  },
-  "/laundry/product/1101/high-pressure-washer-km300-km300/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a5-T8sYPomK4BCflptqofdxKvLCEek\"",
-    "mtime": "2024-12-16T10:02:56.219Z",
-    "size": 78501,
-    "path": "../public/laundry/product/1101/high-pressure-washer-km300-km300/index.html"
-  },
-  "/laundry/product/1101/high-pressure-washer-km300-km300/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cx+43Ruw7lXNTnYfB0fSgFjscZo\"",
-    "mtime": "2024-12-16T10:03:10.694Z",
-    "size": 69,
-    "path": "../public/laundry/product/1101/high-pressure-washer-km300-km300/_payload.json"
-  },
-  "/laundry/product/1029/automatic-finishing-machine-32m-afm2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b9-wxXBvKXnhU8KdL6ZNOUi2RUXsFY\"",
-    "mtime": "2024-12-16T10:02:56.156Z",
-    "size": 78521,
-    "path": "../public/laundry/product/1029/automatic-finishing-machine-32m-afm2/index.html"
-  },
-  "/laundry/product/1029/automatic-finishing-machine-32m-afm2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-U3R745Nmmt63S2MYT2b4tGIvGVw\"",
-    "mtime": "2024-12-16T10:03:10.684Z",
-    "size": 69,
-    "path": "../public/laundry/product/1029/automatic-finishing-machine-32m-afm2/_payload.json"
-  },
-  "/laundry/product/235/tumble-dryer-22kg-sr-22-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-JLxDtFDECzEeJb1EZoYDzQLzTWc\"",
-    "mtime": "2024-12-16T10:02:54.224Z",
-    "size": 78470,
-    "path": "../public/laundry/product/235/tumble-dryer-22kg-sr-22-tp2/index.html"
-  },
-  "/laundry/product/235/tumble-dryer-22kg-sr-22-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rWlBbFSD+6oyrULT/EMLGK2bxME\"",
-    "mtime": "2024-12-16T10:03:10.255Z",
-    "size": 69,
-    "path": "../public/laundry/product/235/tumble-dryer-22kg-sr-22-tp2/_payload.json"
-  },
-  "/laundry/product/233/tumble-dryer-14kg-sr-14-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-MiKdDOWKrMX1JFCIDBDpZUXkIcY\"",
-    "mtime": "2024-12-16T10:02:54.224Z",
-    "size": 78470,
-    "path": "../public/laundry/product/233/tumble-dryer-14kg-sr-14-tp2/index.html"
-  },
-  "/laundry/product/233/tumble-dryer-14kg-sr-14-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UbtUwnPr3AuZh4OgkkLjtl02iaI\"",
-    "mtime": "2024-12-16T10:03:10.236Z",
-    "size": 69,
-    "path": "../public/laundry/product/233/tumble-dryer-14kg-sr-14-tp2/_payload.json"
-  },
-  "/laundry/product/234/tumble-dryer-18kg-sr-18-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-TGmlAs62ysmV5xqsimIJ6Ow+sq0\"",
-    "mtime": "2024-12-16T10:02:54.224Z",
-    "size": 78470,
-    "path": "../public/laundry/product/234/tumble-dryer-18kg-sr-18-tp2/index.html"
-  },
-  "/laundry/product/234/tumble-dryer-18kg-sr-18-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PPtpmeZYPJ6MXpm89kGr3IM3HBY\"",
-    "mtime": "2024-12-16T10:03:10.216Z",
-    "size": 69,
-    "path": "../public/laundry/product/234/tumble-dryer-18kg-sr-18-tp2/_payload.json"
-  },
-  "/laundry/product/1102/steam-machine--clean-vapor-plus-bf090epl/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cd-jPLI+e07PJSvqvJ8kWdhliO2d9E\"",
-    "mtime": "2024-12-16T10:02:56.230Z",
-    "size": 78541,
-    "path": "../public/laundry/product/1102/steam-machine--clean-vapor-plus-bf090epl/index.html"
-  },
-  "/laundry/product/1102/steam-machine--clean-vapor-plus-bf090epl/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3lkSIcN1ImniWbPKckPFafhGYe8\"",
-    "mtime": "2024-12-16T10:03:10.700Z",
-    "size": 69,
-    "path": "../public/laundry/product/1102/steam-machine--clean-vapor-plus-bf090epl/_payload.json"
-  },
-  "/laundry/product/236/tumble-dryer-28kg-sr-28-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-ojFg9uvxYnwPAyIDRrbbAfGMnx4\"",
-    "mtime": "2024-12-16T10:02:54.224Z",
-    "size": 78470,
-    "path": "../public/laundry/product/236/tumble-dryer-28kg-sr-28-tp2/index.html"
-  },
-  "/laundry/product/236/tumble-dryer-28kg-sr-28-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AFVyPgTum5vzonp6oflqepJ203Q\"",
-    "mtime": "2024-12-16T10:03:10.255Z",
-    "size": 69,
-    "path": "../public/laundry/product/236/tumble-dryer-28kg-sr-28-tp2/_payload.json"
-  },
-  "/laundry/product/237/tumble-dryer-35kg-sr-35-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-OzEsELqnPmuWqksuiT8EpQ5/Ti8\"",
-    "mtime": "2024-12-16T10:02:54.235Z",
-    "size": 78470,
-    "path": "../public/laundry/product/237/tumble-dryer-35kg-sr-35-tp2/index.html"
-  },
-  "/laundry/product/237/tumble-dryer-35kg-sr-35-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-W9q8oyoroKG5IM+JjjTD2mTj79w\"",
-    "mtime": "2024-12-16T10:03:10.255Z",
-    "size": 69,
-    "path": "../public/laundry/product/237/tumble-dryer-35kg-sr-35-tp2/_payload.json"
-  },
-  "/laundry/product/238/tumble-dryer-45kg-sr-45-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-x2RAkF01gik8PBf3PHHfKrq8Ez4\"",
-    "mtime": "2024-12-16T10:02:54.260Z",
-    "size": 78470,
-    "path": "../public/laundry/product/238/tumble-dryer-45kg-sr-45-tp2/index.html"
-  },
-  "/laundry/product/238/tumble-dryer-45kg-sr-45-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MTtIH5HrmfNqI90cpLelq/rmFrM\"",
-    "mtime": "2024-12-16T10:03:10.275Z",
-    "size": 69,
-    "path": "../public/laundry/product/238/tumble-dryer-45kg-sr-45-tp2/_payload.json"
-  },
-  "/laundry/product/239/tumble-dryer-60kg-sr-60-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-oFfoykVltCb61W06OupEiKAIUa8\"",
-    "mtime": "2024-12-16T10:02:54.278Z",
-    "size": 78470,
-    "path": "../public/laundry/product/239/tumble-dryer-60kg-sr-60-tp2/index.html"
-  },
-  "/laundry/product/239/tumble-dryer-60kg-sr-60-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-VrVUtP+xTy1ITgre578XjjVK0R4\"",
-    "mtime": "2024-12-16T10:03:10.282Z",
-    "size": 69,
-    "path": "../public/laundry/product/239/tumble-dryer-60kg-sr-60-tp2/_payload.json"
-  },
-  "/laundry/product/240/tumble-dryer-80kg-sr-80-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-W/njNJH5nZ1Uox9Efg50O3Pb/cA\"",
-    "mtime": "2024-12-16T10:02:54.325Z",
-    "size": 78470,
-    "path": "../public/laundry/product/240/tumble-dryer-80kg-sr-80-tp2/index.html"
-  },
-  "/laundry/product/240/tumble-dryer-80kg-sr-80-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DgbRotCLbbCPguNUe+gcjuiPkAc\"",
-    "mtime": "2024-12-16T10:03:10.296Z",
-    "size": 69,
-    "path": "../public/laundry/product/240/tumble-dryer-80kg-sr-80-tp2/_payload.json"
-  },
-  "/laundry/product/241/95kg-commercial-washer-nf3jxasp403ug01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132bd-fdbSXolzy0YjhXdhHRszbvS4CyA\"",
-    "mtime": "2024-12-16T10:02:57.087Z",
-    "size": 78525,
-    "path": "../public/laundry/product/241/95kg-commercial-washer-nf3jxasp403ug01/index.html"
-  },
-  "/laundry/product/241/95kg-commercial-washer-nf3jxasp403ug01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.959Z",
-    "size": 69,
-    "path": "../public/laundry/product/241/95kg-commercial-washer-nf3jxasp403ug01/_payload.json"
-  },
-  "/laundry/product/242/82kg-commercial-dryer-nd3nxags403ug01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-Hc0dxI4khmxnLjCH6fqt6lRhCNk\"",
-    "mtime": "2024-12-16T10:02:54.131Z",
-    "size": 78520,
-    "path": "../public/laundry/product/242/82kg-commercial-dryer-nd3nxags403ug01/index.html"
-  },
-  "/laundry/product/242/82kg-commercial-dryer-nd3nxags403ug01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+kbSub7wC7H8GrHZk0KQEHnCqpA\"",
-    "mtime": "2024-12-16T10:03:10.197Z",
-    "size": 69,
-    "path": "../public/laundry/product/242/82kg-commercial-dryer-nd3nxags403ug01/_payload.json"
-  },
-  "/laundry/product/243/vended-stack-washer-dryer-nt3jxasp403ug01/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-i2rJEOzOA/PQlUcFeVnlOpOpAoM\"",
-    "mtime": "2024-12-16T10:02:55.858Z",
-    "size": 78540,
-    "path": "../public/laundry/product/243/vended-stack-washer-dryer-nt3jxasp403ug01/index.html"
-  },
-  "/laundry/product/243/vended-stack-washer-dryer-nt3jxasp403ug01/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tTA1GnoKb7VCZH9oELfolTeHPcY\"",
-    "mtime": "2024-12-16T10:03:10.618Z",
-    "size": 69,
-    "path": "../public/laundry/product/243/vended-stack-washer-dryer-nt3jxasp403ug01/_payload.json"
-  },
-  "/laundry/product/244/normal-spin-washer-14kg-capacity-hcu030/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-3dZY7f8tntwr4E9uDUcpO47WXBs\"",
-    "mtime": "2024-12-16T10:02:59.476Z",
-    "size": 78530,
-    "path": "../public/laundry/product/244/normal-spin-washer-14kg-capacity-hcu030/index.html"
-  },
-  "/laundry/product/244/normal-spin-washer-14kg-capacity-hcu030/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.442Z",
-    "size": 69,
-    "path": "../public/laundry/product/244/normal-spin-washer-14kg-capacity-hcu030/_payload.json"
-  },
-  "/laundry/product/245/normal-spin-washer-18kg-capacity-hcu040/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-QByzT4NLd1NmOVvtwdgE9U7QTlQ\"",
-    "mtime": "2024-12-16T10:02:59.478Z",
-    "size": 78530,
-    "path": "../public/laundry/product/245/normal-spin-washer-18kg-capacity-hcu040/index.html"
-  },
-  "/laundry/product/245/normal-spin-washer-18kg-capacity-hcu040/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-aAKePebeKnwAA7sOqE1/EEwyRcI\"",
-    "mtime": "2024-12-16T10:03:11.442Z",
-    "size": 69,
-    "path": "../public/laundry/product/245/normal-spin-washer-18kg-capacity-hcu040/_payload.json"
-  },
-  "/laundry/product/247/14kg-tumble-dryer---htt30-htt30/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329a-7UB3EslTQsvvek5jw9hZB360uKA\"",
-    "mtime": "2024-12-16T10:02:54.131Z",
-    "size": 78490,
-    "path": "../public/laundry/product/247/14kg-tumble-dryer---htt30-htt30/index.html"
-  },
-  "/laundry/product/247/14kg-tumble-dryer---htt30-htt30/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-po8WyWY99qCtaZndDjqx7IJP/m8\"",
-    "mtime": "2024-12-16T10:03:10.207Z",
-    "size": 69,
-    "path": "../public/laundry/product/247/14kg-tumble-dryer---htt30-htt30/_payload.json"
-  },
-  "/laundry/product/246/14-kg-tumble-dryer---hcu-030-hcu-030/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b3-EYWuc2q3M/fnrgoEfRWx67VaL5c\"",
-    "mtime": "2024-12-16T10:02:54.183Z",
-    "size": 78515,
-    "path": "../public/laundry/product/246/14-kg-tumble-dryer---hcu-030-hcu-030/index.html"
-  },
-  "/laundry/product/246/14-kg-tumble-dryer---hcu-030-hcu-030/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-oMZ1AMENEL+Dm3k84NO1tes0wmg\"",
-    "mtime": "2024-12-16T10:03:10.216Z",
-    "size": 69,
-    "path": "../public/laundry/product/246/14-kg-tumble-dryer---hcu-030-hcu-030/_payload.json"
-  },
-  "/laundry/product/248/2100-lsr3316-roller-ironer-flatwork-finisher-lsr3316/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-u9at2FeFI6QQ/qTnRf7+hcAeL+U\"",
-    "mtime": "2024-12-16T10:02:54.537Z",
-    "size": 78595,
-    "path": "../public/laundry/product/248/2100-lsr3316-roller-ironer-flatwork-finisher-lsr3316/index.html"
-  },
-  "/laundry/product/248/2100-lsr3316-roller-ironer-flatwork-finisher-lsr3316/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-qG+4QnWaznCgY86w0UAbJ9Fbezc\"",
-    "mtime": "2024-12-16T10:03:10.358Z",
-    "size": 69,
-    "path": "../public/laundry/product/248/2100-lsr3316-roller-ironer-flatwork-finisher-lsr3316/_payload.json"
-  },
-  "/laundry/product/249/flatwork-finisher-125-140-i25-140/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-9vp/3y9m1d6LZUbUrdev4luar9E\"",
-    "mtime": "2024-12-16T10:02:54.438Z",
-    "size": 78500,
-    "path": "../public/laundry/product/249/flatwork-finisher-125-140-i25-140/index.html"
-  },
-  "/laundry/product/249/flatwork-finisher-125-140-i25-140/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-b741JTp7Kh/M0kx7xvcrix/66J4\"",
-    "mtime": "2024-12-16T10:03:10.316Z",
-    "size": 69,
-    "path": "../public/laundry/product/249/flatwork-finisher-125-140-i25-140/_payload.json"
-  },
-  "/laundry/product/250/high-spin-washer-100kg-capacity-la-100c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-ToX3fd6S+ugF9oIza+GWsTR0ujo\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78550,
-    "path": "../public/laundry/product/250/high-spin-washer-100kg-capacity-la-100c-tp2/index.html"
-  },
-  "/laundry/product/250/high-spin-washer-100kg-capacity-la-100c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.434Z",
-    "size": 69,
-    "path": "../public/laundry/product/250/high-spin-washer-100kg-capacity-la-100c-tp2/_payload.json"
-  },
-  "/laundry/product/251/high-spin-washer-120kg-capacity-la-120c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-4iuHgHC+eL5Hu9iPlOGza+T0/XI\"",
-    "mtime": "2024-12-16T10:02:57.021Z",
-    "size": 78550,
-    "path": "../public/laundry/product/251/high-spin-washer-120kg-capacity-la-120c-tp2/index.html"
-  },
-  "/laundry/product/251/high-spin-washer-120kg-capacity-la-120c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.953Z",
-    "size": 69,
-    "path": "../public/laundry/product/251/high-spin-washer-120kg-capacity-la-120c-tp2/_payload.json"
-  },
-  "/laundry/product/252/high-spin-washer-80kg-capacity-la-80c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-yJ2aucDlC5BUZRfsJ7GLe/+nY5o\"",
-    "mtime": "2024-12-16T10:02:58.339Z",
-    "size": 78540,
-    "path": "../public/laundry/product/252/high-spin-washer-80kg-capacity-la-80c-tp2/index.html"
-  },
-  "/laundry/product/252/high-spin-washer-80kg-capacity-la-80c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.175Z",
-    "size": 69,
-    "path": "../public/laundry/product/252/high-spin-washer-80kg-capacity-la-80c-tp2/_payload.json"
-  },
-  "/laundry/product/253/high-spin-washer-60kg-capacity-la-60c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-TZwIZfpUENrz8iDC6k35csKVbWM\"",
-    "mtime": "2024-12-16T10:02:59.485Z",
-    "size": 78540,
-    "path": "../public/laundry/product/253/high-spin-washer-60kg-capacity-la-60c-tp2/index.html"
-  },
-  "/laundry/product/253/high-spin-washer-60kg-capacity-la-60c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.443Z",
-    "size": 69,
-    "path": "../public/laundry/product/253/high-spin-washer-60kg-capacity-la-60c-tp2/_payload.json"
-  },
-  "/laundry/product/254/high-spin-washer-45kg-capacity-la-45c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-gGVLa7tvmbxZQDPq8e+mTiggJdY\"",
-    "mtime": "2024-12-16T10:02:58.339Z",
-    "size": 78540,
-    "path": "../public/laundry/product/254/high-spin-washer-45kg-capacity-la-45c-tp2/index.html"
-  },
-  "/laundry/product/254/high-spin-washer-45kg-capacity-la-45c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.175Z",
-    "size": 69,
-    "path": "../public/laundry/product/254/high-spin-washer-45kg-capacity-la-45c-tp2/_payload.json"
-  },
-  "/laundry/product/255/high-spin-washer-35kg-capacity-la-35c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132cc-48Pfap+Vfs5omifYSRCuekU50j0\"",
-    "mtime": "2024-12-16T10:02:58.404Z",
-    "size": 78540,
-    "path": "../public/laundry/product/255/high-spin-washer-35kg-capacity-la-35c-tp2/index.html"
-  },
-  "/laundry/product/255/high-spin-washer-35kg-capacity-la-35c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.223Z",
-    "size": 69,
-    "path": "../public/laundry/product/255/high-spin-washer-35kg-capacity-la-35c-tp2/_payload.json"
-  },
-  "/laundry/product/257/high-spin-washer-18kg-capacity-la-18tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-/eOssOCu000DVVj31I6eD4tQnlw\"",
-    "mtime": "2024-12-16T10:02:57.116Z",
-    "size": 78530,
-    "path": "../public/laundry/product/257/high-spin-washer-18kg-capacity-la-18tp2/index.html"
-  },
-  "/laundry/product/257/high-spin-washer-18kg-capacity-la-18tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.959Z",
-    "size": 69,
-    "path": "../public/laundry/product/257/high-spin-washer-18kg-capacity-la-18tp2/_payload.json"
-  },
-  "/laundry/product/256/high-spin-washer-22kg-capacity-la-22tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c2-WU3eb2wwhBQD9gKbSsZmgjWTmtk\"",
-    "mtime": "2024-12-16T10:02:57.138Z",
-    "size": 78530,
-    "path": "../public/laundry/product/256/high-spin-washer-22kg-capacity-la-22tp2/index.html"
-  },
-  "/laundry/product/256/high-spin-washer-22kg-capacity-la-22tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.960Z",
-    "size": 69,
-    "path": "../public/laundry/product/256/high-spin-washer-22kg-capacity-la-22tp2/_payload.json"
-  },
-  "/laundry/product/259/normal-spin-washer-60kg-capacity-ln-60-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-JGHQOBac2o7SINlsZQ4Cnzi8Skk\"",
-    "mtime": "2024-12-16T10:02:58.312Z",
-    "size": 78545,
-    "path": "../public/laundry/product/259/normal-spin-washer-60kg-capacity-ln-60-tp2/index.html"
-  },
-  "/laundry/product/259/normal-spin-washer-60kg-capacity-ln-60-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.158Z",
-    "size": 69,
-    "path": "../public/laundry/product/259/normal-spin-washer-60kg-capacity-ln-60-tp2/_payload.json"
-  },
-  "/laundry/product/258/high-spin-washer-14kg-capacity-la-14-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-7WILZSkW3DElm346HsmmwpiBRXc\"",
-    "mtime": "2024-12-16T10:02:58.404Z",
-    "size": 78535,
-    "path": "../public/laundry/product/258/high-spin-washer-14kg-capacity-la-14-tp2/index.html"
-  },
-  "/laundry/product/258/high-spin-washer-14kg-capacity-la-14-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.222Z",
-    "size": 69,
-    "path": "../public/laundry/product/258/high-spin-washer-14kg-capacity-la-14-tp2/_payload.json"
-  },
-  "/laundry/product/260/normal-spin-washer-45kg-capacity-ln-45c-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-qBY84S5EkToocT9QuVB7Rhq8Oas\"",
-    "mtime": "2024-12-16T10:02:57.090Z",
-    "size": 78550,
-    "path": "../public/laundry/product/260/normal-spin-washer-45kg-capacity-ln-45c-tp2/index.html"
-  },
-  "/laundry/product/260/normal-spin-washer-45kg-capacity-ln-45c-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:10.959Z",
-    "size": 69,
-    "path": "../public/laundry/product/260/normal-spin-washer-45kg-capacity-ln-45c-tp2/_payload.json"
-  },
-  "/laundry/product/261/normal-spin-washer-35kg-capacity-ln-35-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-b1VsnbVukCjR6XDow4MNLIuD5yQ\"",
-    "mtime": "2024-12-16T10:02:58.314Z",
-    "size": 78545,
-    "path": "../public/laundry/product/261/normal-spin-washer-35kg-capacity-ln-35-tp2/index.html"
-  },
-  "/laundry/product/261/normal-spin-washer-35kg-capacity-ln-35-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.158Z",
-    "size": 69,
-    "path": "../public/laundry/product/261/normal-spin-washer-35kg-capacity-ln-35-tp2/_payload.json"
-  },
-  "/laundry/product/262/normal-spin-washer-22kg-capacity-ln-22-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-qia4xrBxxM/14WOMofpBVtRSoKU\"",
-    "mtime": "2024-12-16T10:02:58.406Z",
-    "size": 78545,
-    "path": "../public/laundry/product/262/normal-spin-washer-22kg-capacity-ln-22-tp2/index.html"
-  },
-  "/laundry/product/262/normal-spin-washer-22kg-capacity-ln-22-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.223Z",
-    "size": 69,
-    "path": "../public/laundry/product/262/normal-spin-washer-22kg-capacity-ln-22-tp2/_payload.json"
-  },
-  "/laundry/product/263/normal-spin-washer-18kg-capacity-ln-18-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-O3PfrVSn0lyFvLMp5Vp+ZITkzDE\"",
-    "mtime": "2024-12-16T10:02:58.312Z",
-    "size": 78545,
-    "path": "../public/laundry/product/263/normal-spin-washer-18kg-capacity-ln-18-tp2/index.html"
-  },
-  "/laundry/product/263/normal-spin-washer-18kg-capacity-ln-18-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.175Z",
-    "size": 69,
-    "path": "../public/laundry/product/263/normal-spin-washer-18kg-capacity-ln-18-tp2/_payload.json"
-  },
-  "/laundry/product/264/normal-spin-washer-14kg-capacity-ln-14-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-BU4x26WqvamKgagsTUVn4KhN0HE\"",
-    "mtime": "2024-12-16T10:02:58.340Z",
-    "size": 78545,
-    "path": "../public/laundry/product/264/normal-spin-washer-14kg-capacity-ln-14-tp2/index.html"
-  },
-  "/laundry/product/264/normal-spin-washer-14kg-capacity-ln-14-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.215Z",
-    "size": 69,
-    "path": "../public/laundry/product/264/normal-spin-washer-14kg-capacity-ln-14-tp2/_payload.json"
-  },
-  "/laundry/product/285/electric-steam-ironer-mod-u/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-4u0M+4cAxjWCcPAEkRVEcN72iLw\"",
-    "mtime": "2024-12-16T10:02:54.627Z",
-    "size": 78470,
-    "path": "../public/laundry/product/285/electric-steam-ironer-mod-u/index.html"
-  },
-  "/laundry/product/285/electric-steam-ironer-mod-u/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-mXZ8buyLNIDrcPTVikWZeEQomaU\"",
-    "mtime": "2024-12-16T10:03:10.401Z",
-    "size": 69,
-    "path": "../public/laundry/product/285/electric-steam-ironer-mod-u/_payload.json"
-  },
-  "/laundry/product/286/electric-steam-boiler-of-18-lit-capacity-1-kw-beta-3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-YuUIGH6BTmimJR89gbNmnUyymYg\"",
-    "mtime": "2024-12-16T10:02:54.644Z",
-    "size": 78595,
-    "path": "../public/laundry/product/286/electric-steam-boiler-of-18-lit-capacity-1-kw-beta-3/index.html"
-  },
-  "/laundry/product/286/electric-steam-boiler-of-18-lit-capacity-1-kw-beta-3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bfzJjn8xuWg7Er7rsAfaQBgtAmI\"",
-    "mtime": "2024-12-16T10:03:10.414Z",
-    "size": 69,
-    "path": "../public/laundry/product/286/electric-steam-boiler-of-18-lit-capacity-1-kw-beta-3/_payload.json"
-  },
-  "/laundry/product/287/electric-steam-boiler-of-25-lit-capacity-1-kw-moon/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132f9-yMy8/wL+VjpevdVmCLC/SO0uvMo\"",
-    "mtime": "2024-12-16T10:02:54.739Z",
-    "size": 78585,
-    "path": "../public/laundry/product/287/electric-steam-boiler-of-25-lit-capacity-1-kw-moon/index.html"
-  },
-  "/laundry/product/287/electric-steam-boiler-of-25-lit-capacity-1-kw-moon/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QVKBdgyT06PEcFQkeMVdJl0hPvs\"",
-    "mtime": "2024-12-16T10:03:10.416Z",
-    "size": 69,
-    "path": "../public/laundry/product/287/electric-steam-boiler-of-25-lit-capacity-1-kw-moon/_payload.json"
-  },
-  "/laundry/product/291/folding-ironing-table-tpa/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1327c-s99rwzKjeve+7sC0GeERjfQzCb4\"",
-    "mtime": "2024-12-16T10:02:54.829Z",
-    "size": 78460,
-    "path": "../public/laundry/product/291/folding-ironing-table-tpa/index.html"
-  },
-  "/laundry/product/291/folding-ironing-table-tpa/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-4cLLcn65IzaM4Ad1Q2zG+5NKW6Y\"",
-    "mtime": "2024-12-16T10:03:10.456Z",
-    "size": 69,
-    "path": "../public/laundry/product/291/folding-ironing-table-tpa/_payload.json"
-  },
-  "/laundry/product/288/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-mini/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13312-mJ7u+vkJKb+zWcb1SpwOWiHf9X0\"",
-    "mtime": "2024-12-16T10:02:54.775Z",
-    "size": 78610,
-    "path": "../public/laundry/product/288/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-mini/index.html"
-  },
-  "/laundry/product/288/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-mini/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-SGeozUuIsmgJrB/MzfbWJ6ndnU4\"",
-    "mtime": "2024-12-16T10:03:10.432Z",
-    "size": 69,
-    "path": "../public/laundry/product/288/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-mini/_payload.json"
-  },
-  "/laundry/product/289/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-simba/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13317-cek7JaFQiSiytmzKnZ5kzwF44E4\"",
-    "mtime": "2024-12-16T10:02:54.750Z",
-    "size": 78615,
-    "path": "../public/laundry/product/289/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-simba/index.html"
-  },
-  "/laundry/product/289/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-simba/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-eIMVRWmKqR/a6Ou09Fzy7UtZCsY\"",
-    "mtime": "2024-12-16T10:03:10.418Z",
-    "size": 69,
-    "path": "../public/laundry/product/289/electric-steam-boiler-of-5-lit-capacity-1-kw-simba-simba/_payload.json"
-  },
-  "/laundry/product/290/automatic-and-electric-steam-boiler-maxi-16/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d6-HFX42znwF6qFqx+kLqr81nGvtws\"",
-    "mtime": "2024-12-16T10:02:54.808Z",
-    "size": 78550,
-    "path": "../public/laundry/product/290/automatic-and-electric-steam-boiler-maxi-16/index.html"
-  },
-  "/laundry/product/290/automatic-and-electric-steam-boiler-maxi-16/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-NlRB+msMkMk8MSriDuqe8zIjRgs\"",
-    "mtime": "2024-12-16T10:03:10.436Z",
-    "size": 69,
-    "path": "../public/laundry/product/290/automatic-and-electric-steam-boiler-maxi-16/_payload.json"
-  },
-  "/laundry/product/292/vacuum-ironing-tables-doris-a/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-ryiGKTnXxMp3dQy7Yx7w+mpT+UU\"",
-    "mtime": "2024-12-16T10:02:54.853Z",
-    "size": 78480,
-    "path": "../public/laundry/product/292/vacuum-ironing-tables-doris-a/index.html"
-  },
-  "/laundry/product/292/vacuum-ironing-tables-doris-a/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-DHZcmYV5q5YGS30cxLAkHCK5vMI\"",
-    "mtime": "2024-12-16T10:03:10.456Z",
-    "size": 69,
-    "path": "../public/laundry/product/292/vacuum-ironing-tables-doris-a/_payload.json"
-  },
-  "/laundry/product/293/vacuum-ironing-tables-ambria-ambria/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132ae-HBWmJrNw814A7GbIDN1fmCMxMLE\"",
-    "mtime": "2024-12-16T10:02:54.877Z",
-    "size": 78510,
-    "path": "../public/laundry/product/293/vacuum-ironing-tables-ambria-ambria/index.html"
-  },
-  "/laundry/product/293/vacuum-ironing-tables-ambria-ambria/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-70muLGt8oMmtZlXa8wJoC5Ls+5A\"",
-    "mtime": "2024-12-16T10:03:10.456Z",
-    "size": 69,
-    "path": "../public/laundry/product/293/vacuum-ironing-tables-ambria-ambria/_payload.json"
-  },
-  "/laundry/product/294/presses-pm98-u3-press-pm98-u3/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-ujxzArQh/DE5pe+TbMv9p3tKfTw\"",
-    "mtime": "2024-12-16T10:02:54.925Z",
-    "size": 78480,
-    "path": "../public/laundry/product/294/presses-pm98-u3-press-pm98-u3/index.html"
-  },
-  "/laundry/product/294/presses-pm98-u3-press-pm98-u3/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Tu2YoHRQRQMT97LoAFnwp6Pzg7k\"",
-    "mtime": "2024-12-16T10:03:10.457Z",
-    "size": 69,
-    "path": "../public/laundry/product/294/presses-pm98-u3-press-pm98-u3/_payload.json"
-  },
-  "/laundry/product/295/presses-p87-88-press-p87-88/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-FIHLdwrFKpPMYaclaQK+1b9+iwM\"",
-    "mtime": "2024-12-16T10:02:54.894Z",
-    "size": 78470,
-    "path": "../public/laundry/product/295/presses-p87-88-press-p87-88/index.html"
-  },
-  "/laundry/product/295/presses-p87-88-press-p87-88/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-PlZe4I5rKlVoCstFMV5PxksdNDk\"",
-    "mtime": "2024-12-16T10:03:10.456Z",
-    "size": 69,
-    "path": "../public/laundry/product/295/presses-p87-88-press-p87-88/_payload.json"
-  },
-  "/laundry/product/297/form-finisher-for-both-washed-and-dry-cleaned-shirts-anoraks-and-jackets-without-boiler-mc-100/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"133d5-N/4dbT0OydrsVxkBb/jUpVuB4vk\"",
-    "mtime": "2024-12-16T10:02:54.956Z",
-    "size": 78805,
-    "path": "../public/laundry/product/297/form-finisher-for-both-washed-and-dry-cleaned-shirts-anoraks-and-jackets-without-boiler-mc-100/index.html"
-  },
-  "/laundry/product/297/form-finisher-for-both-washed-and-dry-cleaned-shirts-anoraks-and-jackets-without-boiler-mc-100/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-cPzn5p6o8HqT2E8KfNAI1SeiQVM\"",
-    "mtime": "2024-12-16T10:03:10.475Z",
-    "size": 69,
-    "path": "../public/laundry/product/297/form-finisher-for-both-washed-and-dry-cleaned-shirts-anoraks-and-jackets-without-boiler-mc-100/_payload.json"
-  },
-  "/laundry/product/296/utility-form-finisher-with-and-without-boiler-magestic/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1330d-Yti7Y8PsqdH4oI4lG0axFwmEPzs\"",
-    "mtime": "2024-12-16T10:02:54.925Z",
-    "size": 78605,
-    "path": "../public/laundry/product/296/utility-form-finisher-with-and-without-boiler-magestic/index.html"
-  },
-  "/laundry/product/296/utility-form-finisher-with-and-without-boiler-magestic/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-sJdoMQZEje0q8H+VTt4OhwDKJA8\"",
-    "mtime": "2024-12-16T10:03:10.459Z",
-    "size": 69,
-    "path": "../public/laundry/product/296/utility-form-finisher-with-and-without-boiler-magestic/_payload.json"
-  },
-  "/laundry/product/299/1600-roller-ironer-flatwork-finisher-lsr3316/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-i2RHri5RhroHvdEs+GfsEw4yOvc\"",
-    "mtime": "2024-12-16T10:02:54.519Z",
-    "size": 78555,
-    "path": "../public/laundry/product/299/1600-roller-ironer-flatwork-finisher-lsr3316/index.html"
-  },
-  "/laundry/product/299/1600-roller-ironer-flatwork-finisher-lsr3316/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-zdv5ECp/49DCRM9n2bOcVBo5aCw\"",
-    "mtime": "2024-12-16T10:03:10.349Z",
-    "size": 69,
-    "path": "../public/laundry/product/299/1600-roller-ironer-flatwork-finisher-lsr3316/_payload.json"
-  },
-  "/laundry/product/298/1400-roller-ironer-flatwork-finisher-i25-140/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-Co/HSMsdzyZyY7rnnjbDaefaMCA\"",
-    "mtime": "2024-12-16T10:02:54.451Z",
-    "size": 78555,
-    "path": "../public/laundry/product/298/1400-roller-ironer-flatwork-finisher-i25-140/index.html"
-  },
-  "/laundry/product/298/1400-roller-ironer-flatwork-finisher-i25-140/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-0Jm92DjKOyQ0P0w1lJzIavrvKJE\"",
-    "mtime": "2024-12-16T10:03:10.319Z",
-    "size": 69,
-    "path": "../public/laundry/product/298/1400-roller-ironer-flatwork-finisher-i25-140/_payload.json"
-  },
-  "/laundry/product/300/2100-lsr3320-roller-ironer-flatwork-finisher-lsr3320/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13303-s3qDjh3sskR+V6N1+MSsQ9VeE9E\"",
-    "mtime": "2024-12-16T10:02:54.555Z",
-    "size": 78595,
-    "path": "../public/laundry/product/300/2100-lsr3320-roller-ironer-flatwork-finisher-lsr3320/index.html"
-  },
-  "/laundry/product/300/2100-lsr3320-roller-ironer-flatwork-finisher-lsr3320/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hfXUQCpU1tdxDML4no34RbfK44o\"",
-    "mtime": "2024-12-16T10:03:10.371Z",
-    "size": 69,
-    "path": "../public/laundry/product/300/2100-lsr3320-roller-ironer-flatwork-finisher-lsr3320/_payload.json"
-  },
-  "/laundry/product/301/2000-roller-ironer-flatwork-finisher-i30-200/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132db-24bdvd9DuWIuEWZsJUvHWD7EahM\"",
-    "mtime": "2024-12-16T10:02:54.492Z",
-    "size": 78555,
-    "path": "../public/laundry/product/301/2000-roller-ironer-flatwork-finisher-i30-200/index.html"
-  },
-  "/laundry/product/301/2000-roller-ironer-flatwork-finisher-i30-200/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-8Ub6iM3PZ40vBzlckg3+JEcnt4I\"",
-    "mtime": "2024-12-16T10:03:10.332Z",
-    "size": 69,
-    "path": "../public/laundry/product/301/2000-roller-ironer-flatwork-finisher-i30-200/_payload.json"
-  },
-  "/laundry/product/302/50-2600-flatwork-ironer-ps-50-260/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-hNEft8XumIEQWviChLetwC28SSw\"",
-    "mtime": "2024-12-16T10:02:54.579Z",
-    "size": 78500,
-    "path": "../public/laundry/product/302/50-2600-flatwork-ironer-ps-50-260/index.html"
-  },
-  "/laundry/product/302/50-2600-flatwork-ironer-ps-50-260/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ngI6UX3XkqxHP6l4/LpXTjpAUFY\"",
-    "mtime": "2024-12-16T10:03:10.371Z",
-    "size": 69,
-    "path": "../public/laundry/product/302/50-2600-flatwork-ironer-ps-50-260/_payload.json"
-  },
-  "/laundry/product/303/50-3300-flatwork-ironer-ps-50-330/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-m3y8aiG8K038BqcLHoi8bvAqhwg\"",
-    "mtime": "2024-12-16T10:02:54.604Z",
-    "size": 78500,
-    "path": "../public/laundry/product/303/50-3300-flatwork-ironer-ps-50-330/index.html"
-  },
-  "/laundry/product/303/50-3300-flatwork-ironer-ps-50-330/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-2UjSiTwl5f1idThoAaAzAKttmbA\"",
-    "mtime": "2024-12-16T10:03:10.384Z",
-    "size": 69,
-    "path": "../public/laundry/product/303/50-3300-flatwork-ironer-ps-50-330/_payload.json"
-  },
-  "/laundry/product/304/65-3300-flatwork-ironer-ps-65-330/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-fUiymB9yqEuGjGPCQ4zhGSpdry4\"",
-    "mtime": "2024-12-16T10:02:54.614Z",
-    "size": 78500,
-    "path": "../public/laundry/product/304/65-3300-flatwork-ironer-ps-65-330/index.html"
-  },
-  "/laundry/product/304/65-3300-flatwork-ironer-ps-65-330/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-rQgUrcTW63EH/Cf+sciB5bJSyqs\"",
-    "mtime": "2024-12-16T10:03:10.384Z",
-    "size": 69,
-    "path": "../public/laundry/product/304/65-3300-flatwork-ironer-ps-65-330/_payload.json"
-  },
-  "/laundry/product/305/wet-linen-trolley-crh-20-40-60/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-9OLpW3hj5hs3Yelx8l5gQSv6jf4\"",
-    "mtime": "2024-12-16T10:02:55.025Z",
-    "size": 78485,
-    "path": "../public/laundry/product/305/wet-linen-trolley-crh-20-40-60/index.html"
-  },
-  "/laundry/product/305/wet-linen-trolley-crh-20-40-60/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-UAhIB3cqkOzkzdT67EiWs3T2Vao\"",
-    "mtime": "2024-12-16T10:03:10.497Z",
-    "size": 69,
-    "path": "../public/laundry/product/305/wet-linen-trolley-crh-20-40-60/_payload.json"
-  },
-  "/laundry/product/306/dry-linen-trolley-crs-10-20-35-40/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a4-9rNYUxG0Zd5jwg0f+poeCz5siDk\"",
-    "mtime": "2024-12-16T10:02:55.045Z",
-    "size": 78500,
-    "path": "../public/laundry/product/306/dry-linen-trolley-crs-10-20-35-40/index.html"
-  },
-  "/laundry/product/306/dry-linen-trolley-crs-10-20-35-40/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-5R3f+neWHVMPkjIWPbv02g6d8so\"",
-    "mtime": "2024-12-16T10:03:10.499Z",
-    "size": 69,
-    "path": "../public/laundry/product/306/dry-linen-trolley-crs-10-20-35-40/_payload.json"
-  },
-  "/laundry/product/308/taski-aero-8-plus-uk-7524257/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-0Q2k3CsB4WQrghLxT6tq8yYqpjE\"",
-    "mtime": "2024-12-16T10:02:55.467Z",
-    "size": 78475,
-    "path": "../public/laundry/product/308/taski-aero-8-plus-uk-7524257/index.html"
-  },
-  "/laundry/product/308/taski-aero-8-plus-uk-7524257/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-BCFi7W7tGhqU5WlrsivkduapgVA\"",
-    "mtime": "2024-12-16T10:03:10.559Z",
-    "size": 69,
-    "path": "../public/laundry/product/308/taski-aero-8-plus-uk-7524257/_payload.json"
-  },
-  "/laundry/product/307/taski-aero-8-uk-7524255/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13272-GmFPYhJKROTiu80I5x3EsLQwphQ\"",
-    "mtime": "2024-12-16T10:02:55.445Z",
-    "size": 78450,
-    "path": "../public/laundry/product/307/taski-aero-8-uk-7524255/index.html"
-  },
-  "/laundry/product/307/taski-aero-8-uk-7524255/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-QMWjjS5ln7WAQ4+MBC+Cq3wBlJE\"",
-    "mtime": "2024-12-16T10:03:10.555Z",
-    "size": 69,
-    "path": "../public/laundry/product/307/taski-aero-8-uk-7524255/_payload.json"
-  },
-  "/laundry/product/309/taski-go-uk-7524187/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1325e-jFNasxqkoEnC2aVtNGP3spstkIY\"",
-    "mtime": "2024-12-16T10:02:55.425Z",
-    "size": 78430,
-    "path": "../public/laundry/product/309/taski-go-uk-7524187/index.html"
-  },
-  "/laundry/product/309/taski-go-uk-7524187/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-tGxvg9d4b0uQpzAW9EzMcQSwjuc\"",
-    "mtime": "2024-12-16T10:03:10.555Z",
-    "size": 69,
-    "path": "../public/laundry/product/309/taski-go-uk-7524187/_payload.json"
-  },
-  "/laundry/product/310/taski-aero-15-uk-7524256/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13277-6SuunHQP/BqC6wEHgdvkAlwCPmo\"",
-    "mtime": "2024-12-16T10:02:55.493Z",
-    "size": 78455,
-    "path": "../public/laundry/product/310/taski-aero-15-uk-7524256/index.html"
-  },
-  "/laundry/product/310/taski-aero-15-uk-7524256/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Aat8OqVXnvLUqfHl5DO4fIQl8yM\"",
-    "mtime": "2024-12-16T10:03:10.574Z",
-    "size": 69,
-    "path": "../public/laundry/product/310/taski-aero-15-uk-7524256/_payload.json"
-  },
-  "/laundry/product/311/taski-aero-15-plus-uk-7524258/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-c4AsWVE4SThbZN4HDBooaU5J77A\"",
-    "mtime": "2024-12-16T10:02:55.525Z",
-    "size": 78480,
-    "path": "../public/laundry/product/311/taski-aero-15-plus-uk-7524258/index.html"
-  },
-  "/laundry/product/311/taski-aero-15-plus-uk-7524258/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+YVKCDhiFhRaFhn+N3LAf2NQ9Lg\"",
-    "mtime": "2024-12-16T10:03:10.574Z",
-    "size": 69,
-    "path": "../public/laundry/product/311/taski-aero-15-plus-uk-7524258/_payload.json"
-  },
-  "/laundry/product/313/taski-aero-bp-b-li-ion-7524498/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-+xL3QR1X5NMzoZIHCvBd/i/tX44\"",
-    "mtime": "2024-12-16T10:02:55.641Z",
-    "size": 78485,
-    "path": "../public/laundry/product/313/taski-aero-bp-b-li-ion-7524498/index.html"
-  },
-  "/laundry/product/313/taski-aero-bp-b-li-ion-7524498/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xns+lIFqO1BVGpInLhIMIDTFvCQ\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/313/taski-aero-bp-b-li-ion-7524498/_payload.json"
-  },
-  "/laundry/product/312/taski-aero-bp-e-uk-7524495/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13281-vQiITjAqz9ox9PXavDRZuz30UL0\"",
-    "mtime": "2024-12-16T10:02:55.695Z",
-    "size": 78465,
-    "path": "../public/laundry/product/312/taski-aero-bp-e-uk-7524495/index.html"
-  },
-  "/laundry/product/312/taski-aero-bp-e-uk-7524495/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-hQ51wwuyGWO1aMq4VcOfDrqvWmw\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/312/taski-aero-bp-e-uk-7524495/_payload.json"
-  },
-  "/laundry/product/315/taski-vacumat-22-uk-7517929/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13286-6WwKtYQBCIThRqy4aUJeHdwkCb0\"",
-    "mtime": "2024-12-16T10:02:55.560Z",
-    "size": 78470,
-    "path": "../public/laundry/product/315/taski-vacumat-22-uk-7517929/index.html"
-  },
-  "/laundry/product/315/taski-vacumat-22-uk-7517929/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-iExrrnpjttOrqmhzljhOvH8z5QE\"",
-    "mtime": "2024-12-16T10:03:10.580Z",
-    "size": 69,
-    "path": "../public/laundry/product/315/taski-vacumat-22-uk-7517929/_payload.json"
-  },
-  "/laundry/product/314/taski-aero-up-b-li-ion-7524776/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13295-EARq4PeoXyz5z4ZtLAX/1WuTB18\"",
-    "mtime": "2024-12-16T10:02:55.641Z",
-    "size": 78485,
-    "path": "../public/laundry/product/314/taski-aero-up-b-li-ion-7524776/index.html"
-  },
-  "/laundry/product/314/taski-aero-up-b-li-ion-7524776/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-3WgA7WuxyIi4vfYFNqvWJSvlGeY\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/314/taski-aero-up-b-li-ion-7524776/_payload.json"
-  },
-  "/laundry/product/316/taski-vacumat-22t-uk-8004570/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-1wjGNrpke18u2qdO7Y2GzLuZtGY\"",
-    "mtime": "2024-12-16T10:02:55.580Z",
-    "size": 78475,
-    "path": "../public/laundry/product/316/taski-vacumat-22t-uk-8004570/index.html"
-  },
-  "/laundry/product/316/taski-vacumat-22t-uk-8004570/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-9qgFtCyIZ6X8YXsBBmHCSXoAScQ\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/316/taski-vacumat-22t-uk-8004570/_payload.json"
-  },
-  "/laundry/product/317/taski-vacumat-44t-uk-7518178/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-DDxNy8C41yZAwqVtY3FWNDPSheI\"",
-    "mtime": "2024-12-16T10:02:55.615Z",
-    "size": 78475,
-    "path": "../public/laundry/product/317/taski-vacumat-44t-uk-7518178/index.html"
-  },
-  "/laundry/product/317/taski-vacumat-44t-uk-7518178/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-j/oMx4TzMRBK1iXx0tQPrCnFhQg\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/317/taski-vacumat-44t-uk-7518178/_payload.json"
-  },
-  "/laundry/product/318/taski-procarpet-30-uk-7522310/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-eIpjLdzfVPWWN2lCcysrpHCm3EQ\"",
-    "mtime": "2024-12-16T10:02:55.716Z",
-    "size": 78480,
-    "path": "../public/laundry/product/318/taski-procarpet-30-uk-7522310/index.html"
-  },
-  "/laundry/product/318/taski-procarpet-30-uk-7522310/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-bWmMoJWRCfXsVP9beF6+6UYBX48\"",
-    "mtime": "2024-12-16T10:03:10.590Z",
-    "size": 69,
-    "path": "../public/laundry/product/318/taski-procarpet-30-uk-7522310/_payload.json"
-  },
-  "/laundry/product/319/taski-procarpet-45-uk-7522028/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-7yao3RQbqtWFVYotnyT26/zdp/c\"",
-    "mtime": "2024-12-16T10:02:55.701Z",
-    "size": 78480,
-    "path": "../public/laundry/product/319/taski-procarpet-45-uk-7522028/index.html"
-  },
-  "/laundry/product/319/taski-procarpet-45-uk-7522028/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-TLW0IfKwlZZjPLJJuJKGAxU6mC4\"",
-    "mtime": "2024-12-16T10:03:10.589Z",
-    "size": 69,
-    "path": "../public/laundry/product/319/taski-procarpet-45-uk-7522028/_payload.json"
-  },
-  "/laundry/product/320/taski-ergodisc-hd-uk-7521583/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1328b-rV2eCBfmglWiGndytg0HS0I9Jfg\"",
-    "mtime": "2024-12-16T10:02:55.839Z",
-    "size": 78475,
-    "path": "../public/laundry/product/320/taski-ergodisc-hd-uk-7521583/index.html"
-  },
-  "/laundry/product/320/taski-ergodisc-hd-uk-7521583/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-MwM8cBh6HfZeFeMCyv+JvLqajoE\"",
-    "mtime": "2024-12-16T10:03:10.618Z",
-    "size": 69,
-    "path": "../public/laundry/product/320/taski-ergodisc-hd-uk-7521583/_payload.json"
-  },
-  "/laundry/product/321/taski-ergodisc-165-uk-8003820/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-/41UqO4rTwga3sggPARUTISSmOo\"",
-    "mtime": "2024-12-16T10:02:55.745Z",
-    "size": 78480,
-    "path": "../public/laundry/product/321/taski-ergodisc-165-uk-8003820/index.html"
-  },
-  "/laundry/product/321/taski-ergodisc-165-uk-8003820/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-xCRU3udHKGlQaopYe5LlrhMIVKs\"",
-    "mtime": "2024-12-16T10:03:10.600Z",
-    "size": 69,
-    "path": "../public/laundry/product/321/taski-ergodisc-165-uk-8003820/_payload.json"
-  },
-  "/laundry/product/322/taski-ergodisc-200-uk-8003780/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-Q3MkjJTnTdrr11VbIdzXNkvzC0s\"",
-    "mtime": "2024-12-16T10:02:55.764Z",
-    "size": 78480,
-    "path": "../public/laundry/product/322/taski-ergodisc-200-uk-8003780/index.html"
-  },
-  "/laundry/product/322/taski-ergodisc-200-uk-8003780/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-1fJtQlDQWhdSQRcnGyfvz5dWkVQ\"",
-    "mtime": "2024-12-16T10:03:10.600Z",
-    "size": 69,
-    "path": "../public/laundry/product/322/taski-ergodisc-200-uk-8003780/_payload.json"
-  },
-  "/laundry/product/323/taski-ergodisc-duo-uk-8003990/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-B7i6ktNBOiBYMm2wbLFJwT5xlyE\"",
-    "mtime": "2024-12-16T10:02:55.795Z",
-    "size": 78480,
-    "path": "../public/laundry/product/323/taski-ergodisc-duo-uk-8003990/index.html"
-  },
-  "/laundry/product/323/taski-ergodisc-duo-uk-8003990/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Jx+QEoj3f9Kcjc59z3C4UpaNP4I\"",
-    "mtime": "2024-12-16T10:03:10.618Z",
-    "size": 69,
-    "path": "../public/laundry/product/323/taski-ergodisc-duo-uk-8003990/_payload.json"
-  },
-  "/laundry/product/324/taski-ergodisc-1200-euro-8004660/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1329f-tTe628o+rG6KN20vXDkxKEHqg94\"",
-    "mtime": "2024-12-16T10:02:55.782Z",
-    "size": 78495,
-    "path": "../public/laundry/product/324/taski-ergodisc-1200-euro-8004660/index.html"
-  },
-  "/laundry/product/324/taski-ergodisc-1200-euro-8004660/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ehTujWZUZomnTEo8VxxGEHJ8p1Y\"",
-    "mtime": "2024-12-16T10:03:10.604Z",
-    "size": 69,
-    "path": "../public/laundry/product/324/taski-ergodisc-1200-euro-8004660/_payload.json"
-  },
-  "/laundry/product/325/taski-swingo-150-e-uk-7516211/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-vGx0yUrNsyhV+9PGVvWOS+ruLBU\"",
-    "mtime": "2024-12-16T10:02:55.101Z",
-    "size": 78480,
-    "path": "../public/laundry/product/325/taski-swingo-150-e-uk-7516211/index.html"
-  },
-  "/laundry/product/325/taski-swingo-150-e-uk-7516211/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AtTvbgedP4wJ4cjyEOI/ucmllEI\"",
-    "mtime": "2024-12-16T10:03:10.505Z",
-    "size": 69,
-    "path": "../public/laundry/product/325/taski-swingo-150-e-uk-7516211/_payload.json"
-  },
-  "/laundry/product/326/taski-swingo-150-b-li-ion-incl-taski-li-ion-battery-36v-6ah-7524165/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1334e-XVpWk3uiWozPY536D/MTnXyzvh8\"",
-    "mtime": "2024-12-16T10:02:55.075Z",
-    "size": 78670,
-    "path": "../public/laundry/product/326/taski-swingo-150-b-li-ion-incl-taski-li-ion-battery-36v-6ah-7524165/index.html"
-  },
-  "/laundry/product/326/taski-swingo-150-b-li-ion-incl-taski-li-ion-battery-36v-6ah-7524165/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AzCV3FqxzYZPneUijOpW89nkKas\"",
-    "mtime": "2024-12-16T10:03:10.501Z",
-    "size": 69,
-    "path": "../public/laundry/product/326/taski-swingo-150-b-li-ion-incl-taski-li-ion-battery-36v-6ah-7524165/_payload.json"
-  },
-  "/laundry/product/327/taski-swingo-350-e-uk-7518529/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-4LbAE7Po/QtVviWqLazI+OmZshE\"",
-    "mtime": "2024-12-16T10:02:55.401Z",
-    "size": 78480,
-    "path": "../public/laundry/product/327/taski-swingo-350-e-uk-7518529/index.html"
-  },
-  "/laundry/product/327/taski-swingo-350-e-uk-7518529/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-YvFuZxCiP+kNtfJPM96aTn2fuv0\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 69,
-    "path": "../public/laundry/product/327/taski-swingo-350-e-uk-7518529/_payload.json"
-  },
-  "/laundry/product/328/taski-swingo-350-b-bms-uk-incl-2-battery-12v-25ah-7516861/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1331c-wn6cUS2CtglijTVhQrjcSBhQxYo\"",
-    "mtime": "2024-12-16T10:02:55.375Z",
-    "size": 78620,
-    "path": "../public/laundry/product/328/taski-swingo-350-b-bms-uk-incl-2-battery-12v-25ah-7516861/index.html"
-  },
-  "/laundry/product/328/taski-swingo-350-b-bms-uk-incl-2-battery-12v-25ah-7516861/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ufKUBtv2m5XSSF1CwtsWhyZO8sk\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 69,
-    "path": "../public/laundry/product/328/taski-swingo-350-b-bms-uk-incl-2-battery-12v-25ah-7516861/_payload.json"
-  },
-  "/laundry/product/329/taski-swingo-455-b-bms-uk-incl-2-battery-traction-12v-50ah-5-7518368/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-xwYKZryW6Ayb4K6oGPkj6vTA5dc\"",
-    "mtime": "2024-12-16T10:02:55.357Z",
-    "size": 78675,
-    "path": "../public/laundry/product/329/taski-swingo-455-b-bms-uk-incl-2-battery-traction-12v-50ah-5-7518368/index.html"
-  },
-  "/laundry/product/329/taski-swingo-455-b-bms-uk-incl-2-battery-traction-12v-50ah-5-7518368/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-X09DNVuFlWUr31t+gBJIfI2hd1I\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 69,
-    "path": "../public/laundry/product/329/taski-swingo-455-b-bms-uk-incl-2-battery-traction-12v-50ah-5-7518368/_payload.json"
-  },
-  "/laundry/product/330/taski-swingo-455-e-uk-7518535/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-qfgCL/7ZPqJ84SU34JzLyApWZOQ\"",
-    "mtime": "2024-12-16T10:02:55.326Z",
-    "size": 78480,
-    "path": "../public/laundry/product/330/taski-swingo-455-e-uk-7518535/index.html"
-  },
-  "/laundry/product/330/taski-swingo-455-e-uk-7518535/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-yzeaDIp8K7tXMb6WzzvXFl4hXt4\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 69,
-    "path": "../public/laundry/product/330/taski-swingo-455-e-uk-7518535/_payload.json"
-  },
-  "/laundry/product/332/taski-swingo-755-e-uk-7516839/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13290-gVoVx3v2pDHHyW9XTAiHTMR6cgI\"",
-    "mtime": "2024-12-16T10:02:55.303Z",
-    "size": 78480,
-    "path": "../public/laundry/product/332/taski-swingo-755-e-uk-7516839/index.html"
-  },
-  "/laundry/product/332/taski-swingo-755-e-uk-7516839/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-+K1T3fIm7FO2fs8POndXR9UC3Vg\"",
-    "mtime": "2024-12-16T10:03:10.545Z",
-    "size": 69,
-    "path": "../public/laundry/product/332/taski-swingo-755-e-uk-7516839/_payload.json"
-  },
-  "/laundry/product/331/taski-swingo-755-b-economy-bms-uk-incl-2-battery-traction-block-12v-76ah-5--2-battery-traction-12v-50ah-5-7516827/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13434-QqhAyo6MSP7JrP+pwg5uzE1K23g\"",
-    "mtime": "2024-12-16T10:02:55.326Z",
-    "size": 78900,
-    "path": "../public/laundry/product/331/taski-swingo-755-b-economy-bms-uk-incl-2-battery-traction-block-12v-76ah-5--2-battery-traction-12v-50ah-5-7516827/index.html"
-  },
-  "/laundry/product/331/taski-swingo-755-b-economy-bms-uk-incl-2-battery-traction-block-12v-76ah-5--2-battery-traction-12v-50ah-5-7516827/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-z83fu7BFRaG2PyQGzOH4A6KtrZ8\"",
-    "mtime": "2024-12-16T10:03:10.546Z",
-    "size": 69,
-    "path": "../public/laundry/product/331/taski-swingo-755-b-economy-bms-uk-incl-2-battery-traction-block-12v-76ah-5--2-battery-traction-12v-50ah-5-7516827/_payload.json"
-  },
-  "/laundry/product/333/taski-swingo-1650-bms-uk-incl-4-battery-traction-6v-180-ah-5-7515885/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-hHhuoUJhWMwHzMUSaUlYQdmSbs4\"",
-    "mtime": "2024-12-16T10:02:55.259Z",
-    "size": 78675,
-    "path": "../public/laundry/product/333/taski-swingo-1650-bms-uk-incl-4-battery-traction-6v-180-ah-5-7515885/index.html"
-  },
-  "/laundry/product/333/taski-swingo-1650-bms-uk-incl-4-battery-traction-6v-180-ah-5-7515885/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-V0Qr+pP8tAaf+aY6l8sXPCUQRm0\"",
-    "mtime": "2024-12-16T10:03:10.545Z",
-    "size": 69,
-    "path": "../public/laundry/product/333/taski-swingo-1650-bms-uk-incl-4-battery-traction-6v-180-ah-5-7515885/_payload.json"
-  },
-  "/laundry/product/334/taski-swingo-xp-r-incl-4-battery-traction-6v-180-ah-5-7522818/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-FE75IjGLzHLu636C9+xQl/2xtlA\"",
-    "mtime": "2024-12-16T10:02:55.231Z",
-    "size": 78640,
-    "path": "../public/laundry/product/334/taski-swingo-xp-r-incl-4-battery-traction-6v-180-ah-5-7522818/index.html"
-  },
-  "/laundry/product/334/taski-swingo-xp-r-incl-4-battery-traction-6v-180-ah-5-7522818/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-EF0eivb3vdOy2Rz59CnS4BpopxU\"",
-    "mtime": "2024-12-16T10:03:10.531Z",
-    "size": 69,
-    "path": "../public/laundry/product/334/taski-swingo-xp-r-incl-4-battery-traction-6v-180-ah-5-7522818/_payload.json"
-  },
-  "/laundry/product/335/taski-swingo-xp-m-incl-4-battery-traction-6v-180-ah-5-7522819/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13330-DZggMboOxlxu6bkMy+9ngn79UUg\"",
-    "mtime": "2024-12-16T10:02:55.231Z",
-    "size": 78640,
-    "path": "../public/laundry/product/335/taski-swingo-xp-m-incl-4-battery-traction-6v-180-ah-5-7522819/index.html"
-  },
-  "/laundry/product/335/taski-swingo-xp-m-incl-4-battery-traction-6v-180-ah-5-7522819/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-uNmR88/sDGU7vVFBUuV6c9xPfUI\"",
-    "mtime": "2024-12-16T10:03:10.531Z",
-    "size": 69,
-    "path": "../public/laundry/product/335/taski-swingo-xp-m-incl-4-battery-traction-6v-180-ah-5-7522819/_payload.json"
-  },
-  "/laundry/product/336/taski-swingo-2100icro-bms-uk-incl-battery-traction-6v-180-ah-5-7523422/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1335d-t4fHwAlFmLzRNcXxleftF1DA90I\"",
-    "mtime": "2024-12-16T10:02:55.125Z",
-    "size": 78685,
-    "path": "../public/laundry/product/336/taski-swingo-2100icro-bms-uk-incl-battery-traction-6v-180-ah-5-7523422/index.html"
-  },
-  "/laundry/product/336/taski-swingo-2100icro-bms-uk-incl-battery-traction-6v-180-ah-5-7523422/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-ab+R6PKtuFNDpTtMtzhRKCGddGI\"",
-    "mtime": "2024-12-16T10:03:10.512Z",
-    "size": 69,
-    "path": "../public/laundry/product/336/taski-swingo-2100icro-bms-uk-incl-battery-traction-6v-180-ah-5-7523422/_payload.json"
-  },
-  "/laundry/product/337/taski-swingo-2500-incl-1-battery-set-4x6v-240ah-wet-8004740/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13326-UmPue1RSqO7+8WQy2E1fL6VjiX0\"",
-    "mtime": "2024-12-16T10:02:55.146Z",
-    "size": 78630,
-    "path": "../public/laundry/product/337/taski-swingo-2500-incl-1-battery-set-4x6v-240ah-wet-8004740/index.html"
-  },
-  "/laundry/product/337/taski-swingo-2500-incl-1-battery-set-4x6v-240ah-wet-8004740/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-RqcJAarwb6roJHoeDx64TTgiNgI\"",
-    "mtime": "2024-12-16T10:03:10.512Z",
-    "size": 69,
-    "path": "../public/laundry/product/337/taski-swingo-2500-incl-1-battery-set-4x6v-240ah-wet-8004740/_payload.json"
-  },
-  "/laundry/product/338/taski-swingo-4000-incl-4-battery-traction-tray-24v-330ah-7518096/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"1333f-ZiJ5bHgcEktPmzfwu8byjKZ3ZKY\"",
-    "mtime": "2024-12-16T10:02:55.171Z",
-    "size": 78655,
-    "path": "../public/laundry/product/338/taski-swingo-4000-incl-4-battery-traction-tray-24v-330ah-7518096/index.html"
-  },
-  "/laundry/product/338/taski-swingo-4000-incl-4-battery-traction-tray-24v-330ah-7518096/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-alYKhTYFS/xL5qZvdV/j9M235oU\"",
-    "mtime": "2024-12-16T10:03:10.512Z",
-    "size": 69,
-    "path": "../public/laundry/product/338/taski-swingo-4000-incl-4-battery-traction-tray-24v-330ah-7518096/_payload.json"
-  },
-  "/laundry/product/339/taski-swingo-5000--incl-of-4-battery-traction-tray-24v-330ah-7518373/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"13353-8OfEAHymkN03xfCQr/pcNv1kyz0\"",
-    "mtime": "2024-12-16T10:02:55.194Z",
-    "size": 78675,
-    "path": "../public/laundry/product/339/taski-swingo-5000--incl-of-4-battery-traction-tray-24v-330ah-7518373/index.html"
-  },
-  "/laundry/product/339/taski-swingo-5000--incl-of-4-battery-traction-tray-24v-330ah-7518373/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-k95CjxUWgGvIoIfirbbIZrLoNRw\"",
-    "mtime": "2024-12-16T10:03:10.512Z",
-    "size": 69,
-    "path": "../public/laundry/product/339/taski-swingo-5000--incl-of-4-battery-traction-tray-24v-330ah-7518373/_payload.json"
-  },
-  "/laundry/product/340/drycleaning-machine-xl-xp-8000-series/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132b8-XeQvri6k134UMQ6xVEfR76FHhwU\"",
-    "mtime": "2024-12-16T10:02:55.895Z",
-    "size": 78520,
-    "path": "../public/laundry/product/340/drycleaning-machine-xl-xp-8000-series/index.html"
-  },
-  "/laundry/product/340/drycleaning-machine-xl-xp-8000-series/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-Jfbr06eDGEG+/28oUiWjC6k6TmM\"",
-    "mtime": "2024-12-16T10:03:10.618Z",
-    "size": 69,
-    "path": "../public/laundry/product/340/drycleaning-machine-xl-xp-8000-series/_payload.json"
-  },
-  "/laundry/product/341/wet-cleaning-softwash-extreme-care/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132a9-aGQ+sjDOT85jPp38pLM8Iq1f8TA\"",
-    "mtime": "2024-12-16T10:02:55.908Z",
-    "size": 78505,
-    "path": "../public/laundry/product/341/wet-cleaning-softwash-extreme-care/index.html"
-  },
-  "/laundry/product/341/wet-cleaning-softwash-extreme-care/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-59iA0mE0onK5/yBQhhTgPDsoTuQ\"",
-    "mtime": "2024-12-16T10:03:10.619Z",
-    "size": 69,
-    "path": "../public/laundry/product/341/wet-cleaning-softwash-extreme-care/_payload.json"
-  },
-  "/laundry/product/342/normal-spin-washer-28kg-capacity-ln-28-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132d1-a06xMnJXylBac5KuBrsj9ztlpIU\"",
-    "mtime": "2024-12-16T10:02:58.413Z",
-    "size": 78545,
-    "path": "../public/laundry/product/342/normal-spin-washer-28kg-capacity-ln-28-tp2/index.html"
-  },
-  "/laundry/product/342/normal-spin-washer-28kg-capacity-ln-28-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.223Z",
-    "size": 69,
-    "path": "../public/laundry/product/342/normal-spin-washer-28kg-capacity-ln-28-tp2/_payload.json"
-  },
-  "/laundry/product/343/high-spin-washer-28kg-capacity-la-28-tp2/index.html": {
-    "type": "text/html;charset=utf-8",
-    "etag": "\"132c7-JS+YVpH0Bz67f0QdqKhLwJnH0v4\"",
-    "mtime": "2024-12-16T10:02:59.459Z",
-    "size": 78535,
-    "path": "../public/laundry/product/343/high-spin-washer-28kg-capacity-la-28-tp2/index.html"
-  },
-  "/laundry/product/343/high-spin-washer-28kg-capacity-la-28-tp2/_payload.json": {
-    "type": "application/json;charset=utf-8",
-    "etag": "\"45-AZOYwIQRiae3c29kNwU5UN2qJW0\"",
-    "mtime": "2024-12-16T10:03:11.435Z",
-    "size": 69,
-    "path": "../public/laundry/product/343/high-spin-washer-28kg-capacity-la-28-tp2/_payload.json"
-  },
   "/assets/landing-assets/vendor/font-awesome/css/all.min.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"d747-OgVxppWjXyOAJrk5g4bcmdmgxW0\"",
     "mtime": "2024-12-02T12:49:20.725Z",
     "size": 55111,
     "path": "../public/assets/landing-assets/vendor/font-awesome/css/all.min.css"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot": {
-    "type": "application/vnd.ms-fontobject",
-    "etag": "\"1fb7c-HNLCsRgmyh4QvAd9GLLyQle/iKQ\"",
-    "mtime": "2024-12-02T12:49:20.727Z",
-    "size": 129916,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot_": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"1fb7c-HNLCsRgmyh4QvAd9GLLyQle/iKQ\"",
-    "mtime": "2024-12-02T12:49:20.727Z",
-    "size": 129916,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot_"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"a9937-RNKEgCvoQNltJsfziIeSX6g704M\"",
-    "mtime": "2024-12-02T12:49:20.729Z",
-    "size": 694583,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.svg"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.ttf": {
-    "type": "font/ttf",
-    "etag": "\"1fa4c-T3WECWXyAguelyz5KwAZwX2eUe0\"",
-    "mtime": "2024-12-02T12:49:20.730Z",
-    "size": 129612,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.ttf"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff": {
-    "type": "font/woff",
-    "etag": "\"15688-4Ea4t0ttoe46GRAHJhDeX8cXWZ8\"",
-    "mtime": "2024-12-02T12:49:20.731Z",
-    "size": 87688,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff2": {
-    "type": "font/woff2",
-    "etag": "\"12410-f2xoKt4gTmQa7Y9HEGTFa27dwmM\"",
-    "mtime": "2024-12-02T12:49:20.732Z",
-    "size": 74768,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff2"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot": {
-    "type": "application/vnd.ms-fontobject",
-    "etag": "\"8654-ZiaEfPZu5H6E2UlEtNAd2y4zZss\"",
-    "mtime": "2024-12-02T12:49:20.733Z",
-    "size": 34388,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot_": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"8654-ZiaEfPZu5H6E2UlEtNAd2y4zZss\"",
-    "mtime": "2024-12-02T12:49:20.733Z",
-    "size": 34388,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot_"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"23443-xRTzx5A8x0Y42GvNY17AD9VSBc4\"",
-    "mtime": "2024-12-02T12:49:20.734Z",
-    "size": 144451,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.svg"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.ttf": {
-    "type": "font/ttf",
-    "etag": "\"852c-iKVFNSJH37uQKB3amBEKja7I2F4\"",
-    "mtime": "2024-12-02T12:49:20.735Z",
-    "size": 34092,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.ttf"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff": {
-    "type": "font/woff",
-    "etag": "\"41a4-sLRDLGVxZiZQ3Dy+Y/1e8euSC3M\"",
-    "mtime": "2024-12-02T12:49:20.736Z",
-    "size": 16804,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff2": {
-    "type": "font/woff2",
-    "etag": "\"34f0-hYOk8N0S4VpIszlVkzB6hNlxzDM\"",
-    "mtime": "2024-12-02T12:49:20.736Z",
-    "size": 13552,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff2"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot": {
-    "type": "application/vnd.ms-fontobject",
-    "etag": "\"2d968-lL5Gx1ShQV7SIfeBNuRUSQGNoO0\"",
-    "mtime": "2024-12-02T12:49:20.737Z",
-    "size": 186728,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot_": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"2d968-lL5Gx1ShQV7SIfeBNuRUSQGNoO0\"",
-    "mtime": "2024-12-02T12:49:20.738Z",
-    "size": 186728,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot_"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.svg": {
-    "type": "image/svg+xml",
-    "etag": "\"c771e-k08CHG+jqgMQ6e7qJdeKEyogSlE\"",
-    "mtime": "2024-12-02T12:49:20.739Z",
-    "size": 816926,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.svg"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.ttf": {
-    "type": "font/ttf",
-    "etag": "\"2d84c-dTiQVf8W9Q4TxGuV2jxZrwkfNME\"",
-    "mtime": "2024-12-02T12:49:20.740Z",
-    "size": 186444,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.ttf"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff": {
-    "type": "font/woff",
-    "etag": "\"17800-lk1bFpUK3s8U5jKt+ScHcgMey50\"",
-    "mtime": "2024-12-02T12:49:20.741Z",
-    "size": 96256,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff"
-  },
-  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff2": {
-    "type": "font/woff2",
-    "etag": "\"12210-prAD71BuktBc3nOt9nSH1/1+xt8\"",
-    "mtime": "2024-12-02T12:49:20.801Z",
-    "size": 74256,
-    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff2"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/css/font-icons.css": {
-    "type": "text/css; charset=utf-8",
-    "etag": "\"5138-98yekXkOnu1l9X+tRgu5t3vk0kI\"",
-    "mtime": "2024-12-02T12:49:20.803Z",
-    "size": 20792,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/css/font-icons.css"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.eot_74273691": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"3e800-2+ga2/86zfgEbUiOgXTfokCYUg4\"",
-    "mtime": "2024-12-02T12:49:20.804Z",
-    "size": 256000,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.eot_74273691"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.svg_74273691": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"51712-f1j3M1i+OGgtDxjUrkhax+1GCGk\"",
-    "mtime": "2024-12-02T12:49:20.805Z",
-    "size": 333586,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.svg_74273691"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.ttf_74273691": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"3e764-eNJP/KIsEboT1hwzgNnMhiq1JQ4\"",
-    "mtime": "2024-12-02T12:49:20.807Z",
-    "size": 255844,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.ttf_74273691"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff2_74273691": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"20f00-XlbN8mhpZeYcH/rf61KeHIWV9Ro\"",
-    "mtime": "2024-12-02T12:49:20.809Z",
-    "size": 134912,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff2_74273691"
-  },
-  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff_74273691": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"276fc-bwYQL0YIanD8XRYwoAtMrlhcbqA\"",
-    "mtime": "2024-12-02T12:49:20.810Z",
-    "size": 161532,
-    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff_74273691"
-  },
-  "/assets/vendor/line-awesome/line-awesome/line-awesome/.DS_Store": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"1804-PAeA5HKFTAJi72vzy7Vkfvfr+9Q\"",
-    "mtime": "2024-12-02T12:49:20.839Z",
-    "size": 6148,
-    "path": "../public/assets/vendor/line-awesome/line-awesome/line-awesome/.DS_Store"
-  },
-  "/assets/images/about-us/video/logos/.DS_Store": {
-    "type": "text/plain; charset=utf-8",
-    "etag": "\"1804-3y++sUAKzaCQmjLBz2v0kvESHgc\"",
-    "mtime": "2024-11-06T08:15:39.618Z",
-    "size": 6148,
-    "path": "../public/assets/images/about-us/video/logos/.DS_Store"
-  },
-  "/assets/images/about-us/video/logos/broaster.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"89c7-29XdKRacqB43LV2mGLfM6F22/WQ\"",
-    "mtime": "2024-11-06T08:15:39.623Z",
-    "size": 35271,
-    "path": "../public/assets/images/about-us/video/logos/broaster.jpg"
-  },
-  "/assets/images/about-us/video/logos/Dr. Coffee.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"abb4-joM5EL8h102nbJK/f8LMly09q+4\"",
-    "mtime": "2024-11-06T08:15:39.618Z",
-    "size": 43956,
-    "path": "../public/assets/images/about-us/video/logos/Dr. Coffee.jpg"
-  },
-  "/assets/images/about-us/video/logos/EGRO.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"95bf-ezHXkzbrCmU7pi+aF+lJZluYG00\"",
-    "mtime": "2024-11-06T08:15:39.619Z",
-    "size": 38335,
-    "path": "../public/assets/images/about-us/video/logos/EGRO.jpg"
-  },
-  "/assets/images/about-us/video/logos/Electrolux.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"9ecb-E4ugoxtPIg2jsTDU4NfDb3Qid/s\"",
-    "mtime": "2024-11-06T08:15:39.620Z",
-    "size": 40651,
-    "path": "../public/assets/images/about-us/video/logos/Electrolux.jpg"
-  },
-  "/assets/images/about-us/video/logos/f4e.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"d01b-GpXi9twkGy0f0NHYnl7XsJUqY4I\"",
-    "mtime": "2024-11-06T08:15:39.624Z",
-    "size": 53275,
-    "path": "../public/assets/images/about-us/video/logos/f4e.jpg"
-  },
-  "/assets/images/about-us/video/logos/FAGOR.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"8dd8-cFGyLIMmNQnQdigmSqBP+19uV60\"",
-    "mtime": "2024-11-06T08:15:39.620Z",
-    "size": 36312,
-    "path": "../public/assets/images/about-us/video/logos/FAGOR.jpg"
-  },
-  "/assets/images/about-us/video/logos/mambo_safi_.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"61bf-+0LDYikra7wUAPbVzOIBmNiWx4A\"",
-    "mtime": "2024-11-06T08:15:39.624Z",
-    "size": 25023,
-    "path": "../public/assets/images/about-us/video/logos/mambo_safi_.jpg"
-  },
-  "/assets/images/about-us/video/logos/Prisma Food.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"b880-iHAG4MMkpEsBsf8bnsQk0KZZq88\"",
-    "mtime": "2024-11-06T08:15:39.621Z",
-    "size": 47232,
-    "path": "../public/assets/images/about-us/video/logos/Prisma Food.jpg"
-  },
-  "/assets/images/about-us/video/logos/rational.png": {
-    "type": "image/png",
-    "etag": "\"44b3-EnQqjogISBs1IRyvsqollIRjpL4\"",
-    "mtime": "2024-11-06T08:15:39.624Z",
-    "size": 17587,
-    "path": "../public/assets/images/about-us/video/logos/rational.png"
-  },
-  "/assets/images/about-us/video/logos/Santos.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"9e08-WfCjub+05+X6M8YPh+mBSo+saJY\"",
-    "mtime": "2024-11-06T08:15:39.621Z",
-    "size": 40456,
-    "path": "../public/assets/images/about-us/video/logos/Santos.jpg"
-  },
-  "/assets/images/about-us/video/logos/sheffield.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"ad6d-eAeJnuKrv3k/uYe6Oojg6N4XulE\"",
-    "mtime": "2024-11-06T08:15:39.625Z",
-    "size": 44397,
-    "path": "../public/assets/images/about-us/video/logos/sheffield.jpg"
-  },
-  "/assets/images/about-us/video/logos/Skymsen.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"9b87-4/eFilU402f+XWmcUA1Ys+WRMxU\"",
-    "mtime": "2024-11-06T08:15:39.622Z",
-    "size": 39815,
-    "path": "../public/assets/images/about-us/video/logos/Skymsen.jpg"
-  },
-  "/assets/images/about-us/video/logos/TASKI.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"98b1-pp2WA55kYiwj7FKruSH8Zv+08K0\"",
-    "mtime": "2024-11-06T08:15:39.622Z",
-    "size": 39089,
-    "path": "../public/assets/images/about-us/video/logos/TASKI.jpg"
-  },
-  "/assets/images/about-us/video/logos/Tecnodom.jpg": {
-    "type": "image/jpeg",
-    "etag": "\"c10d-4ONqV3YOvAwsV0hlZAmT5bQdh5Y\"",
-    "mtime": "2024-11-06T08:15:39.623Z",
-    "size": 49421,
-    "path": "../public/assets/images/about-us/video/logos/Tecnodom.jpg"
   },
   "/dearflip/dflip/js/libs/cmaps/78-EUC-H.bcmap": {
     "type": "text/plain; charset=utf-8",
@@ -25506,6 +11790,286 @@ const assets$1 = {
     "size": 179,
     "path": "../public/dearflip/dflip/js/libs/cmaps/WP-Symbol.bcmap"
   },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot": {
+    "type": "application/vnd.ms-fontobject",
+    "etag": "\"1fb7c-HNLCsRgmyh4QvAd9GLLyQle/iKQ\"",
+    "mtime": "2024-12-02T12:49:20.727Z",
+    "size": 129916,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot_": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"1fb7c-HNLCsRgmyh4QvAd9GLLyQle/iKQ\"",
+    "mtime": "2024-12-02T12:49:20.727Z",
+    "size": 129916,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.eot_"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"a9937-RNKEgCvoQNltJsfziIeSX6g704M\"",
+    "mtime": "2024-12-02T12:49:20.729Z",
+    "size": 694583,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.svg"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.ttf": {
+    "type": "font/ttf",
+    "etag": "\"1fa4c-T3WECWXyAguelyz5KwAZwX2eUe0\"",
+    "mtime": "2024-12-02T12:49:20.730Z",
+    "size": 129612,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.ttf"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff": {
+    "type": "font/woff",
+    "etag": "\"15688-4Ea4t0ttoe46GRAHJhDeX8cXWZ8\"",
+    "mtime": "2024-12-02T12:49:20.731Z",
+    "size": 87688,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff2": {
+    "type": "font/woff2",
+    "etag": "\"12410-f2xoKt4gTmQa7Y9HEGTFa27dwmM\"",
+    "mtime": "2024-12-02T12:49:20.732Z",
+    "size": 74768,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-brands-400.woff2"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot": {
+    "type": "application/vnd.ms-fontobject",
+    "etag": "\"8654-ZiaEfPZu5H6E2UlEtNAd2y4zZss\"",
+    "mtime": "2024-12-02T12:49:20.733Z",
+    "size": 34388,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot_": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"8654-ZiaEfPZu5H6E2UlEtNAd2y4zZss\"",
+    "mtime": "2024-12-02T12:49:20.733Z",
+    "size": 34388,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.eot_"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"23443-xRTzx5A8x0Y42GvNY17AD9VSBc4\"",
+    "mtime": "2024-12-02T12:49:20.734Z",
+    "size": 144451,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.svg"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.ttf": {
+    "type": "font/ttf",
+    "etag": "\"852c-iKVFNSJH37uQKB3amBEKja7I2F4\"",
+    "mtime": "2024-12-02T12:49:20.735Z",
+    "size": 34092,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.ttf"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff": {
+    "type": "font/woff",
+    "etag": "\"41a4-sLRDLGVxZiZQ3Dy+Y/1e8euSC3M\"",
+    "mtime": "2024-12-02T12:49:20.736Z",
+    "size": 16804,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff2": {
+    "type": "font/woff2",
+    "etag": "\"34f0-hYOk8N0S4VpIszlVkzB6hNlxzDM\"",
+    "mtime": "2024-12-02T12:49:20.736Z",
+    "size": 13552,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-regular-400.woff2"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot": {
+    "type": "application/vnd.ms-fontobject",
+    "etag": "\"2d968-lL5Gx1ShQV7SIfeBNuRUSQGNoO0\"",
+    "mtime": "2024-12-02T12:49:20.737Z",
+    "size": 186728,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot_": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"2d968-lL5Gx1ShQV7SIfeBNuRUSQGNoO0\"",
+    "mtime": "2024-12-02T12:49:20.738Z",
+    "size": 186728,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.eot_"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.svg": {
+    "type": "image/svg+xml",
+    "etag": "\"c771e-k08CHG+jqgMQ6e7qJdeKEyogSlE\"",
+    "mtime": "2024-12-02T12:49:20.739Z",
+    "size": 816926,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.svg"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.ttf": {
+    "type": "font/ttf",
+    "etag": "\"2d84c-dTiQVf8W9Q4TxGuV2jxZrwkfNME\"",
+    "mtime": "2024-12-02T12:49:20.740Z",
+    "size": 186444,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.ttf"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff": {
+    "type": "font/woff",
+    "etag": "\"17800-lk1bFpUK3s8U5jKt+ScHcgMey50\"",
+    "mtime": "2024-12-02T12:49:20.741Z",
+    "size": 96256,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff"
+  },
+  "/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff2": {
+    "type": "font/woff2",
+    "etag": "\"12210-prAD71BuktBc3nOt9nSH1/1+xt8\"",
+    "mtime": "2024-12-02T12:49:20.801Z",
+    "size": 74256,
+    "path": "../public/assets/landing-assets/vendor/font-awesome/webfonts/fa-solid-900.woff2"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/css/font-icons.css": {
+    "type": "text/css; charset=utf-8",
+    "etag": "\"5138-98yekXkOnu1l9X+tRgu5t3vk0kI\"",
+    "mtime": "2024-12-02T12:49:20.803Z",
+    "size": 20792,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/css/font-icons.css"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.eot_74273691": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"3e800-2+ga2/86zfgEbUiOgXTfokCYUg4\"",
+    "mtime": "2024-12-02T12:49:20.804Z",
+    "size": 256000,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.eot_74273691"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.svg_74273691": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"51712-f1j3M1i+OGgtDxjUrkhax+1GCGk\"",
+    "mtime": "2024-12-02T12:49:20.805Z",
+    "size": 333586,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.svg_74273691"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.ttf_74273691": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"3e764-eNJP/KIsEboT1hwzgNnMhiq1JQ4\"",
+    "mtime": "2024-12-02T12:49:20.807Z",
+    "size": 255844,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.ttf_74273691"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff2_74273691": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"20f00-XlbN8mhpZeYcH/rf61KeHIWV9Ro\"",
+    "mtime": "2024-12-02T12:49:20.809Z",
+    "size": 134912,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff2_74273691"
+  },
+  "/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff_74273691": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"276fc-bwYQL0YIanD8XRYwoAtMrlhcbqA\"",
+    "mtime": "2024-12-02T12:49:20.810Z",
+    "size": 161532,
+    "path": "../public/assets/landing-assets/vendor/molla-fonts/fonts/molla.woff_74273691"
+  },
+  "/assets/vendor/line-awesome/line-awesome/line-awesome/.DS_Store": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"1804-PAeA5HKFTAJi72vzy7Vkfvfr+9Q\"",
+    "mtime": "2024-12-02T12:49:20.839Z",
+    "size": 6148,
+    "path": "../public/assets/vendor/line-awesome/line-awesome/line-awesome/.DS_Store"
+  },
+  "/assets/images/about-us/video/logos/.DS_Store": {
+    "type": "text/plain; charset=utf-8",
+    "etag": "\"1804-3y++sUAKzaCQmjLBz2v0kvESHgc\"",
+    "mtime": "2024-11-06T08:15:39.618Z",
+    "size": 6148,
+    "path": "../public/assets/images/about-us/video/logos/.DS_Store"
+  },
+  "/assets/images/about-us/video/logos/broaster.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"89c7-29XdKRacqB43LV2mGLfM6F22/WQ\"",
+    "mtime": "2024-11-06T08:15:39.623Z",
+    "size": 35271,
+    "path": "../public/assets/images/about-us/video/logos/broaster.jpg"
+  },
+  "/assets/images/about-us/video/logos/Dr. Coffee.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"abb4-joM5EL8h102nbJK/f8LMly09q+4\"",
+    "mtime": "2024-11-06T08:15:39.618Z",
+    "size": 43956,
+    "path": "../public/assets/images/about-us/video/logos/Dr. Coffee.jpg"
+  },
+  "/assets/images/about-us/video/logos/EGRO.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"95bf-ezHXkzbrCmU7pi+aF+lJZluYG00\"",
+    "mtime": "2024-11-06T08:15:39.619Z",
+    "size": 38335,
+    "path": "../public/assets/images/about-us/video/logos/EGRO.jpg"
+  },
+  "/assets/images/about-us/video/logos/Electrolux.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"9ecb-E4ugoxtPIg2jsTDU4NfDb3Qid/s\"",
+    "mtime": "2024-11-06T08:15:39.620Z",
+    "size": 40651,
+    "path": "../public/assets/images/about-us/video/logos/Electrolux.jpg"
+  },
+  "/assets/images/about-us/video/logos/f4e.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"d01b-GpXi9twkGy0f0NHYnl7XsJUqY4I\"",
+    "mtime": "2024-11-06T08:15:39.624Z",
+    "size": 53275,
+    "path": "../public/assets/images/about-us/video/logos/f4e.jpg"
+  },
+  "/assets/images/about-us/video/logos/FAGOR.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"8dd8-cFGyLIMmNQnQdigmSqBP+19uV60\"",
+    "mtime": "2024-11-06T08:15:39.620Z",
+    "size": 36312,
+    "path": "../public/assets/images/about-us/video/logos/FAGOR.jpg"
+  },
+  "/assets/images/about-us/video/logos/mambo_safi_.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"61bf-+0LDYikra7wUAPbVzOIBmNiWx4A\"",
+    "mtime": "2024-11-06T08:15:39.624Z",
+    "size": 25023,
+    "path": "../public/assets/images/about-us/video/logos/mambo_safi_.jpg"
+  },
+  "/assets/images/about-us/video/logos/Prisma Food.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"b880-iHAG4MMkpEsBsf8bnsQk0KZZq88\"",
+    "mtime": "2024-11-06T08:15:39.621Z",
+    "size": 47232,
+    "path": "../public/assets/images/about-us/video/logos/Prisma Food.jpg"
+  },
+  "/assets/images/about-us/video/logos/rational.png": {
+    "type": "image/png",
+    "etag": "\"44b3-EnQqjogISBs1IRyvsqollIRjpL4\"",
+    "mtime": "2024-11-06T08:15:39.624Z",
+    "size": 17587,
+    "path": "../public/assets/images/about-us/video/logos/rational.png"
+  },
+  "/assets/images/about-us/video/logos/Santos.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"9e08-WfCjub+05+X6M8YPh+mBSo+saJY\"",
+    "mtime": "2024-11-06T08:15:39.621Z",
+    "size": 40456,
+    "path": "../public/assets/images/about-us/video/logos/Santos.jpg"
+  },
+  "/assets/images/about-us/video/logos/sheffield.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"ad6d-eAeJnuKrv3k/uYe6Oojg6N4XulE\"",
+    "mtime": "2024-11-06T08:15:39.625Z",
+    "size": 44397,
+    "path": "../public/assets/images/about-us/video/logos/sheffield.jpg"
+  },
+  "/assets/images/about-us/video/logos/Skymsen.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"9b87-4/eFilU402f+XWmcUA1Ys+WRMxU\"",
+    "mtime": "2024-11-06T08:15:39.622Z",
+    "size": 39815,
+    "path": "../public/assets/images/about-us/video/logos/Skymsen.jpg"
+  },
+  "/assets/images/about-us/video/logos/TASKI.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"98b1-pp2WA55kYiwj7FKruSH8Zv+08K0\"",
+    "mtime": "2024-11-06T08:15:39.622Z",
+    "size": 39089,
+    "path": "../public/assets/images/about-us/video/logos/TASKI.jpg"
+  },
+  "/assets/images/about-us/video/logos/Tecnodom.jpg": {
+    "type": "image/jpeg",
+    "etag": "\"c10d-4ONqV3YOvAwsV0hlZAmT5bQdh5Y\"",
+    "mtime": "2024-11-06T08:15:39.623Z",
+    "size": 49421,
+    "path": "../public/assets/images/about-us/video/logos/Tecnodom.jpg"
+  },
   "/assets/vendor/line-awesome/line-awesome/line-awesome/css/line-awesome.min.css": {
     "type": "text/css; charset=utf-8",
     "etag": "\"6d87-eCaPM/FmVGWChIm8uZ1PO2uJqtQ\"",
@@ -26089,7 +12653,7 @@ function _expandFromEnv(value) {
 const _inlineRuntimeConfig = {
   "app": {
     "baseURL": "/",
-    "buildId": "2cb4fc9e-9d4f-475b-a090-8cbc5ec3df71",
+    "buildId": "44160105-eb76-4319-830d-e8eff6e130ce",
     "buildAssetsDir": "/_nuxt/",
     "cdnURL": ""
   },
@@ -27431,6 +13995,106 @@ function getRouteRulesForPath(path) {
   return defu({}, ..._routeRulesMatcher.matchAll(path).reverse());
 }
 
+function createContext(opts = {}) {
+  let currentInstance;
+  let isSingleton = false;
+  const checkConflict = (instance) => {
+    if (currentInstance && currentInstance !== instance) {
+      throw new Error("Context conflict");
+    }
+  };
+  let als;
+  if (opts.asyncContext) {
+    const _AsyncLocalStorage = opts.AsyncLocalStorage || globalThis.AsyncLocalStorage;
+    if (_AsyncLocalStorage) {
+      als = new _AsyncLocalStorage();
+    } else {
+      console.warn("[unctx] `AsyncLocalStorage` is not provided.");
+    }
+  }
+  const _getCurrentInstance = () => {
+    if (als && currentInstance === void 0) {
+      const instance = als.getStore();
+      if (instance !== void 0) {
+        return instance;
+      }
+    }
+    return currentInstance;
+  };
+  return {
+    use: () => {
+      const _instance = _getCurrentInstance();
+      if (_instance === void 0) {
+        throw new Error("Context is not available");
+      }
+      return _instance;
+    },
+    tryUse: () => {
+      return _getCurrentInstance();
+    },
+    set: (instance, replace) => {
+      if (!replace) {
+        checkConflict(instance);
+      }
+      currentInstance = instance;
+      isSingleton = true;
+    },
+    unset: () => {
+      currentInstance = void 0;
+      isSingleton = false;
+    },
+    call: (instance, callback) => {
+      checkConflict(instance);
+      currentInstance = instance;
+      try {
+        return als ? als.run(instance, callback) : callback();
+      } finally {
+        if (!isSingleton) {
+          currentInstance = void 0;
+        }
+      }
+    },
+    async callAsync(instance, callback) {
+      currentInstance = instance;
+      const onRestore = () => {
+        currentInstance = instance;
+      };
+      const onLeave = () => currentInstance === instance ? onRestore : void 0;
+      asyncHandlers.add(onLeave);
+      try {
+        const r = als ? als.run(instance, callback) : callback();
+        if (!isSingleton) {
+          currentInstance = void 0;
+        }
+        return await r;
+      } finally {
+        asyncHandlers.delete(onLeave);
+      }
+    }
+  };
+}
+function createNamespace(defaultOpts = {}) {
+  const contexts = {};
+  return {
+    get(key, opts = {}) {
+      if (!contexts[key]) {
+        contexts[key] = createContext({ ...defaultOpts, ...opts });
+      }
+      contexts[key];
+      return contexts[key];
+    }
+  };
+}
+const _globalThis = typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof global !== "undefined" ? global : {};
+const globalKey = "__unctx__";
+const defaultNamespace = _globalThis[globalKey] || (_globalThis[globalKey] = createNamespace());
+const getContext = (key, opts = {}) => defaultNamespace.get(key, opts);
+const asyncHandlersKey = "__unctx_async_handlers__";
+const asyncHandlers = _globalThis[asyncHandlersKey] || (_globalThis[asyncHandlersKey] = /* @__PURE__ */ new Set());
+
+function baseURL() {
+  return useRuntimeConfig().app.baseURL;
+}
 function buildAssetsDir() {
   return useRuntimeConfig().app.buildAssetsDir;
 }
@@ -28527,7 +15191,7 @@ function GracefulShutdown(server, opts) {
   function destroy(socket, force = false) {
     if (socket._isIdle && isShuttingDown || force) {
       socket.destroy();
-      if (socket.server instanceof http.Server) {
+      if (socket.server instanceof vt.Server) {
         delete connections[socket._connectionId];
       } else {
         delete secureConnections[socket._connectionId];
@@ -28697,5 +15361,5 @@ function setupGracefulShutdown(listener, nitroApp) {
   });
 }
 
-export { getRouteRules as a, buildAssetsURL as b, createError$1 as c, defineRenderHandler as d, getResponseStatus as e, getResponseStatusText as f, getQuery as g, useNitroApp as h, destr as i, trapUnhandledNodeErrors as j, publicAssetsURL as p, setupGracefulShutdown as s, toNodeListener as t, useRuntimeConfig as u };
+export { trapUnhandledNodeErrors as a, useNitroApp as b, defineRenderHandler as c, destr as d, buildAssetsURL as e, createError$1 as f, getQuery as g, getRouteRules as h, getResponseStatus as i, getResponseStatusText as j, baseURL as k, sanitizeStatusCode as l, getContext as m, createHooks as n, getRequestHeader as o, publicAssetsURL as p, setCookie as q, getCookie as r, setupGracefulShutdown as s, toNodeListener as t, useRuntimeConfig as u, deleteCookie as v, toRouteMatcher as w, createRouter$1 as x };
 //# sourceMappingURL=nitro.mjs.map

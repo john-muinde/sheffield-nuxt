@@ -1,6 +1,6 @@
 import { RouteGenerator } from "./utils/urls";
 const generator = new RouteGenerator(
-  process.env.API_BASE_URL || "https://dev.sheffieldafrica.com"
+  process.env.API_BASE_URL || "https://sheffieldafrica.com"
 );
 
 export default defineNuxtConfig({
