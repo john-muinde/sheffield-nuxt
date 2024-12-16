@@ -1,0 +1,4 @@
+const brochuresAndCatalogs_vue_vue_type_style_index_0_lang = "._df_thumb{height:360px;width:240px}.df-sheet .df-page:before{opacity:.5}.buttonWidgetAnnotation a,.customHtmlAnnotation,.customVideoAnnotation,a.customLinkAnnotation,a.df-autolink,a.linkAnnotation,section.linkAnnotation a{background-color:#ff0;opacity:.2}.buttonWidgetAnnotation a:hover,.customHtmlAnnotation:hover,.customVideoAnnotation:hover,a.customLinkAnnotation:hover,a.df-autolink:hover,a.linkAnnotation:hover,section.linkAnnotation a:hover{background-color:#2196f3;opacity:.5}.df-icon-play-popup:before{background-color:#3385d1;color:#fff}.df-lightbox-bg{opacity:.8}.df-lightbox-wrapper .df-bg{background-color:transparent}.df-container.df-transparent.df-fullscreen{background-color:#eee}";
+
+export { brochuresAndCatalogs_vue_vue_type_style_index_0_lang as b };
+//# sourceMappingURL=brochures-and-catalogs-styles-1.mjs-DXwGG4BP.mjs.map
