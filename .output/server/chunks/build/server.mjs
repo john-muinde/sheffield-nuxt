@@ -5874,7 +5874,7 @@ const _routes = [
     name: "segment-id-slug",
     path: "/:segment()/:id()/:slug(.*)*",
     meta: __nuxt_page_meta$3 || {},
-    component: () => import('./_...slug_-aX8-TkIl.mjs')
+    component: () => import('./_...slug_-yngk8GtF.mjs')
   },
   {
     name: "segment",
@@ -5941,7 +5941,7 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-8O-bkV8I.mjs')
+    component: () => import('./index-BPiJhp-a.mjs')
   },
   {
     name: "lease-and-finance",

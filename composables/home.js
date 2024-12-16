@@ -35,7 +35,6 @@ export default function useStats() {
       const url = `/api/dashboard-stats?${queryParameters.toString()}`;
       const response = await apiRequest("get", url);
       stats.value = response;
-      console.log(stats.value);
       return response;
     } catch (errors) {
       validationErrors.value = errors;

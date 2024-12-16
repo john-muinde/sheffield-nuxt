@@ -66,21 +66,21 @@ export default defineNuxtConfig({
       PUBLIC_URL: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
     },
   },
-  hooks: {
-    async "nitro:config"(nitroConfig) {
-      if (process.env.NODE_ENV === "production") {
-        const routes = await generator.generateAllRoutes();
+  // hooks: {
+  //   async "nitro:config"(nitroConfig) {
+  //     if (process.env.NODE_ENV === "production") {
+  //       const routes = await generator.generateAllRoutes();
 
-        nitroConfig.prerender = nitroConfig.prerender || {};
-        //@ts-ignore
-        nitroConfig.prerender.enabled = false;
-        nitroConfig.prerender.failOnError = false;
-        //@ts-ignore
-        nitroConfig.prerender.ignorePaths = ["/api/**"];
-        nitroConfig.prerender.routes = ["/", ...routes];
-      }
-    },
-  },
+  //       nitroConfig.prerender = nitroConfig.prerender || {};
+  //       //@ts-ignore
+  //       nitroConfig.prerender.enabled = false;
+  //       nitroConfig.prerender.failOnError = false;
+  //       //@ts-ignore
+  //       nitroConfig.prerender.ignorePaths = ["/api/**"];
+  //       nitroConfig.prerender.routes = ["/", ...routes];
+  //     }
+  //   },
+  // },
   sitemap: {
     //@ts-ignore
     routes: async () => {

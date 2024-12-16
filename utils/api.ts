@@ -2,7 +2,12 @@ import type { SegmentInterface } from "~/types/meta-tags";
 import showToast from "./notification";
 
 // src/utils/api.js
-export const apiRequest = async (method: string, url: string, data = null, config = {}) => {
+export const apiRequest = async (
+  method: string,
+  url: string,
+  data = null,
+  config = {}
+) => {
   const { logoutAdmin } = useAuth();
   const { api } = useAxios();
   try {
@@ -122,7 +127,8 @@ export const APP_SEGMENTS: SegmentInterface[] = [
   },
   {
     id: 370,
-    active: import.meta.browser &&
+    active:
+      import.meta.browser &&
       window.localStorage.getItem("promotionActive") === "true",
     name: "Promotional Solutions",
     slug: "promotional-solutions",

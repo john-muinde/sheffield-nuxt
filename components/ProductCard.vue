@@ -11,11 +11,13 @@
         class="d-flex justify-content-center align-items-center mt-2"
       >
         <div v-if="!imageLoaded" class="image-skeleton"></div>
-        <img
-          v-lazy="assetsSync(product.main_image_path)"
-          :alt="product.name"
+        <NuxtImg
+          :src="assetsSync(product.main_image_path)"
+          :alt="product?.name"
+          format="webp"
+          quality="80"
+          loading="lazy"
           class="img img-fluid product-image"
-          @load="imageLoaded = true"
         />
       </NuxtLink>
     </div>

@@ -309,7 +309,7 @@
                   class="view-all-slide align-items-center justify-content-center h-100 d-none d-lg-flex col-3"
                 >
                   <NuxtLink
-                    to="/promotional-solutions/371/nov-1-nov-31-2024-promotions"
+                    to="/promotional-solutions/373/nov-1-nov-31-2024-promotions"
                     class="btn btn-dark btn-md view-all-button"
                   >
                     View All Products
@@ -457,7 +457,6 @@ const search = async () => {
     try {
       const response = await api.get(`/api/product_search/${query.value}`);
       results.value = response.data.data;
-      console.log(results.value);
       showResults.value = true;
     } catch (error) {
       console.error(error);
@@ -552,7 +551,7 @@ onMounted(async () => {
     showPopup.value = true;
   }
 
-  promotionId.value = 371;
+  promotionId.value = 373;
   await fetchProducts();
 });
 

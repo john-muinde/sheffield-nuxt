@@ -47,7 +47,10 @@
                 </div>
               </div>
             </div>
-            <div v-if="error || !pageSegment?.active" class="error-content">
+            <div
+              v-if="error != null || !pageSegment?.active"
+              class="error-content"
+            >
               <i
                 class="icon-exclamation-circle text-danger mb-4"
                 style="font-size: 3rem"
@@ -64,6 +67,7 @@
                 <li>The selected filters might be too restrictive</li>
                 <li>The category might be temporarily empty</li>
                 <li>New products might be coming soon</li>
+                <li>{{ pageSegment?.active }}</li>
               </ul>
               <div class="error-actions">
                 <button
@@ -351,8 +355,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import type { SegmentInterface } from "~/types/meta-tags";
-const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
-  useMetaGenerator();
+const { generateSeoMeta, generateHeadInput } = useMetaGenerator();
 
 // Page validation
 definePageMeta({
@@ -389,8 +392,6 @@ if (import.meta.server) {
 
 // Get current segment
 const pageSegment = computed(() => getSegment(segment));
-
-const filtersLoading = computed(() => store.isFilterLoading);
 
 // Main data fetching with proper SSR handling
 const {
