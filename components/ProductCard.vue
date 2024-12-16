@@ -12,7 +12,7 @@
       >
         <div v-if="!imageLoaded" class="image-skeleton"></div>
         <img
-          v-lazy="assets(product.main_image_path)"
+          v-lazy="assetsSync(product.main_image_path)"
           :alt="product.name"
           class="img img-fluid product-image"
           @load="imageLoaded = true"

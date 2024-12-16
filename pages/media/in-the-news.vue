@@ -53,7 +53,7 @@
                         <img
                           class="w-100 h-100 rounded"
                           style="object-fit: cover"
-                          :src="assets(product.main_image_path)"
+                          :src="assetsSync(product.main_image_path)"
                           :alt="product.name"
                         />
                       </a>

@@ -263,7 +263,7 @@
                               >
                                 <div class="flex items-center space-x-4">
                                   <img
-                                    :src="assets(item.main_image_path)"
+                                    :src="assetsSync(item.main_image_path)"
                                     :alt="item.name"
                                     class="w-16 h-16 object-cover rounded-md border"
                                   />

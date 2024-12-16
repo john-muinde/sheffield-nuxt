@@ -2,224 +2,161 @@
   <div class="page-wrapper">
     <main class="main">
       <div class="container" style="margin-top: 1px">
-        <LoadingData v-if="loading" />
+        <LoadingData v-if="pending" />
+
         <div v-else class="row cat-banner-row">
+          <!-- Banner Section -->
           <div class="col-xl-2 col-xxl-2 slide-from-right">
             <div class="cat-banner row no-gutters">
               <div class="col-sm-12 col-xl-12 col-xxl-12">
                 <div class="banner banner-overlay solution-image">
                   <a href="#">
-                    <img :src="pageSegment.image" alt="Banner img desc" />
+                    <img :src="segment?.image" :alt="segment?.name" />
                   </a>
                 </div>
-                <!-- End .banner -->
               </div>
-              <!-- End .col-sm-6 -->
             </div>
-            <!-- End .cat-banner -->
           </div>
-          <!-- End .col-xl-3 -->
+
+          <!-- Solutions Grid -->
           <div class="col-xl-10 col-xxl-10 mt-1 slide-from-left">
             <div class="row">
               <div
-                v-for="solution in mainSolutions"
+                v-for="solution in solutions"
                 :key="solution.id"
                 class="col-md-2 col-sm-4 slide-solutions"
               >
                 <NuxtLink
                   class="cat-block"
-                  :to="getSolutionLink(solution.id, solution.name, pageSegment)"
+                  :to="getSolutionLink(solution.id, solution.name, segment)"
                 >
                   <figure>
                     <span>
                       <img
-                        :src="assets(solution.main_image_path)"
-                        alt="Category image"
+                        :src="assetsSync(solution.main_image_path)"
+                        :alt="solution.name"
                       />
                     </span>
                   </figure>
 
-                  <h3 class="cat-block-title">
-                    {{ solution.name }}
-                  </h3>
-                  <!-- End .cat-block-title -->
+                  <h3 class="cat-block-title">{{ solution.name }}</h3>
                 </NuxtLink>
               </div>
-              <!-- End .col-sm-4 col-lg-2 -->
             </div>
           </div>
-          <!-- End .col-xl-9 -->
         </div>
-        <!-- End .row cat-banner-row -->
       </div>
     </main>
-    <!-- End .main -->
+
+    <button id="scroll-top" title="Back to Top">
+      <i class="icon-arrow-up"></i>
+    </button>
   </div>
-  <!-- End .page-wrapper -->
-  <button id="scroll-top" title="Back to Top">
-    <i class="icon-arrow-up"></i>
-  </button>
 </template>
 
-<script setup>
-import { ref, onMounted, nextTick } from "vue";
+<script setup lang="ts">
+import type { SolutionInterface } from "~/types/meta-tags";
 
-const { api, loading } = useAxios();
-const pageSegment = ref(null);
-
+// Composables
 const route = useRoute();
+const { api } = useAxios();
+const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
+  useMetaGenerator();
 
-pageSegment.value = getSegment(route.params.segment);
+// Get segment from route
+const segment = computed(() => getSegment(route.params.segment));
 
+// Page validation
 definePageMeta({
   validate: async (route) => {
-    return APP_SEGMENTS.some((item) => item.slug === route.params.segment);
+    return getSegment(route.params.segment) !== undefined;
   },
 });
 
-// const mainCategories = ref([]);
-const mainSolutions = ref([]);
+// Fetch solutions data
+const { data: solutions, pending } = await useAsyncData(
+  `solutions-${segment.value?.id}`,
+  async () => {
+    if (!segment.value?.id) return [];
 
-const fetchMainSolutions = async () => {
-  try {
-    const response = await api.get(
-      `/api/get-solutions/${pageSegment.value.id}`,
-      {}
-    );
-    mainSolutions.value = response.data.data;
-  } catch (error) {
-    console.error(error);
+    try {
+      const response = await api.get<{ data: SolutionInterface[] }>(
+        `/api/get-solutions/${segment.value.id}`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching solutions:", error);
+      return [];
+    }
+  },
+  {
+    server: true,
+    lazy: false,
   }
-};
+);
 
-onMounted(async () => {
-  loading.value = true;
-  fetchMainSolutions();
-  await nextTick();
-});
+// Generate meta tags
+const metaTags = computed(() =>
+  generateContentMetaTags({
+    type: "category",
+    content: {
+      name: segment.value?.name || "Solutions",
+      description: `Explore our ${
+        segment.value?.name
+      } solutions for your business needs. Sheffield Steel Systems offers professional ${segment.value?.name?.toLowerCase()} solutions in East Africa.`,
+      keywords: segment.value?.keywords || "",
+      main_image_path: assetsSync(segment.value?.image, {
+        local: true,
+        transform: { width: 1200, height: 630 },
+      }),
+    },
+  })
+);
+
+// Generate solution-specific schema
+const solutionSchema = computed(() => ({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: `${segment.value?.name} Solutions by Sheffield Steel Systems`,
+  description: `Browse our comprehensive range of ${segment.value?.name} solutions for businesses in East Africa`,
+  numberOfItems: solutions.value?.length || 0,
+  itemListElement:
+    solutions.value?.map((solution, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Product",
+        name: solution.name,
+        image: assetsSync(solution.main_image_path),
+        url: assetsSync(
+          getSolutionLink(solution.id, solution.name, segment.value)
+        ),
+        description:
+          solution.description ||
+          `Professional ${solution.name} solutions by Sheffield Steel Systems`,
+        brand: {
+          "@type": "Brand",
+          name: "Sheffield Steel Systems",
+        },
+        category: segment.value?.name,
+        offers: {
+          "@type": "AggregateOffer",
+          availability: "https://schema.org/InStock",
+        },
+      },
+    })) || [],
+}));
+
+// Apply meta tags
+useHead(() => ({
+  ...generateHeadInput(route, solutionSchema.value),
+}));
+
+useSeoMeta(generateSeoMeta(metaTags.value, route));
 </script>
 
-<style></style>
-
-<style>
-.cat-banner-row .carousel__prev {
-  height: 92% !important;
-  color: #8a8a8a !important;
-  background-color: #ffffff !important;
-  border: 0.3px solid !important;
-  border-radius: 0 !important;
-  top: 49% !important;
-}
-
-.cat-banner-row .carousel__next {
-  height: 92% !important;
-  color: #8a8a8a !important;
-  background-color: #ffffff !important;
-  border: 0.3px solid !important;
-  border-radius: 0 !important;
-  top: 49% !important;
-}
-</style>
-
 <style scoped>
-.header-left > .category-dropdown {
-  pointer-events: none;
-}
-
-.theClass1 {
-  position: absolute;
-  width: 94.8% !important;
-}
-
-.megamenu-scrollable {
-  overflow-y: auto;
-  direction: rtl;
-}
-
-.megamenu-container {
-  direction: ltr;
-}
-
-.megamenu-scrollable::-webkit-scrollbar {
-  width: 8px;
-}
-
-.megamenu-scrollable::-webkit-scrollbar-thumb {
-  background-color: #888;
-  border-radius: 4px;
-}
-
-.megamenu-scrollable::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
-}
-
-.scroll-track {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 16px;
-  background-color: #f0f0f0;
-}
-
-.scroll-arrow {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 50%;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.up-arrow {
-  border-bottom: 1px solid #ccc;
-}
-
-.down-arrow {
-  border-top: 1px solid #ccc;
-}
-
-.scroll-arrow:hover {
-  background-color: #ccc;
-  color: #fff;
-}
-
-.container {
-  margin-top: 20px;
-}
-
-.box {
-  height: 33px;
-  background: #d9d6d6;
-  border-radius: 5px;
-  margin-bottom: 5px;
-  /* max-width: 330px; */
-  border: 1px solid #9d9d9d;
-}
-
-.box p {
-  font-size: 1.1rem;
-  color: #012e66;
-}
-
-.elements {
-  position: relative;
-  /*background-image: url(/assets/images/sheffield_stainless_steel_background.jpg);*/
-  background-size: cover;
-  overflow: hidden;
-  margin-bottom: 15px;
-}
-
-.slide-solutions a:hover .cat-block-title {
-  color: #c02435;
-}
-
-@media only screen and (max-width: 768px) {
-  .solution-image {
-    display: none;
-  }
-}
-
+/* Animations */
 .slide-from-left .slide-solutions {
   list-style: none;
   opacity: 0;
@@ -233,13 +170,6 @@ onMounted(async () => {
   animation: slideRight 0.5s ease-in-out forwards;
 }
 
-@keyframes slideLeft {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 @keyframes slideRight {
   to {
     opacity: 1;
@@ -247,8 +177,20 @@ onMounted(async () => {
   }
 }
 
-/* Add a delay for every "n" item */
+/* Add animation delay for items */
 .slide-from-left .slide-solutions:nth-child(2n) {
   animation-delay: 2ms;
+}
+
+/* Solution hover effects */
+.slide-solutions a:hover .cat-block-title {
+  color: #c02435;
+}
+
+/* Responsive */
+@media only screen and (max-width: 768px) {
+  .solution-image {
+    display: none;
+  }
 }
 </style>

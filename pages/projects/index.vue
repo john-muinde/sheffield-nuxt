@@ -72,7 +72,7 @@
                         <article class="">
                           <figure class="">
                             <img
-                              :src="assets(project.main_image_path)"
+                              :src="assetsSync(project.main_image_path)"
                               alt="image desc"
                             />
                           </figure>

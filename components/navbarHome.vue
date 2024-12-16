@@ -33,7 +33,7 @@
                       <img
                         style="display: inline"
                         width="28"
-                        :src="assets(result.main_image_path)"
+                        :src="assetsSync(result.main_image_path)"
                         class="rounded profile-img"
                         alt=""
                       />
@@ -118,7 +118,7 @@
                       <img
                         style="display: inline"
                         width="28"
-                        :src="assets(result.main_image_path)"
+                        :src="assetsSync(result.main_image_path)"
                         class="rounded profile-img"
                         alt=""
                       />

@@ -87,7 +87,7 @@
                     <figure class="product-main-image">
                       <NuxtImg
                         id="product-zoom"
-                        :src="assets(mainImage)"
+                        :src="assetsSync(mainImage)"
                         :alt="product?.name"
                         style="
                           display: grid;
@@ -134,12 +134,15 @@
                           { active: index === activeIndex },
                         ]"
                         href="#"
-                        :data-image="assets(image.name)"
-                        :data-zoom-image="assets(image.name)"
+                        :data-image="assetsSync(image.name)"
+                        :data-zoom-image="assetsSync(image.name)"
                         @click.prevent
                         @mouseover="changeMainImage(image.name, index)"
                       >
-                        <img :src="assets(image.name)" :alt="product?.name" />
+                        <img
+                          :src="assetsSync(image.name)"
+                          :alt="product?.name"
+                        />
                       </a>
                     </div>
                   </div>
@@ -363,7 +366,7 @@ useHead(() => {
       },
       {
         property: "og:image",
-        content: assets(product.value?.main_image_path),
+        content: assetsSync(product.value?.main_image_path),
       },
       {
         property: "og:url",
@@ -384,7 +387,7 @@ useHead(() => {
       },
       {
         property: "twitter:image",
-        content: assets(product.value?.main_image_path),
+        content: assetsSync(product.value?.main_image_path),
       },
       {
         property: "twitter:url",
@@ -404,14 +407,16 @@ useHead(() => {
 const generateQRCode = () => {
   if (!import.meta.client) return;
   const qr = QRCode(0, "L");
-  qr.addData(route.fullPath);
+  qr.addData(API_URL + route.fullPath);
   qr.make();
   qrCodeDataUrl.value = qr.createDataURL();
 };
 
 const showMultiple = () => {
   if (!product.value?.product_images) return;
-  imgs.value = product.value.product_images.map((item) => assets(item.name));
+  imgs.value = product.value.product_images.map((item) =>
+    assetsSync(item.name)
+  );
   indexRef.value = activeIndex.value;
   visible.value = true;
 };
@@ -437,7 +442,8 @@ const getCategoryMainLinkTopName = (name) => {
 
 // Computed
 const imgs = computed(
-  () => product.value?.product_images?.map((item) => assets(item.name)) || []
+  () =>
+    product.value?.product_images?.map((item) => assetsSync(item.name)) || []
 );
 
 // Watch route changes for navigation

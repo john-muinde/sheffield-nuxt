@@ -133,7 +133,7 @@
                                           > -->
                       <img
                         style=""
-                        :src="assets(event.main_image_path)"
+                        :src="assetsSync(event.main_image_path)"
                         alt="image desc"
                         @click="showSingle(event.main_image_path)"
                       />

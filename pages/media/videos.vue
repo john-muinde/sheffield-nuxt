@@ -281,7 +281,7 @@ const getYoutubeId = (url) => {
 
 const videoSrc = (video) => {
   if (!video) return "";
-  return video.type === "Upload" ? assets(video.file_path) : "";
+  return video.type === "Upload" ? assetsSync(video.file_path) : "";
 };
 
 const getVideoPoster = (video) => {

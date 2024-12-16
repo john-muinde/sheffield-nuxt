@@ -4,95 +4,55 @@
       <div class="container d-flex align-items-center">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
-            <NuxtLink to="/"> HOME </NuxtLink>
+            <NuxtLink to="/">HOME</NuxtLink>
           </li>
-
           <li class="breadcrumb-item">
-            <NuxtLink :to="`/${pageSegment.slug}`">
-              {{ pageSegment.name.toUpperCase() }}
+            <NuxtLink :to="`/${pageSegment?.slug}`">
+              {{ pageSegment?.name?.toUpperCase() }}
             </NuxtLink>
           </li>
-
           <li class="breadcrumb-item active" aria-current="page">
-            {{ solutionCategories.name }}
+            {{ data?.categories?.name }}
           </li>
         </ol>
       </div>
     </nav>
-    <!-- End .page-header -->
+
     <div class="page-content">
       <div class="container">
-        <LoadingData v-if="loading && !solutionCategories.length" />
+        <LoadingData v-if="pending" />
         <NoSolutionData
-          :retry-function="fetchItems"
-          v-if="
-            ((!solutionCategories.length && !solutionCategoriesList.length) ||
-              !pageSegment?.active) &&
-            loading == false
-          "
+          v-else-if="!data?.categories || !pageSegment?.active"
+          :retry-function="() => refresh()"
         />
-        <div
-          v-show="
-            (!loading && pageSegment?.active) || solutionCategories.length
-          "
-          class="row"
-        >
-          <div
-            v-show="
-              (!loading && pageSegment?.active) || solutionCategories.length
-            "
-            class="col-lg-10"
-          >
-            <!-- End .toolbox -->
+
+        <div v-else class="row">
+          <!-- Main Content -->
+          <div class="col-lg-10">
             <div class="products mb-3">
               <div class="row">
+                <!-- Solution Description -->
                 <div class="col-lg-12 col-md-12 mt-1">
-                  <div id="accordion-1" class="accordion" style="width: 100%">
-                    <div class="card">
-                      <div id="heading-2" class="card-header">
-                        <h2 class="card-title">
-                          <a
-                            class="collapsed"
-                            role="button"
-                            data-toggle="collapse"
-                            href="#collapse-2"
-                            aria-expanded="false"
-                            aria-controls="collapse-2"
-                          >
-                            {{ solutionCategories.name }}
-                            - SOLUTION
-                          </a>
-                        </h2>
-                      </div>
-                      <!-- End .card-header -->
-                      <div
-                        id="collapse-2"
-                        class="collapse"
-                        aria-labelledby="heading-2"
-                        data-parent="#accordion-1"
-                        style=""
-                      >
-                        <div class="card-body">
-                          <span v-html="solutionCategories.description"></span>
-                        </div>
-                        <!-- End .card-body -->
-                      </div>
-                      <!-- End .collapse -->
+                  <div class="card w-100 mb-1">
+                    <div id="heading-2" class="card-header">
+                      <h2 class="card-title">
+                        <a> {{ data.categories.name }} - SOLUTION </a>
+                      </h2>
                     </div>
                   </div>
                 </div>
 
+                <!-- Products Grid -->
                 <div
-                  v-for="product in solutionCategoryProducts"
+                  v-for="product in data.products"
                   :key="product.id"
                   class="col-6 col-md-2 col-lg-2 col-xl-2 image-container"
                 >
                   <div class="product product-7 text-center">
                     <figure class="product-media">
-                      <!-- <span class="product-label label-new">New</span>  -->
                       <NuxtLink :to="getProductLink(product)">
                         <NuxtImg
-                          :src="assets(product.main_image_path)"
+                          :src="assetsSync(product.main_image_path)"
                           :alt="product.name"
                           format="webp"
                           quality="80"
@@ -100,9 +60,7 @@
                           class="w-full h-auto object-cover product-image"
                         />
                       </NuxtLink>
-                      <div class="product-action-vertical"></div>
-                      <!-- End .product-action-vertical -->
-                      <div class="product-action" :disabled="!product">
+                      <div class="product-action">
                         <button
                           type="button"
                           class="btn-product btn-cart"
@@ -111,65 +69,44 @@
                           <span>Add to Cart</span>
                         </button>
                       </div>
-                      <!-- End .product-action -->
                     </figure>
-                    <!-- End .product-media -->
                     <div class="product-body">
                       <div class="product-cat">
                         <NuxtLink :to="getProductLink(product)">
                           {{ product.product_brand?.name }}
                         </NuxtLink>
                       </div>
-                      <!-- End .product-cat -->
                       <h3 class="product-title">
                         <NuxtLink :to="getProductLink(product)">
                           {{ product.name }}
                         </NuxtLink>
                       </h3>
-                      <div class="ratings-container"></div>
                     </div>
-                    <!-- End .product-body -->
                   </div>
-                  <!-- End .product -->
                 </div>
-
-                <!-- End .col-sm-6 col-lg-4 col-xl-3 -->
               </div>
-              <!-- End .row -->
             </div>
-            <!-- End .products -->
           </div>
-          <!-- End .col-lg-9 -->
 
-          <aside
-            v-show="
-              (!loading && pageSegment?.active) || solutionCategories.length
-            "
-            class="col-lg-2 order-lg-first mt-2"
-          >
+          <!-- Sidebar -->
+          <aside class="col-lg-2 order-lg-first mt-2">
             <div class="sidebar sidebar-shop sidebar-shop-solution">
-              <!-- End .widget widget-clean -->
+              <!-- Categories Filter -->
               <div
-                v-if="solutionCategoriesList.length"
+                v-if="data.categories.product_categories_json?.length"
                 class="widget widget-collapsible widget-categories"
               >
                 <h3 class="widget-title">
-                  <a
-                    data-toggle="collapse"
-                    href="#widget-1"
-                    role="button"
-                    aria-expanded="true"
-                    aria-controls="widget-1"
-                  >
+                  <a data-toggle="collapse" href="#widget-1" role="button">
                     Product Categories
                   </a>
                 </h3>
-                <!-- End .widget-title -->
                 <div id="widget-1" class="show">
                   <div class="widget-body">
                     <div class="filter-items filter-items-count">
                       <div
-                        v-for="category in solutionCategoriesList"
+                        v-for="category in data.categories
+                          .product_categories_json"
                         :key="category.id"
                         class="filter-item"
                       >
@@ -179,217 +116,200 @@
                             type="checkbox"
                             class="custom-control-input"
                             :value="category.id"
-                            @change="handleCheckboxChange(category.id)"
+                            @change="handleCategoryFilter(category.id)"
                           />
                           <label
-                            class="custom-control-label"
                             :for="'cat-' + category.id"
-                            >{{ category.name }}</label
+                            class="custom-control-label"
                           >
+                            {{ category.name }}
+                          </label>
                         </div>
                       </div>
                     </div>
-                    <!-- End .filter-items -->
                   </div>
-                  <!-- End .widget-body -->
                 </div>
-                <!-- End .collapse -->
               </div>
 
+              <!-- Category Image -->
               <div class="widget widget-collapsible">
                 <div id="widget-4" class="show">
                   <div class="widget-body">
                     <NuxtImg
-                      :src="assets(solutionCategories.main_image_path)"
+                      :src="assetsSync(data.categories.main_image_path)"
                       format="webp"
                       quality="80"
                       loading="lazy"
                       class="w-full h-auto object-cover product-image"
+                      :alt="data.categories.name"
                     />
-                    <!-- End .filter-items -->
                   </div>
-                  <!-- End .widget-body -->
                 </div>
-                <!-- End .collapse -->
               </div>
             </div>
-            <!-- End .sidebar sidebar-shop -->
           </aside>
-          <!-- End .col-lg-3 -->
         </div>
-        <!-- End .row -->
       </div>
-      <!-- End .container -->
     </div>
-    <!-- End .page-content -->
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { Ref } from "vue";
+
+// Composables
+const route = useRoute();
+const { segment, id } = route.params;
+const { api } = useAxios();
+const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
+  useMetaGenerator();
+
+// Validate page
 definePageMeta({
-  validate: async (route) => {
-    return (
-      APP_SEGMENTS.some((item) => item.slug === route.params.segment) &&
-      route.params.id &&
-      Number.isInteger(Number(route.params.id))
-    );
+  validate: (route) => {
+    return getSegment(route.params.segment) !== undefined;
   },
 });
 
-import { ref, computed, watch, onMounted, watchEffect } from "vue";
+// State
+const selectedCategories: Ref<Record<number, number[]>> = ref({});
 
-const pageSegment = computed(() => {
-  return getSegment(route.params.segment);
-});
+// Get current segment
+const pageSegment = computed(() => getSegment(segment));
 
-const route = useRoute();
-const { segment, id } = route.params;
-const slug = Array.isArray(route.params.slug)
-  ? route.params.slug
-  : [route.params.slug];
+// Fetch data using useAsyncData
+const { data, pending, refresh } = await useAsyncData(
+  `solution-category-${id}`,
+  async () => {
+    const [categoriesRes, productsRes] = await Promise.all([
+      api.get("/api/get-solution-categories", {
+        params: { solution_id: id },
+      }),
+      api.get("/api/get-solution-category-products", {
+        params: {
+          solution_id: id,
+          checkedCategoriesSolutions:
+            selectedCategories.value[Number(id)] || [],
+        },
+      }),
+    ]);
 
-const category = slug[0];
-const page = slug[2];
-
-const { api, loading } = useAxios();
-
-const title = ref(
-  `${capitalizeMainWords(segment)} - ${capitalizeMainWords(category)}`
+    return {
+      categories: categoriesRes.data.data,
+      products: productsRes.data.products.data,
+    };
+  },
+  {
+    watch: [selectedCategories],
+  }
 );
 
-useHead({
-  title: title,
-  meta: [
-    {
-      name: "description",
-      content:
-        "We offer state of the art commercial cold room equipment at Sheffield africa Ltd",
+// Generate meta tags
+const metaTags = computed(() =>
+  generateContentMetaTags({
+    type: "category",
+    content: {
+      name: data.value?.categories.name,
+      description:
+        data.value?.categories.description?.replace(/<[^>]*>/g, "") || "",
+      keywords: `${pageSegment.value?.keywords}, ${
+        data.value?.categories.name
+      }, 
+                ${data.value?.products
+                  .map((p: { name: any }) => p.name)
+                  .join(", ")}`,
+      main_image_path: data.value?.categories.main_image_path,
     },
-    {
-      name: "keywords",
-      content: "Cold room equipment",
-    },
-  ],
-});
+  })
+);
 
-const currentPage = ref(page ? parseInt(page) : 1);
-const perPage = ref(12);
-const totalProducts = ref(0);
-const products = ref([]);
-const solution_id = ref(id ? parseInt(id) : 1);
-const solutionCategories = ref([]);
-const solutionCategoriesList = ref([]);
+// Generate schema
+const categorySchema = computed(() => ({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: `${data.value?.categories.name} by Sheffield Steel Systems`,
+  description:
+    data.value?.categories.description?.replace(/<[^>]*>/g, "") || "",
+  numberOfItems: data.value?.products.length || 0,
+  itemListElement:
+    data.value?.products.map(
+      (
+        product: {
+          name: any;
+          main_image_path: string | undefined;
+          product_brand: { name: any };
+          description: any;
+        },
+        index: number
+      ) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Product",
+          name: product.name,
+          image: assetsSync(product.main_image_path),
+          url: getProductLink(product),
+          brand: {
+            "@type": "Brand",
+            name: product.product_brand?.name || "Sheffield Steel Systems",
+          },
+          description:
+            product.description || `${product.name} by Sheffield Steel Systems`,
+          category: data.value?.categories.name,
+          manufacturer: {
+            "@type": "Organization",
+            name: "Sheffield Steel Systems",
+          },
+        },
+      })
+    ) || [],
+}));
 
-const checkedCategoriesSolutions = ref([]);
+// Apply meta tags
+useHead(() => ({
+  ...generateHeadInput(route, categorySchema.value),
+  title: `${data.value?.categories.name} - ${pageSegment.value?.name} Solutions`,
+}));
 
-const fetchSolutionCategories = async () => {
-  try {
-    const response = await api.get("/api/get-solution-categories", {
-      params: {
-        solution_id: solution_id.value,
-      },
-    });
-    solutionCategories.value = response.data.data;
-    solutionCategoriesList.value = response.data.data.product_categories_json;
-  } catch (error) {
-    console.error(error);
+useSeoMeta(generateSeoMeta(metaTags.value, route));
+
+// Handle category filter
+const handleCategoryFilter = (categoryId: number) => {
+  const mainCategoryId = Number(id);
+
+  if (!selectedCategories.value[mainCategoryId]) {
+    selectedCategories.value[mainCategoryId] = [];
   }
-};
 
-const solutionCategoryProducts = ref([]);
+  const categoryArray = selectedCategories.value[mainCategoryId];
+  const index = categoryArray.indexOf(categoryId);
 
-const fetchSolutionCategoryProducts = async () => {
-  try {
-    const response = await api.get("/api/get-solution-category-products", {
-      params: {
-        solution_id: solution_id.value,
-        checkedCategoriesSolutions: checkedCategoriesSolutions.value,
-      },
-    });
-    solutionCategoryProducts.value = response.data.products.data;
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-function handleCheckboxChange(categoryId) {
-  let mainCategoryId = solution_id.value;
-
-  if (!(mainCategoryId in checkedCategoriesSolutions.value)) {
-    checkedCategoriesSolutions.value[mainCategoryId] = [];
-  }
-
-  const categoryArray = checkedCategoriesSolutions.value[mainCategoryId];
-
-  if (categoryArray.includes(categoryId)) {
-    categoryArray.splice(categoryArray.indexOf(categoryId), 1);
+  if (index > -1) {
+    categoryArray.splice(index, 1);
   } else {
     categoryArray.push(categoryId);
   }
-}
-
-// Displayed products based on the current page
-const displayedProducts = ref([]);
-
-// Update displayedProducts based on the current page and products
-const updateDisplayedProducts = () => {
-  const startIndex = 0;
-  displayedProducts.value = products.value.slice(
-    startIndex,
-    startIndex + perPage.value
-  );
 };
-
-const fetchItems = (cb = null) => {
-  loading.value = true;
-  fetchSolutionCategories();
-  fetchSolutionCategoryProducts();
-};
-
-// Initial fetch of products
-onMounted(() => {
-  fetchItems();
-});
-
-// Watch for changes in the products and update displayedProducts
-watch(products, updateDisplayedProducts);
-
-watchEffect(() => {
-  if (id !== "" && solution_id.value !== id) {
-    currentPage.value = 1;
-
-    solution_id.value = id ? parseInt(id) : 1;
-
-    if (page !== "" && currentPage.value !== page) {
-      currentPage.value = page ? parseInt(page) : 1;
-    }
-    fetchSolutionCategoryProducts();
-  }
-});
 </script>
 
-<style>
-.product-item {
-  margin-bottom: 20px;
+<style scoped>
+.card-title a:before {
+  content: " ";
 }
-
 .product-title a {
   font-weight: 550 !important;
 }
 
 .sidebar-shop-solution .filter-items-count .filter-item {
-  padding-right: 0rem !important;
+  padding-right: 0 !important;
 }
 
 .swal2-popup.swal2-toast .swal2-title {
   font-size: 1.5rem !important;
+  color: #ffffff;
 }
 
 .swal2-container.swal2-bottom-end > .swal2-popup {
   background-color: #c02434;
-}
-
-.swal2-popup.swal2-toast .swal2-title {
-  color: #ffffff;
 }
 </style>

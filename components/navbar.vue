@@ -126,7 +126,7 @@
                             <NuxtLink :to="getProductLink(result)">
                               <img
                                 style="display: inline; height: 28px"
-                                :src="assets(result.main_image_path)"
+                                :src="assetsSync(result.main_image_path)"
                                 class="rounded profile-img"
                                 alt=""
                               />

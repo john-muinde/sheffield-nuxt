@@ -1,4 +1,4 @@
-import { hasInjectionContext, inject, version, unref, ref, reactive, defineAsyncComponent, defineComponent, h, computed, provide, shallowReactive, watch, Suspense, nextTick, Fragment, Transition, getCurrentInstance, mergeProps, useSSRContext, createApp, effectScope, getCurrentScope, onErrorCaptured, onServerPrefetch, createVNode, resolveDynamicComponent, toRef, shallowRef, isReadonly, toRaw, withCtx, isRef, isShallow, isReactive } from 'vue';
+import { hasInjectionContext, inject, version, unref, ref, reactive, computed, defineAsyncComponent, defineComponent, h, provide, shallowReactive, watch, Suspense, nextTick, Fragment, Transition, getCurrentInstance, mergeProps, useSSRContext, createApp, effectScope, getCurrentScope, onErrorCaptured, onServerPrefetch, createVNode, resolveDynamicComponent, toRef, shallowRef, isReadonly, toRaw, withCtx, isRef, isShallow, isReactive } from 'vue';
 import vt from 'node:http';
 import Bs from 'node:https';
 import st from 'node:zlib';
@@ -13,6 +13,8 @@ import { k as baseURL, f as createError$1, l as sanitizeStatusCode, m as getCont
 import { defineStore, createPinia, setActivePinia, shouldHydrate } from 'pinia';
 import { getActiveHead, CapoPlugin } from 'unhead';
 import { useRoute as useRoute$1, RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
+import { notification } from 'ant-design-vue';
+import axios from 'axios';
 import { ssrRenderSuspense, ssrRenderComponent, ssrRenderVNode } from 'vue/server-renderer';
 import 'consola/core';
 import 'nuxt-site-config/urls';
@@ -2699,7 +2701,7 @@ const mr = Symbol.toStringTag, yi = n((i) => typeof i == "object" && typeof i.ap
       for (const [p, h2] of l2) u.append(p, h2);
       return u;
     }
-    const { toFormData: a2 } = await import('./multipart-parser-J-AJTwH1.mjs');
+    const { toFormData: a2 } = await import('./multipart-parser-MCXQjonN.mjs');
     return a2(this.body, o2);
   }
   async blob() {
@@ -4792,6 +4794,19 @@ const wrapInKeepAlive = (props, children) => {
 function toArray(value) {
   return Array.isArray(value) ? value : [value];
 }
+const showToast$1 = (description, type = "success", message = "Success") => {
+  type = type.toLowerCase();
+  if (!message || message.length == 0 || type != "success") {
+    message = type.substring(0, 1).toUpperCase() + type.substring(1);
+  }
+  notification[type]({
+    message,
+    description,
+    placement: "topRight",
+    duration: 3
+    // Duration in seconds
+  });
+};
 const useStateKeyPrefix = "$s";
 function useState(...args) {
   const autoKey = typeof args[args.length - 1] === "string" ? args.pop() : void 0;
@@ -5566,21 +5581,65 @@ function useAuth() {
     getAbilities
   };
 }
+function useAxios() {
+  const rtConfig = /* @__PURE__ */ useRuntimeConfig();
+  const url = rtConfig.public.API_URL || "https://dev.sheffieldafrica.com";
+  let api2 = axios.create({
+    baseURL: url,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    withCredentials: true,
+    withXSRFToken: true
+  });
+  const loading = ref(null);
+  api2.interceptors.request.use(
+    function(config) {
+      loading.value = true;
+      return config;
+    },
+    function(error) {
+      loading.value = false;
+      return Promise.reject(error);
+    }
+  );
+  api2.interceptors.response.use(
+    function(response) {
+      loading.value = false;
+      return response;
+    },
+    function(error) {
+      loading.value = false;
+      return Promise.reject(error);
+    }
+  );
+  async function csrf() {
+    return await api2.get("/sanctum/csrf-cookie");
+  }
+  return {
+    api: api2,
+    csrf,
+    loading,
+    API_URL: url
+  };
+}
 const apiRequest = async (method, url, data = null, config = {}) => {
   var _a2, _b2, _c, _d, _e;
   const { logoutAdmin } = useAuth();
+  const { api: api2 } = useAxios();
   try {
     if (method === "put") {
       method = "post";
       url += "?_method=PUT";
     }
-    const response = api[method](url, data, config);
+    const response = await api2.request({ method, url, data, ...config });
     return ((_a2 = response.data) == null ? void 0 : _a2.data) || response.data;
   } catch (error) {
     const validationErrors = ((_c = (_b2 = error.response) == null ? void 0 : _b2.data) == null ? void 0 : _c.errors) || {};
     const message = ((_e = (_d = error.response) == null ? void 0 : _d.data) == null ? void 0 : _e.message) || error.message || "Something went wrong";
     validationErrors.message = message;
-    showToast(message, "error");
+    showToast$1(message, "error");
     if (error.response.status === 401) {
       if ((void 0).location.pathname.includes("admin")) {
         logoutAdmin();
@@ -5596,6 +5655,26 @@ const APP_SEGMENTS = [
     name: "Cold Storage",
     slug: "cold-storage",
     slugs: [],
+    keywords: `cold storage solutions east africa, coldroom installation nairobi, 
+      industrial refrigeration kenya, commercial refrigeration systems, walk-in coldrooms, 
+      blast freezers, chillers, freezer rooms, cold storage, temperature control systems, 
+      refrigeration solutions, blast chiller systems, commercial fridges, 
+      supermarket refrigeration, industrial freezers, cold chain solutions, 
+      food storage systems, pharmaceutical cold storage, commercial cold rooms, 
+      dairy cooling systems, meat storage solutions, frozen food storage, 
+      cold storage maintenance, cold room design, industrial cooling systems, 
+      modular cold rooms, refrigerated warehousing, cold storage installation, 
+      cold chain equipment, temperature monitoring systems, frozen storage solutions, 
+      cold storage consultancy, commercial freezer rooms, cold storage maintenance, 
+      cold room repair services, refrigeration equipment east africa, 
+      industrial cold storage kenya, commercial cooling solutions, 
+      food preservation systems, cold chain logistics, temperature-controlled storage, 
+      cold storage facility design, industrial refrigeration maintenance, 
+      supermarket cooling systems, restaurant cold storage, hotel cold rooms, 
+      hospital cold storage, pharmaceutical refrigeration, laboratory cold storage, 
+      food processing cold rooms, butchery cold storage, fishery cold rooms, 
+      agricultural cold storage, dairy cold rooms, beverage cooling systems, 
+      ice cream storage solutions, vaccine storage systems, blood bank refrigeration`,
     color: "#3d62ad",
     image: "/assets/images/homepage/cold_storage_page.jpg",
     icon: "/assets/images/menu-icons/top-menu/cold-room.png"
@@ -5606,6 +5685,24 @@ const APP_SEGMENTS = [
     name: "Laundry",
     slug: "laundry",
     slugs: [],
+    keywords: `industrial laundry equipment east africa, commercial washing machines kenya, 
+      industrial dryers, laundry solutions, commercial laundry systems, 
+      hotel laundry equipment, hospital laundry solutions, industrial washers, 
+      commercial dryers, laundromat equipment, dry cleaning machines, 
+      industrial ironers, commercial pressing equipment, laundry automation systems, 
+      industrial laundry installation, commercial laundry maintenance, 
+      laundry equipment suppliers, industrial washing solutions, 
+      commercial laundry consultancy, hotel laundry systems, hospital laundry equipment, 
+      school laundry solutions, industrial laundry design, laundry facility planning, 
+      commercial washer extractors, industrial tumble dryers, finishing equipment, 
+      flatwork ironers, laundry folding machines, garment conveyor systems, 
+      ozone laundry systems, wet cleaning solutions, commercial laundry chemicals, 
+      laundry water recycling, energy-efficient laundry, industrial pressing machines, 
+      laundry management systems, commercial laundry software, laundry trolleys, 
+      industrial laundry carts, laundry sorting systems, stain removal equipment, 
+      commercial fabric care, industrial textile cleaning, laundry automation controls, 
+      commercial laundry parts, laundry equipment service, industrial laundry repair, 
+      laundry facility design, commercial laundry planning, industrial cleaning solutions`,
     color: "#7ab337",
     image: "/assets/images/homepage/laundry_page.jpg",
     icon: "/assets/images/menu-icons/top-menu/laundry.png"
@@ -5616,6 +5713,27 @@ const APP_SEGMENTS = [
     name: "Commercial Kitchen",
     slug: "commercial-kitchen",
     slugs: ["kitchen"],
+    keywords: `commercial kitchen equipment kenya, industrial kitchen supplier east africa, 
+      commercial kitchen manufacturer africa, restaurant kitchen equipment, 
+      hotel kitchen solutions, hospital kitchen systems, school cafeteria equipment, 
+      industrial canteen setup, food processing equipment, bakery equipment, 
+      butchery equipment, supermarket installations, commercial ovens, 
+      industrial cookers, professional grills, food prep stations, 
+      dishwashing systems, ventilation hoods, cooking ranges, kitchen consultancy, 
+      project management, kitchen maintenance services, equipment repair, 
+      spare parts supply, warranty services, kitchen design, layout optimization, 
+      workflow planning, HACCP compliant kitchens, food safety equipment, 
+      hygiene systems, energy-efficient solutions, sustainable kitchen design, 
+      green technologies, kitchen automation, monitoring systems, 
+      smart kitchen solutions, commercial food preparation, industrial cooking equipment, 
+      professional kitchen supplies, restaurant equipment installation, 
+      hotel kitchen design, catering equipment solutions, commercial refrigeration, 
+      food service equipment, industrial kitchen maintenance, cooking equipment repair, 
+      kitchen ventilation systems, commercial kitchen consulting, food prep equipment, 
+      industrial food processors, commercial mixers, food warming equipment, 
+      kitchen storage solutions, stainless steel equipment, commercial kitchen parts, 
+      kitchen equipment service, industrial kitchen planning, restaurant solutions, 
+      cafe equipment setup, fast food kitchen systems, industrial kitchen design`,
     color: "#c02434",
     image: "/assets/images/homepage/commercial_kitchen.jpg",
     icon: "/assets/images/menu-icons/top-menu/kitchen.png"
@@ -5626,24 +5744,128 @@ const APP_SEGMENTS = [
     name: "Promotional Solutions",
     slug: "promotional-solutions",
     slugs: ["promotions"],
+    keywords: `kitchen equipment promotions kenya, commercial kitchen deals east africa, 
+      laundry equipment offers, cold storage discounts, industrial kitchen promotions, 
+      commercial equipment sales, restaurant equipment deals, hotel supplies offers, 
+      catering equipment promotions, industrial machinery discounts, seasonal offers, 
+      equipment lease promotions, commercial kitchen packages, laundry system bundles, 
+      cold storage solutions deals, business equipment promotions, year-end sales, 
+      commercial appliance discounts, industrial equipment offers, kitchen setup packages, 
+      restaurant startup deals, hotel equipment bundles, hospital equipment promotions, 
+      school cafeteria packages, industrial kitchen deals, commercial refrigeration offers, 
+      laundry installation promotions, equipment financing offers, maintenance package deals, 
+      spare parts promotions, warranty extension offers, equipment upgrade deals, 
+      trade-in promotions, bulk purchase discounts, commercial kitchen specials, 
+      industrial equipment sales, professional kitchen deals, business expansion offers, 
+      equipment replacement promotions, installation service deals, maintenance contract offers, 
+      equipment rental promotions, leasing package deals, commercial solutions bundles, 
+      business equipment packages, industrial machinery offers, seasonal equipment deals, 
+      promotional equipment packages, limited time offers, special equipment deals`,
     color: "#f4a261",
     image: "/assets/images/events/november-promo.png",
     icon: "/assets/images/menu-icons/top-menu/kitchen.png"
   }
 ];
+const useCartStore = defineStore("cart-store", {
+  state: () => ({
+    stateCartItems: []
+  }),
+  actions: {
+    addToCart(product) {
+      const existingProduct = this.stateCartItems.find(
+        (item) => item.id === product.id
+      );
+      if (existingProduct) {
+        existingProduct.quantity++;
+      } else {
+        product.quantity = 1;
+        this.stateCartItems.push(product);
+      }
+    },
+    removeFromCart(index) {
+      this.stateCartItems.splice(index, 1);
+    },
+    clearCart() {
+      this.stateCartItems = [];
+    }
+  },
+  getters: {
+    cartItems: (state) => state.stateCartItems,
+    total: (state) => state.stateCartItems.reduce(
+      (acc, item) => acc + item.price * item.quantity,
+      0
+    )
+  },
+  persist: {
+    storage: storages.sessionStorage()
+  }
+});
+function getSegment(slug) {
+  if (typeof slug == "string" && slug.includes("/")) {
+    slug = slug.split("/")[0];
+  }
+  slug = Array.isArray(slug) ? slug[0] : slug;
+  return APP_SEGMENTS.find(
+    (item) => [item.slug, ...item.slugs || []].includes(
+      slug
+    )
+  );
+}
+const getSolutionLink = (id, name, segment) => {
+  const transformedName = transformName(name);
+  return `/${segment.slug}/solutions/${id}/${transformedName}`;
+};
+const transformName = (name) => {
+  if (!name) return "";
+  return name.toLowerCase().replace(/[\s/]+/g, "-").replace(/[^\w-]+/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+};
+function getProductLink(product = {}) {
+  var _a2, _b2, _c;
+  if (!product) return `/${APP_SEGMENTS[0].slug}`;
+  const { id, name, model_number, categories_json: categories } = product;
+  const firstPart = (_c = getSegment((_b2 = (_a2 = categories == null ? void 0 : categories[0]) == null ? void 0 : _a2.parent_name_with_slashes) == null ? void 0 : _b2.split("/")[0])) == null ? void 0 : _c.slug;
+  const transformedName = transformName(name);
+  const transformedModelNumber = transformName(model_number);
+  return firstPart ? `/${firstPart}/product/${id}/${transformedName}-${transformedModelNumber}` : `/product/${id}/${transformedName}-${transformedModelNumber}`;
+}
+const isAdding = ref(false);
+process.env.API_URL;
+const addToCartText = computed(() => {
+  return isAdding.value ? "Adding..." : "Add to Cart";
+});
+const getCategoryLink = (id, name, page, segment) => {
+  if (!segment || !segment.slug) {
+    const route = useRoute();
+    segment = getSegment(route.params.segment);
+  }
+  const transformedName = transformName(name);
+  if (page) {
+    return segment ? `/${segment.slug}/${id}/${transformedName}/page/${page}` : `/product/${id}/${transformedName}/page/${page}`;
+  }
+  return segment ? `/${segment.slug}/${id}/${transformedName}` : `/product/${id}/${transformedName}`;
+};
+function formatPrice(price) {
+  if (typeof price === "string") {
+    price = parseFloat(price);
+  }
+  return new Intl.NumberFormat("en-KE").format(price);
+}
+function calculateDiscount(original, discounted) {
+  return Math.round((original - discounted) / original * 100);
+}
 const __nuxt_page_meta$3 = {
   validate: async (route2) => {
-    return APP_SEGMENTS.some((item) => item.slug === route2.params.segment) && route2.params.id && Number.isInteger(Number(route2.params.id));
+    return getSegment(route2.params.segment) !== void 0;
   }
 };
 const __nuxt_page_meta$2 = {
-  validate: async (route) => {
-    return APP_SEGMENTS.some((item) => item.slug === route.params.segment);
+  validate: async (route2) => {
+    return getSegment(route2.params.segment) !== void 0;
   }
 };
 const __nuxt_page_meta$1 = {
-  validate: async (route) => {
-    return APP_SEGMENTS.some((item) => item.slug === route.params.segment) && route.params.id && Number.isInteger(Number(route.params.id));
+  validate: (route2) => {
+    return getSegment(route2.params.segment) !== void 0;
   }
 };
 const component_45stubllrvQLJ14c = {};
@@ -5652,159 +5874,159 @@ const _routes = [
     name: "segment-id-slug",
     path: "/:segment()/:id()/:slug(.*)*",
     meta: __nuxt_page_meta$3 || {},
-    component: () => import('./_...slug_-BzmwiY2p.mjs')
+    component: () => import('./_...slug_-aX8-TkIl.mjs')
   },
   {
     name: "segment",
     path: "/:segment()",
     meta: __nuxt_page_meta$2 || {},
-    component: () => import('./index-BgEFBOQl.mjs')
+    component: () => import('./index-Cb5tPt21.mjs')
   },
   {
     name: "segment-product-id-slug",
     path: "/:segment()/product/:id()/:slug(.*)*",
-    component: () => import('./_...slug_-p4rJBD30.mjs')
+    component: () => import('./_...slug_-BXeswYEs.mjs')
   },
   {
     name: "segment-solutions-id-slug",
     path: "/:segment()/solutions/:id()/:slug(.*)*",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./_...slug_-BQ2kHss1.mjs')
+    component: () => import('./_...slug_-COjD3lDc.mjs')
   },
   {
     name: "about-us",
     path: "/about-us",
-    component: () => import('./index-f8smq0gW.mjs')
+    component: () => import('./index-C-JmzdUw.mjs')
   },
   {
     name: "about-us-sheffield-advantage",
     path: "/about-us/sheffield-advantage",
-    component: () => import('./sheffield-advantage-DWalBYoA.mjs')
+    component: () => import('./sheffield-advantage-FTApO6WQ.mjs')
   },
   {
     name: "careers",
     path: "/careers",
-    component: () => import('./careers-qWq6bdSH.mjs')
+    component: () => import('./careers-BbueI7CC.mjs')
   },
   {
     name: "consultancy-and-design",
     path: "/consultancy-and-design",
-    component: () => import('./consultancy-and-design-CmgdARU8.mjs')
+    component: () => import('./consultancy-and-design-DDoJD0Oh.mjs')
   },
   {
     name: "contact-us",
     path: "/contact-us",
-    component: () => import('./contact-us-wkA0Mhvd.mjs')
+    component: () => import('./contact-us-QeEtN2Et.mjs')
   },
   {
     name: "cookie-policy",
     path: "/cookie-policy",
-    component: () => import('./cookie-policy-DWnkx2mU.mjs')
+    component: () => import('./cookie-policy-BNexyKUw.mjs')
   },
   {
     name: "error",
     path: "/error",
-    component: () => import('./error-CEezfh-B.mjs')
+    component: () => import('./error-CYm48Y1X.mjs')
   },
   {
     name: "events",
     path: "/events",
-    component: () => import('./index-DN0aJN-C.mjs')
+    component: () => import('./index-BDaZj9pk.mjs')
   },
   {
     name: "faq",
     path: "/faq",
-    component: () => import('./faq-COE_7x-9.mjs')
+    component: () => import('./faq-DMI-SPNx.mjs')
   },
   {
     name: "index",
     path: "/",
-    component: () => import('./index-B06LYYrj.mjs')
+    component: () => import('./index-8O-bkV8I.mjs')
   },
   {
     name: "lease-and-finance",
     path: "/lease-and-finance",
-    component: () => import('./lease-and-finance-CKxWx4Db.mjs')
+    component: () => import('./lease-and-finance-CXuLMTDf.mjs')
   },
   {
     name: "login",
     path: "/login",
-    component: () => import('./login-CqERvaxU.mjs')
+    component: () => import('./login-5PKwyDKz.mjs')
   },
   {
     name: "media-blogs",
     path: "/media/blogs",
-    component: () => import('./blogs-Dh0a29ny.mjs')
+    component: () => import('./blogs-BQO9CThs.mjs')
   },
   {
     name: "media-brochures-and-catalogs",
     path: "/media/brochures-and-catalogs",
-    component: () => import('./brochures-and-catalogs-Cmf6OooK.mjs')
+    component: () => import('./brochures-and-catalogs-qCrlDOgc.mjs')
   },
   {
     name: "media-gallery",
     path: "/media/gallery",
-    component: () => import('./gallery-BuO0S4J1.mjs')
+    component: () => import('./gallery-8Gp5amyg.mjs')
   },
   {
     name: "media-in-the-news",
     path: "/media/in-the-news",
-    component: () => import('./in-the-news-BTwX4fNZ.mjs')
+    component: () => import('./in-the-news-C9mQLiXJ.mjs')
   },
   {
     name: "media",
     path: "/media",
-    component: () => import('./index-DxEuF0x0.mjs')
+    component: () => import('./index-DJyE7E-1.mjs')
   },
   {
     name: "media-newsletters",
     path: "/media/newsletters",
-    component: () => import('./newsletters-CCYcne8A.mjs')
+    component: () => import('./newsletters-IwE28Y8O.mjs')
   },
   {
     name: "media-videos",
     path: "/media/videos",
-    component: () => import('./videos-CLXpCb-x.mjs')
+    component: () => import('./videos-CTsH0Rf3.mjs')
   },
   {
     name: "my-account",
     path: "/my-account",
-    component: () => import('./index-D7rau13E.mjs')
+    component: () => import('./index-BYsFxDQI.mjs')
   },
   {
     name: "privacy-policy",
     path: "/privacy-policy",
-    component: () => import('./privacy-policy-Dqaj0d8a.mjs')
+    component: () => import('./privacy-policy-iv716GfA.mjs')
   },
   {
     name: "product-id-slug",
     path: "/product/:id()/:slug(.*)*",
-    component: () => import('./_...slug_-3WLlzJfm.mjs')
+    component: () => import('./_...slug_-BSvj5Zo3.mjs')
   },
   {
     name: "projects",
     path: "/projects",
-    component: () => import('./index-B7emETwZ.mjs')
+    component: () => import('./index-C0oKRjNi.mjs')
   },
   {
     name: "register",
     path: "/register",
-    component: () => import('./register-yIyHONVA.mjs')
+    component: () => import('./register-BHv8PlEV.mjs')
   },
   {
     name: "request-for-quote",
     path: "/request-for-quote",
-    component: () => import('./request-for-quote-LKgD6Iqz.mjs')
+    component: () => import('./request-for-quote-D23XggL4.mjs')
   },
   {
     name: "terms-and-conditions",
     path: "/terms-and-conditions",
-    component: () => import('./terms-and-conditions-Di2X2TeR.mjs')
+    component: () => import('./terms-and-conditions-DlBHL34B.mjs')
   },
   {
     name: "warranty-terms",
     path: "/warranty-terms",
-    component: () => import('./warranty-terms-C5yBhJdQ.mjs')
+    component: () => import('./warranty-terms-B5vnfL_P.mjs')
   },
   {
     name: void 0 ,
@@ -6362,7 +6584,7 @@ const plugins = [
   plugin_rEHAXyA4gp
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-C6VHM0yh.mjs'))
+  default: defineAsyncComponent(() => import('./default-CYuS1dwk.mjs'))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",
@@ -6656,8 +6878,8 @@ const _sfc_main$1 = {
     const statusMessage = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import('./error-404-BVDNJYk8.mjs'));
-    const _Error = defineAsyncComponent(() => import('./error-500-RlMba-do.mjs'));
+    const _Error404 = defineAsyncComponent(() => import('./error-404-CwiwP8-x.mjs'));
+    const _Error = defineAsyncComponent(() => import('./error-500-gEEIechF.mjs'));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
       _push(ssrRenderComponent(unref(ErrorTemplate), mergeProps({ statusCode: unref(statusCode), statusMessage: unref(statusMessage), description: unref(description), stack: unref(stack) }, _attrs), null, _parent));
@@ -6738,5 +6960,5 @@ let entry;
 }
 const entry$1 = (ssrContext) => entry(ssrContext);
 
-export { APP_SEGMENTS as A, useAuthStore as B, On as O, _export_sfc as _, navigateTo as a, useNuxtApp as b, useRuntimeConfig as c, withoutTrailingSlash as d, entry$1 as default, resolveUnrefHeadInput as e, useRoute as f, asyncDataDefaults as g, hasProtocol as h, injectHead as i, joinURL as j, createError as k, useRequestEvent as l, withLeadingSlash as m, nuxtLinkDefaults as n, parseURL as o, parseQuery as p, defu as q, resolveRouteObject as r, storages as s, encodeParam as t, useRouter as u, encodePath as v, withTrailingSlash as w, apiRequest as x, useAuth as y, br as z };
+export { encodePath as A, apiRequest as B, calculateDiscount as C, formatPrice as D, addToCartText as E, useCartStore as F, useAuth as G, br as H, useAuthStore as I, On as O, _export_sfc as _, navigateTo as a, useNuxtApp as b, useRuntimeConfig as c, withoutTrailingSlash as d, entry$1 as default, resolveUnrefHeadInput as e, useRoute as f, getProductLink as g, hasProtocol as h, injectHead as i, joinURL as j, useAxios as k, getSegment as l, asyncDataDefaults as m, nuxtLinkDefaults as n, createError as o, parseQuery as p, getSolutionLink as q, resolveRouteObject as r, getCategoryLink as s, useRequestEvent as t, useRouter as u, withLeadingSlash as v, withTrailingSlash as w, parseURL as x, defu as y, encodeParam as z };
 //# sourceMappingURL=server.mjs.map

@@ -44,7 +44,7 @@
                       <img
                         style="display: inline"
                         width="28"
-                        :src="assets(result.main_image_path)"
+                        :src="assetsSync(result.main_image_path)"
                         class="rounded profile-img"
                         alt=""
                       />
@@ -115,7 +115,7 @@
                       <img
                         style="display: inline"
                         width="28"
-                        :src="assets(result.main_image_path)"
+                        :src="assetsSync(result.main_image_path)"
                         class="rounded profile-img"
                         alt=""
                       />
@@ -456,7 +456,8 @@ const search = async () => {
     searchLoading.value = true;
     try {
       const response = await api.get(`/api/product_search/${query.value}`);
-      results.value = response.data;
+      results.value = response.data.data;
+      console.log(results.value);
       showResults.value = true;
     } catch (error) {
       console.error(error);

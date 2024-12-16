@@ -51,7 +51,7 @@
                     <figure class="entry-media entry-gallery">
                       <NuxtLink :to="getBlogLink(product.id, product.name)">
                         <NuxtImg
-                          :src="assets(product.main_image_path)"
+                          :src="assetsSync(product.main_image_path)"
                           :alt="product.name"
                           format="webp"
                           quality="80"

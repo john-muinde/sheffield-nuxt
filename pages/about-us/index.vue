@@ -696,7 +696,7 @@
                     <figure class="">
                       <!-- <a href=""> -->
                       <img
-                        :src="assets(client.main_image_path)"
+                        :src="assetsSync(client.main_image_path)"
                         alt="image desc"
                       />
                       <!--  </a> -->

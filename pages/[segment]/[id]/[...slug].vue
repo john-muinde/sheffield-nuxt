@@ -7,7 +7,7 @@
             <NuxtLink to="/">HOME</NuxtLink>
           </li>
           <li class="breadcrumb-item">
-            <NuxtLink :to="`/${pageSegment.slug}`">
+            <NuxtLink :to="`/${pageSegment?.slug}`">
               {{ pageSegment?.name.toUpperCase() }}
             </NuxtLink>
           </li>
@@ -19,31 +19,34 @@
     </nav>
     <div class="page-content">
       <div class="container">
-        <div v-if="status == 'pending'" class="products mb-3 products-section">
-          <div class="row">
+        <ClientOnly>
+          <template #default>
             <div
-              v-for="n in 12"
-              :key="n"
-              class="col-6 col-md-3 col-lg-2 col-xl-2"
+              v-if="status == 'pending' && !store.isFilterLoading"
+              class="products mb-3 products-section"
             >
-              <div class="product product-7 text-center">
-                <div class="product-media shimmer">
-                  <div class="product-image-shimmer"></div>
-                </div>
-                <div class="product-body">
-                  <div class="product-cat">
-                    <div class="shimmer brand-shimmer"></div>
-                  </div>
-                  <div class="product-title">
-                    <div class="shimmer title-shimmer"></div>
+              <div class="row">
+                <div
+                  v-for="n in 12"
+                  :key="n"
+                  class="col-6 col-md-3 col-lg-2 col-xl-2"
+                >
+                  <div class="product product-7 text-center">
+                    <div class="product-media shimmer">
+                      <div class="product-image-shimmer"></div>
+                    </div>
+                    <div class="product-body">
+                      <div class="product-cat">
+                        <div class="shimmer brand-shimmer"></div>
+                      </div>
+                      <div class="product-title">
+                        <div class="shimmer title-shimmer"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-        <ClientOnly>
-          <template #default>
             <div v-if="error || !pageSegment?.active" class="error-content">
               <i
                 class="icon-exclamation-circle text-danger mb-4"
@@ -63,7 +66,10 @@
                 <li>New products might be coming soon</li>
               </ul>
               <div class="error-actions">
-                <button class="btn btn-primary me-3" @click="refreshProducts">
+                <button
+                  class="btn btn-primary me-3"
+                  @click="() => refreshProducts()"
+                >
                   Try Again
                 </button>
                 <NuxtLink to="/" class="btn btn-outline-primary">
@@ -121,7 +127,7 @@
                           <figure class="product-media">
                             <NuxtLink :to="getProductLink(product)">
                               <NuxtImg
-                                :src="assets(product.main_image_path)"
+                                :src="assetsSync(product.main_image_path)"
                                 :alt="product?.name"
                                 format="webp"
                                 quality="80"
@@ -342,76 +348,59 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
+import type { SegmentInterface } from "~/types/meta-tags";
+const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
+  useMetaGenerator();
 
+// Page validation
 definePageMeta({
   validate: async (route) => {
-    return (
-      APP_SEGMENTS.some((item) => item.slug === route.params.segment) &&
-      route.params.id &&
-      Number.isInteger(Number(route.params.id))
-    );
+    return getSegment(route.params.segment) !== undefined;
   },
 });
 
+// Composables
 const route = useRoute();
+const router = useRouter();
 const { segment, id } = route.params;
 const { api } = useAxios();
+const store = useProductsStore();
+
+// Parse route params
 const slug = Array.isArray(route.params.slug)
   ? route.params.slug
   : [route.params.slug];
+const [category, , page] = slug;
 
-const category = slug[0];
-const page = slug[2];
-
+// State with SSR-safe initialization
 const productsFetched = ref(false);
+const category_id = ref(id ? parseInt(id as string) : 1);
 
-const store = useProductsStore();
-
-const createPageLink = (page) => {
-  const label = page?.split("page=")[1];
-  return page
-    ? `/${segment}/${id}/${category}/page/${label}`
-    : `/${segment}/${id}/${category}`;
-};
-
-// State
-const title = ref(
-  `${capitalizeMainWords(segment)} - ${capitalizeMainWords(category)}`
-);
-const category_id = ref(id ? parseInt(id) : 1);
-
-// Initialize currentPage from URL if exists
-if (page) {
-  store.setCurrentPage(parseInt(page));
+// Initialize store state server-side
+if (import.meta.server) {
+  if (page) {
+    store.setCurrentPage(parseInt(page));
+  }
+  // Reset filters on server-side to ensure clean state
+  store.resetFilters();
 }
 
-const pageSegment = computed(() => {
-  return getSegment(segment);
-});
+// Get current segment
+const pageSegment = computed(() => getSegment(segment));
 
-// Main data fetching using useAsyncData
+const filtersLoading = computed(() => store.isFilterLoading);
+
+// Main data fetching with proper SSR handling
 const {
   data: productsData,
   refresh: refreshProducts,
-  status,
   error,
+  status,
 } = await useAsyncData(
-  `products-${category_id.value}-${store.currentPage}-${JSON.stringify(
-    store.checkedCategories
-  )}-${JSON.stringify(store.checkedBrands)}-${store.selectedSortOption}`,
+  `products-${category_id.value}-${store.currentPage}`,
   async () => {
-    const newCheckedCategories = {
-      [category_id.value]: store.checkedCategories[category_id.value] || [],
-    };
-    store.setCheckedCategories(newCheckedCategories);
-
-    const newCheckedBrands = {
-      [category_id.value]: store.checkedBrands[category_id.value] || [],
-    };
-    store.setCheckedBrands(newCheckedBrands);
-
     const response = await api.get("/api/get-products", {
       params: {
         category_id: category_id.value,
@@ -424,7 +413,6 @@ const {
     });
 
     productsFetched.value = true;
-
     return {
       products: response.data.products.data,
       total: response.data.products.total,
@@ -440,102 +428,100 @@ const {
   },
   {
     server: true,
-    lazy: false,
-    watch: [() => store.currentPage],
+    immediate: true,
   }
 );
 
-// SEO
-useHead({
-  title: title,
-  meta: [
-    {
-      name: "description",
-      content: title,
-    },
+// SEO setup
+const { metaTags, productListSchema, breadcrumbSchema, filterSchema } =
+  useProductsPageSEO(productsData, pageSegment.value as SegmentInterface);
+
+// Link generator
+const createPageLink = (page: string | undefined) => {
+  const label = page?.split("page=")[1];
+  return page
+    ? `/${segment}/${id}/${category}/page/${label}`
+    : `/${segment}/${id}/${category}`;
+};
+
+// Apply meta tags
+useHead(() => ({
+  ...generateHeadInput(route, [
+    productListSchema.value,
+    breadcrumbSchema.value,
+    filterSchema.value,
+  ]),
+  title: productsData.value?.theCategory?.name
+    ? `${productsData.value.theCategory.name} - ${pageSegment.value?.name} Products`
+    : "Products",
+  link: [
+    ...(productsData.value?.prev_page_url
+      ? [
+          {
+            rel: "prev",
+            href: createPageLink(productsData.value.prev_page_url),
+          },
+        ]
+      : []),
+    ...(productsData.value?.next_page_url
+      ? [
+          {
+            rel: "next",
+            href: createPageLink(productsData.value.next_page_url),
+          },
+        ]
+      : []),
   ],
-});
+}));
 
-// Filter handlers
-async function handleCheckboxChange(categoryId) {
+useSeoMeta(generateSeoMeta(metaTags.value, route));
+
+// Filter handlers with proper state management
+const handleFilters = async (filterType: "category" | "brand", id: number) => {
+  if (!productsData.value?.theCategory?.id) return;
+
   store.setIsFilterLoading(true);
-  let mainCategoryId = productsData.value?.theCategory.id;
-
-  if (!(mainCategoryId in store.checkedCategories)) {
-    const newCategories = { ...store.checkedCategories };
-    newCategories[mainCategoryId] = [];
-    store.setCheckedCategories(newCategories);
-  }
-
-  const categoryArray = [...(store.checkedCategories[mainCategoryId] || [])];
-
-  if (categoryArray.includes(categoryId)) {
-    const index = categoryArray.indexOf(categoryId);
-    categoryArray.splice(index, 1);
-  } else {
-    categoryArray.push(categoryId);
-  }
-
-  const newCategories = { ...store.checkedCategories };
-  newCategories[mainCategoryId] = categoryArray;
-  store.setCheckedCategories(newCategories);
-
+  console.log(
+    "Filtering",
+    filterType,
+    id,
+    "filtering started",
+    store.isFilterLoading
+  );
   try {
-    useRouter().push(createPageLink("page=1"));
+    const mainCategoryId = productsData.value.theCategory.id;
+
+    if (filterType === "category") {
+      store.getActiveCategoryFilters(mainCategoryId).includes(id)
+        ? store.removeCategoryFilter(mainCategoryId, id)
+        : store.addCategoryFilter(mainCategoryId, id);
+    } else {
+      store.getActiveBrandFilters(mainCategoryId).includes(id)
+        ? store.removeBrandFilter(mainCategoryId, id)
+        : store.addBrandFilter(mainCategoryId, id);
+    }
+
+    await store.applyFilters(mainCategoryId, router, createPageLink);
     await refreshProducts();
   } finally {
     store.setIsFilterLoading(false);
   }
-}
+};
 
-async function handleCheckboxBrandChange(categoryId) {
+const handleCheckboxChange = (id: number) => handleFilters("category", id);
+const handleCheckboxBrandChange = (id: number) => handleFilters("brand", id);
+
+// Reset filters with proper state cleanup
+const resetSortValues = async () => {
   store.setIsFilterLoading(true);
-  let mainCategoryId = productsData.value?.theCategory.id;
-
-  if (!(mainCategoryId in store.checkedBrands)) {
-    const newBrands = { ...store.checkedBrands };
-    newBrands[mainCategoryId] = [];
-    store.setCheckedBrands(newBrands);
-  }
-
-  const brandArray = [...(store.checkedBrands[mainCategoryId] || [])];
-
-  if (brandArray.includes(categoryId)) {
-    const index = brandArray.indexOf(categoryId);
-    brandArray.splice(index, 1);
-  } else {
-    brandArray.push(categoryId);
-  }
-
-  const newBrands = { ...store.checkedBrands };
-  newBrands[mainCategoryId] = brandArray;
-  store.setCheckedBrands(newBrands);
-
   try {
-    useRouter().push(createPageLink("page=1"));
+    store.resetFilters();
+    await store.applyFilters(category_id.value, router, createPageLink);
     await refreshProducts();
   } finally {
     store.setIsFilterLoading(false);
   }
-}
-
-async function resetSortValues() {
-  store.setIsFilterLoading(true);
-
-  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach((checkbox) => {
-    checkbox.checked = false;
-  });
-
-  store.resetFilters();
-
-  try {
-    useRouter().push(createPageLink("page=1"));
-    await refreshProducts();
-  } finally {
-    store.setIsFilterLoading(false);
-  }
-}
+};
 </script>
 
 <style>

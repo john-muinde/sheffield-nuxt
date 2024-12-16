@@ -21,15 +21,13 @@ export function getSegment(slug: string | string[]) {
 }
 
 export const getSolutionLink = (id: number, name: string, segment: any) => {
-  const transformedName = name
-    .toLowerCase()
-    .replace(/[\s/]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const transformedName = transformName(name);
 
   return `/${segment.slug}/solutions/${id}/${transformedName}`;
 };
 
-export const transformName = (name: string): string => {
+export const transformName = (name?: string): string => {
+  if (!name) return '';
   return name
     .toLowerCase()
     .replace(/[\s/]+/g, '-') // Replace spaces and slashes with hyphens
