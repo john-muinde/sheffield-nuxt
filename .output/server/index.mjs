@@ -1,6 +1,7 @@
-import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import { Server as Server$1 } from 'node:http';
-import { Server } from 'node:https';
-import { t as toNodeListener, d as destr, u as useRuntimeConfig, a as trapUnhandledNodeErrors, s as setupGracefulShutdown, b as useNitroApp } from './chunks/_/nitro.mjs';
+import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import 'node:http';
+import 'node:https';
+import './chunks/_/nitro.mjs';
+export { n as default } from './chunks/build/server.mjs';
 import 'vue';
 import 'node:fs';
 import 'node:url';
@@ -8,32 +9,6 @@ import 'consola/core';
 import 'nuxt-site-config/urls';
 import 'ipx';
 import 'node:path';
-
-const cert = process.env.NITRO_SSL_CERT;
-const key = process.env.NITRO_SSL_KEY;
-const nitroApp = useNitroApp();
-const server = cert && key ? new Server({ key, cert }, toNodeListener(nitroApp.h3App)) : new Server$1(toNodeListener(nitroApp.h3App));
-const port = destr(process.env.NITRO_PORT || process.env.PORT) || 3e3;
-const host = process.env.NITRO_HOST || process.env.HOST;
-const path = process.env.NITRO_UNIX_SOCKET;
-const listener = server.listen(path ? { path } : { port, host }, (err) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-  const protocol = cert && key ? "https" : "http";
-  const addressInfo = listener.address();
-  if (typeof addressInfo === "string") {
-    console.log(`Listening on unix socket ${addressInfo}`);
-    return;
-  }
-  const baseURL = (useRuntimeConfig().app.baseURL || "").replace(/\/$/, "");
-  const url = `${protocol}://${addressInfo.family === "IPv6" ? `[${addressInfo.address}]` : addressInfo.address}:${addressInfo.port}${baseURL}`;
-  console.log(`Listening on ${url}`);
-});
-trapUnhandledNodeErrors();
-setupGracefulShutdown(listener, nitroApp);
-const nodeServer = {};
-
-export { nodeServer as default };
+import 'file:///C:/Users/john.muinde/Documents/sheffield-application/node_modules/.pnpm/@nuxt+vite-builder@3.14.1592_@types+node@22.10.1_magicast@0.3.5_rollup@4.28.0_sass-embedded@1_xff552qpnkbia6fpn2v4yoma5e/node_modules/@nuxt/vite-builder/dist/runtime/client.manifest.mjs';
+import 'file:///C:/Users/john.muinde/Documents/sheffield-application/node_modules/.pnpm/@nuxt+vite-builder@3.14.1592_@types+node@22.10.1_magicast@0.3.5_rollup@4.28.0_sass-embedded@1_xff552qpnkbia6fpn2v4yoma5e/node_modules/@nuxt/vite-builder/dist/runtime/vite-node.mjs';
 //# sourceMappingURL=index.mjs.map

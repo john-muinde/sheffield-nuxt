@@ -60,9 +60,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
   runtimeConfig: {
-    API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
+    API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     public: {
-      API_URL: process.env.API_URL || "https://dev.sheffieldafrica.com",
+      API_URL: process.env.API_URL || "https://sheffieldafrica.com",
       PUBLIC_URL: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
     },
   },

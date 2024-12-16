@@ -1,5 +1,5 @@
 import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { getRequestDependencies, getPreloadLinks, getPrefetchLinks, createRenderer } from 'vue-bundle-renderer/runtime';
-import { c as defineRenderHandler, e as buildAssetsURL, p as publicAssetsURL, g as getQuery, f as createError, h as getRouteRules, u as useRuntimeConfig, i as getResponseStatus, j as getResponseStatusText, b as useNitroApp } from '../_/nitro.mjs';
+import { d as defineRenderHandler, b as buildAssetsURL, p as publicAssetsURL, g as getQuery, c as createError, a as getRouteRules, u as useRuntimeConfig, e as getResponseStatus, f as getResponseStatusText, h as useNitroApp } from '../_/nitro.mjs';
 import { stringify, uneval } from 'devalue';
 import { renderToString } from 'vue/server-renderer';
 import { propsToString, renderSSRHead } from '@unhead/ssr';
@@ -94,14 +94,14 @@ const appId = "nuxt-app";
 
 globalThis.__buildAssetsURL = buildAssetsURL;
 globalThis.__publicAssetsURL = publicAssetsURL;
-const getClientManifest = () => import('../build/client.manifest.mjs').then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
+const getClientManifest = () => import('../build/server.mjs').then(function (n) { return n.c; }).then((r) => r.default || r).then((r) => typeof r === "function" ? r() : r);
 const getEntryIds = () => getClientManifest().then((r) => Object.values(r).filter(
   (r2) => (
     // @ts-expect-error internal key set by CSS inlining configuration
     r2._globalCSS
   )
 ).map((r2) => r2.src));
-const getServerEntry = () => import('../build/server.mjs').then((r) => r.default || r);
+const getServerEntry = () => import('../build/server.mjs').then(function (n) { return n.s; }).then((r) => r.default || r);
 const getSSRStyles = lazyCachedFunction(() => import('../build/styles.mjs').then((r) => r.default || r));
 const getSSRRenderer = lazyCachedFunction(async () => {
   const manifest = await getClientManifest();
