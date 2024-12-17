@@ -327,15 +327,7 @@
 </template>
 
 <script setup>
-import {
-  ref,
-  onMounted,
-  onUnmounted,
-  onBeforeUnmount,
-  reactive,
-  nextTick,
-  watch,
-} from "vue";
+import { ref, reactive } from "vue";
 
 useHead({
   title: "Careers",
@@ -351,7 +343,7 @@ import VueEasyLightbox from "vue-easy-lightbox";
 
 import { useForm, useField, defineRule } from "vee-validate";
 
-const { executeRecaptcha, recaptchaLoaded } = useVueRecaptcha();
+const { executeRecaptcha } = useVueRecaptcha();
 
 defineRule("required", required);
 defineRule("min", min);
@@ -430,7 +422,7 @@ const handleHide = () => {
 };
 </script>
 
-<style>
+<style scoped>
 .hex-section-career .hex1 {
   background: red;
   -webkit-clip-path: polygon(

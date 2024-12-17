@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 @media only screen and (max-width: 768px) {
-  .page-content,main.main {
+  .page-content,
+  main.main {
     padding: 6rem 20px;
   }
 }
+
+

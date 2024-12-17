@@ -14,9 +14,10 @@ export default defineNuxtConfig({
     "vue3-carousel-nuxt",
     "@nuxt/image",
     "@nuxtjs/sitemap",
+    "@morev/vue-transitions",
   ],
   imports: {
-    dirs: ["stores"],
+    dirs: ["stores", "components"],
   },
   ignore: ["backend/**"],
   app: {
@@ -28,6 +29,7 @@ export default defineNuxtConfig({
         },
       ],
     },
+    pageTransition: { name: "page", mode: "out-in" },
   },
   generate: {
     //@ts-ignore
@@ -59,6 +61,42 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
+  vueTransitions: {
+    defaultProps: {
+      duration: 300,
+      mode: "out-in",
+      onBeforeLeave(el: any) {
+        // Save scroll position before transition
+        const scrollPosition = window.scrollY;
+        el.dataset.scrollPosition = scrollPosition.toString();
+      },
+      onEnter(el: any) {
+        // Restore scroll position after transition
+        const scrollPosition = parseInt(el.dataset.scrollPosition || "0");
+        window.scrollTo(0, scrollPosition);
+      },
+    },
+    transitions: {
+      page: {
+        name: "fade-slide-y",
+        mode: "out-in",
+        duration: 300,
+        onLeave: (el: any, done: any) => {
+          // Add loading state before transition
+          el.style.opacity = "0";
+          el.style.transform = "translateY(20px)";
+          setTimeout(done, 300);
+        },
+        onEnter: (el: any, done: any) => {
+          // Remove loading state after transition
+          el.style.opacity = "1";
+          el.style.transform = "translateY(0)";
+          setTimeout(done, 300);
+        },
+      },
+    },
+  },
+
   runtimeConfig: {
     API_URL: process.env.API_URL || "https://sheffieldafrica.com",
     public: {

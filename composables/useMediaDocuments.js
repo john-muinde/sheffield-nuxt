@@ -1,13 +1,15 @@
+// composables/useDocuments.js
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useCookie } from "#app";
 
-export function useMediaDocuments(options = {}) {
-  const { API_URL } = useAxios();
+export default function useMediaDocuments(options = {}) {
   const {
-    thumbnailScale = 0.5,
+    type = "all",
+    cacheTime = 3600,
+    thumbnailScale = 0.4,
     enableDflip = true,
     cdnBaseUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174",
-    storageBaseUrl = API_URL + "/storage",
     filters = {
       type: "document",
     },
@@ -17,6 +19,13 @@ export function useMediaDocuments(options = {}) {
   const loading = ref(false);
   const error = ref(null);
   const router = useRouter();
+
+  // Cache management
+  const cacheKey = `documents_${type}`;
+  const documentCache = useCookie(cacheKey, {
+    maxAge: cacheTime,
+    sameSite: true,
+  });
 
   // Dynamic PDF.js loader
   const loadPdfJS = async () => {
@@ -50,13 +59,12 @@ export function useMediaDocuments(options = {}) {
   const generateThumbnail = async (filePath, scale = thumbnailScale) => {
     try {
       const pdfjsLib = await loadPdfJS();
-      const fullPath = `${storageBaseUrl}/${filePath}`;
-      const loadingTask = pdfjsLib.getDocument(fullPath);
+      const loadingTask = pdfjsLib.getDocument(filePath);
       const pdf = await loadingTask.promise;
       const page = await pdf.getPage(1);
 
-      const canvas = document.createElement("canvas");
       const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
       canvas.width = viewport.width;
@@ -74,8 +82,15 @@ export function useMediaDocuments(options = {}) {
     }
   };
 
+  const extractDimensions = (filename) => {
+    const match = filename.match(/(\d+\.?\d*)x(\d+\.?\d*)/);
+    return match
+      ? { width: parseFloat(match[1]), height: parseFloat(match[2]) }
+      : null;
+  };
+
   // Process documents with thumbnail generation
-  const processDocuments = async (fetchFunction) => {
+  const processDocuments = async (fetchFunction, sorting = "height") => {
     loading.value = true;
     try {
       const documentsData = await fetchFunction();
@@ -105,12 +120,13 @@ export function useMediaDocuments(options = {}) {
             doc.thumb = thumbnail || undefined;
           } else if (doc.thumbnail_path) {
             // Use existing thumbnail
-            doc.thumb = `${storageBaseUrl}/${doc.thumbnail_path}`;
+            doc.thumb = doc.thumbnail_path;
           }
 
           // Estimate thumbnail height without fully loading the image
-          if (doc.thumb) {
+          if (doc.thumb && sorting === "height") {
             const dimensions = extractDimensions(doc.thumb);
+
             if (dimensions) {
               width = dimensions.width || 1;
               height = dimensions.height || 1;
@@ -132,6 +148,8 @@ export function useMediaDocuments(options = {}) {
           console.error(`Error processing thumbnail for ${doc.name}:`, error);
         }
 
+        doc.thumb = assetsSync(doc.thumb);
+
         return {
           ...doc,
           height,
@@ -142,70 +160,55 @@ export function useMediaDocuments(options = {}) {
       });
 
       // Limit concurrent thumbnail processing to prevent performance issues
-      const processedDocuments = await Promise.all(documentPromises);
+      documents.value = await Promise.all(documentPromises);
 
-      // Sort documents by height-width ratio in descending order
-      // This will prioritize portrait (taller) images, then square, then landscape
-      documents.value = processedDocuments.sort(
-        (a, b) => b.heightWidthRatio - a.heightWidthRatio
-      );
+      if (sorting === "height") {
+        documents.value = sortDocumentsByThumbnailRatios(documents.value);
+      }
 
       loading.value = false;
       return documents.value;
     } catch (err) {
       loading.value = false;
       error.value = err instanceof Error ? err : new Error(String(err));
-      console.error(err);
       return [];
     }
   };
 
-  // Alternative method with fallback
-  const getEstimatedThumbnailHeight = (doc) => {
-    if (doc.thumbnail_path) {
-      const knownHeights = {
-        "a4-portrait": 794,
-        "a4-landscape": 560,
-        "letter-portrait": 792,
-        "letter-landscape": 612,
-      };
-
-      // Try to match known dimensions
-      const matchedHeight = Object.values(knownHeights).find((height) =>
-        doc.thumbnail_path.includes(String(height))
-      );
-
-      if (matchedHeight) return matchedHeight;
-    }
-
-    // Fallback to a default height or based on document type
-    const typeHeights = {
-      brochure: 300,
-      newsletter: 250,
-      catalog: 400,
-      default: 200,
-    };
-
-    return typeHeights[doc.type] || typeHeights["default"];
-  };
-
   // Optimized sorting method with fallback
-  const sortDocumentsByThumbnailHeight = (documents) => {
+  const sortDocumentsByThumbnailRatios = (documents) => {
     return documents.sort((a, b) => {
-      const heightA = a.thumbnailHeight || getEstimatedThumbnailHeight(a);
-      const heightB = b.thumbnailHeight || getEstimatedThumbnailHeight(b);
-      return heightB - heightA;
+      return b.heightWidthRatio - a.heightWidthRatio;
     });
   };
 
-  // Initialize DFlip for documents
+  // Filter and search documents
+  const filterDocuments = (searchTerm = "") => {
+    return documents.value.filter((doc) => {
+      // Check filters
+      const matchesFilters = Object.entries(filters).every(
+        ([key, value]) => doc[key] === value
+      );
+
+      // Check search term
+      const matchesSearch =
+        !searchTerm ||
+        Object.values(doc).some((field) =>
+          String(field).toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+      return matchesFilters && matchesSearch;
+    });
+  };
+
+  // Initialize DFlip
   const initializeDflip = (docs = documents.value) => {
     if (!enableDflip || !docs.length) return false;
 
     docs.forEach((doc) => {
       if (doc.publication_file.toLowerCase().endsWith(".pdf")) {
         window[`df_option_${doc.id}`] = {
-          source: `${storageBaseUrl}/${doc.publication_file}`,
+          source: assetsSync(`${doc.publication_file}`),
           outline: [],
           autoEnableOutline: false,
           autoEnableThumbnail: false,
@@ -257,35 +260,10 @@ export function useMediaDocuments(options = {}) {
     return true;
   };
 
-  // Filter and search documents
-  const filterDocuments = (searchTerm = "") => {
-    return documents.value.filter((doc) => {
-      // Check filters
-      const matchesFilters = Object.entries(filters).every(
-        ([key, value]) => doc[key] === value
-      );
-
-      // Check search term
-      const matchesSearch =
-        !searchTerm ||
-        Object.values(doc).some((field) =>
-          String(field).toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-      return matchesFilters && matchesSearch;
-    });
-  };
-
-  const extractDimensions = (filename) => {
-    const parts = filename.split("-").pop().split(".jpg")[0].split("x");
-    if (parts.length === 2) {
-      const width = parseFloat(parts[0], 10);
-      const height = parseFloat(parts[1], 10);
-      if (!isNaN(width) && !isNaN(height)) {
-        return { width, height };
-      }
-    }
-    return null;
+  // Cleanup function
+  const cleanup = () => {
+    documents.value = [];
+    error.value = null;
   };
 
   return {
@@ -294,8 +272,9 @@ export function useMediaDocuments(options = {}) {
     error,
     processDocuments,
     initializeDflip,
-    generateThumbnail,
     handleRouteLeave,
     filterDocuments,
+    generateThumbnail,
+    cleanup,
   };
 }

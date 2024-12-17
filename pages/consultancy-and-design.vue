@@ -320,7 +320,7 @@ useHead({
 });
 </script>
 
-<style>
+<style scoped>
 .consultancy-and-design-image img {
   margin-top: 20%;
 }

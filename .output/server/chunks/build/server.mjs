@@ -9,7 +9,7 @@ import { format } from 'node:url';
 import { isIP } from 'node:net';
 import { statSync, promises, createReadStream } from 'node:fs';
 import { basename } from 'node:path';
-import { k as baseURL, f as createError$1, l as sanitizeStatusCode, m as getContext, n as createHooks, o as getRequestHeader, q as setCookie, r as getCookie, v as deleteCookie, w as toRouteMatcher, x as createRouter$1 } from '../_/nitro.mjs';
+import { k as baseURL, f as createError$1, l as getRequestHeader, m as sanitizeStatusCode, n as setCookie, o as getCookie, q as deleteCookie, r as getContext, v as createHooks, w as toRouteMatcher, x as createRouter$1 } from '../_/nitro.mjs';
 import { defineStore, createPinia, setActivePinia, shouldHydrate } from 'pinia';
 import { getActiveHead, CapoPlugin } from 'unhead';
 import { useRoute as useRoute$1, RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
@@ -2701,7 +2701,7 @@ const mr = Symbol.toStringTag, yi = n((i) => typeof i == "object" && typeof i.ap
       for (const [p, h2] of l2) u.append(p, h2);
       return u;
     }
-    const { toFormData: a2 } = await import('./multipart-parser-MCXQjonN.mjs');
+    const { toFormData: a2 } = await import('./multipart-parser-BErHemTA.mjs');
     return a2(this.body, o2);
   }
   async blob() {
@@ -4186,8 +4186,8 @@ if (!globalThis.$fetch) {
     baseURL: baseURL()
   });
 }
+const appPageTransition = { "name": "page", "mode": "out-in" };
 const appLayoutTransition = false;
-const appPageTransition = false;
 const appKeepalive = false;
 const nuxtLinkDefaults = { "componentName": "NuxtLink", "prefetch": true, "prefetchOn": { "visibility": true } };
 const asyncDataDefaults = { "value": null, "errorValue": null, "deep": true };
@@ -5874,13 +5874,13 @@ const _routes = [
     name: "segment-id-slug",
     path: "/:segment()/:id()/:slug(.*)*",
     meta: __nuxt_page_meta$3 || {},
-    component: () => import('./_...slug_-yngk8GtF.mjs')
+    component: () => import('./_...slug_-BffeVfWW.mjs')
   },
   {
     name: "segment",
     path: "/:segment()",
     meta: __nuxt_page_meta$2 || {},
-    component: () => import('./index-Cb5tPt21.mjs')
+    component: () => import('./index-CcFOP0gj.mjs')
   },
   {
     name: "segment-product-id-slug",
@@ -5891,7 +5891,7 @@ const _routes = [
     name: "segment-solutions-id-slug",
     path: "/:segment()/solutions/:id()/:slug(.*)*",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./_...slug_-COjD3lDc.mjs')
+    component: () => import('./_...slug_-DhO9arnR.mjs')
   },
   {
     name: "about-us",
@@ -5901,17 +5901,17 @@ const _routes = [
   {
     name: "about-us-sheffield-advantage",
     path: "/about-us/sheffield-advantage",
-    component: () => import('./sheffield-advantage-FTApO6WQ.mjs')
+    component: () => import('./sheffield-advantage-8wOrNPW1.mjs')
   },
   {
     name: "careers",
     path: "/careers",
-    component: () => import('./careers-BbueI7CC.mjs')
+    component: () => import('./careers-CntPUc8s.mjs')
   },
   {
     name: "consultancy-and-design",
     path: "/consultancy-and-design",
-    component: () => import('./consultancy-and-design-DDoJD0Oh.mjs')
+    component: () => import('./consultancy-and-design-w374fD4U.mjs')
   },
   {
     name: "contact-us",
@@ -5941,7 +5941,7 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-BPiJhp-a.mjs')
+    component: () => import('./index-DmDHeSuE.mjs')
   },
   {
     name: "lease-and-finance",
@@ -5961,7 +5961,7 @@ const _routes = [
   {
     name: "media-brochures-and-catalogs",
     path: "/media/brochures-and-catalogs",
-    component: () => import('./brochures-and-catalogs-qCrlDOgc.mjs')
+    component: () => import('./brochures-and-catalogs-t_Ef6DUy.mjs')
   },
   {
     name: "media-gallery",
@@ -5981,7 +5981,7 @@ const _routes = [
   {
     name: "media-newsletters",
     path: "/media/newsletters",
-    component: () => import('./newsletters-IwE28Y8O.mjs')
+    component: () => import('./newsletters-CgJ1zCxC.mjs')
   },
   {
     name: "media-videos",
@@ -6006,7 +6006,7 @@ const _routes = [
   {
     name: "projects",
     path: "/projects",
-    component: () => import('./index-C0oKRjNi.mjs')
+    component: () => import('./index-3lyEE-5Q.mjs')
   },
   {
     name: "register",
@@ -6584,7 +6584,7 @@ const plugins = [
   plugin_rEHAXyA4gp
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-CYuS1dwk.mjs'))
+  default: defineAsyncComponent(() => import('./default-I6Z-shlQ.mjs'))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",
@@ -6960,5 +6960,5 @@ let entry;
 }
 const entry$1 = (ssrContext) => entry(ssrContext);
 
-export { encodePath as A, apiRequest as B, calculateDiscount as C, formatPrice as D, addToCartText as E, useCartStore as F, useAuth as G, br as H, useAuthStore as I, On as O, _export_sfc as _, navigateTo as a, useNuxtApp as b, useRuntimeConfig as c, withoutTrailingSlash as d, entry$1 as default, resolveUnrefHeadInput as e, useRoute as f, getProductLink as g, hasProtocol as h, injectHead as i, joinURL as j, useAxios as k, getSegment as l, asyncDataDefaults as m, nuxtLinkDefaults as n, createError as o, parseQuery as p, getSolutionLink as q, resolveRouteObject as r, getCategoryLink as s, useRequestEvent as t, useRouter as u, withLeadingSlash as v, withTrailingSlash as w, parseURL as x, defu as y, encodeParam as z };
+export { encodePath as A, apiRequest as B, calculateDiscount as C, formatPrice as D, addToCartText as E, useCartStore as F, useAuth as G, useCookie as H, br as I, useAuthStore as J, On as O, _export_sfc as _, navigateTo as a, useNuxtApp as b, useRuntimeConfig as c, withoutTrailingSlash as d, entry$1 as default, resolveUnrefHeadInput as e, useRoute as f, getProductLink as g, hasProtocol as h, injectHead as i, joinURL as j, useAxios as k, getSegment as l, asyncDataDefaults as m, nuxtLinkDefaults as n, createError as o, parseQuery as p, getSolutionLink as q, resolveRouteObject as r, getCategoryLink as s, useRequestEvent as t, useRouter as u, withLeadingSlash as v, withTrailingSlash as w, parseURL as x, defu as y, encodeParam as z };
 //# sourceMappingURL=server.mjs.map

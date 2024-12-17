@@ -1,275 +1,274 @@
 <template>
-  <header class="header header-6 header-transparent desktop-header">
-    <div class="header-middle mt-2">
-      <div class="container">
-        <div class="header-left">
-          <div
-            class="header-search header-search-extended header-search-visible d-none d-lg-block"
-          >
-            <a href="#" class="search-toggle" role="button"
-              ><i class="icon-search"></i
-            ></a>
-            <form action="#" method="get">
-              <div
-                class="header-search-wrapper search-wrapper-wide searchListMainDiv"
-              >
-                <label for="q" class="sr-only">Search</label>
-                <button class="btn btn-primary" type="submit">
-                  <i class="icon-search"></i>
-                </button>
-                <input
-                  v-model="query"
-                  type="search"
-                  class="form-control"
-                  name="q"
-                  autocomplete="off"
-                  placeholder="Search product ..."
-                  required=""
-                  @input="search"
-                />
-                <ul v-if="showResults" style="width: 370px">
-                  <div v-if="searchLoading" class="form-control">
-                    Loading...
-                  </div>
-
-                  <div
-                    v-if="!results.length && !searchLoading"
+  <div>
+    <header class="header header-6 header-transparent desktop-header">
+      <div class="header-middle mt-2">
+        <div class="container">
+          <div class="header-left">
+            <div
+              class="header-search header-search-extended header-search-visible d-none d-lg-block"
+            >
+              <a href="#" class="search-toggle" role="button"
+                ><i class="icon-search"></i
+              ></a>
+              <form action="#" method="get">
+                <div
+                  class="header-search-wrapper search-wrapper-wide searchListMainDiv"
+                >
+                  <label for="q" class="sr-only">Search</label>
+                  <button class="btn btn-primary" type="submit">
+                    <i class="icon-search"></i>
+                  </button>
+                  <input
+                    v-model="query"
+                    type="search"
                     class="form-control"
-                  >
-                    No results found
-                  </div>
+                    name="q"
+                    autocomplete="off"
+                    placeholder="Search product ..."
+                    required=""
+                    @input="search"
+                  />
+                  <ul v-if="showResults" style="width: 370px">
+                    <div v-if="searchLoading" class="form-control">
+                      Loading...
+                    </div>
 
-                  <li v-for="result in results" v-else :key="result.id">
-                    <NuxtLink :to="getProductLink(result)">
-                      <img
-                        style="display: inline"
-                        width="28"
-                        :src="assetsSync(result.main_image_path)"
-                        class="rounded profile-img"
-                        alt=""
-                      />
-                      {{ result.name }}
-                    </NuxtLink>
-                  </li>
-                </ul>
-              </div>
-              <!-- End .header-search-wrapper -->
-            </form>
+                    <div
+                      v-if="!results.length && !searchLoading"
+                      class="form-control"
+                    >
+                      No results found
+                    </div>
+
+                    <li v-for="result in results" v-else :key="result.id">
+                      <NuxtLink :to="getProductLink(result)">
+                        <img
+                          style="display: inline"
+                          width="28"
+                          :src="assetsSync(result.main_image_path)"
+                          class="rounded profile-img"
+                          alt=""
+                        />
+                        {{ result.name }}
+                      </NuxtLink>
+                    </li>
+                  </ul>
+                </div>
+                <!-- End .header-search-wrapper -->
+              </form>
+            </div>
+            <!-- End .header-search -->
           </div>
-          <!-- End .header-search -->
+          <div class="header-center">
+            <NuxtLink to="/" class="logo">
+              <img
+                class="zoom-image"
+                src="/assets/images/logo.png"
+                alt="Sheffield Logo"
+                width="245"
+                height="auto"
+              />
+            </NuxtLink>
+          </div>
+          <!-- End .header-left -->
+
+          <div class="header-right">
+            <CartComponent> </CartComponent>
+          </div>
         </div>
-        <div class="header-center">
-          <NuxtLink to="/" class="logo">
-            <img
-              class="zoom-image"
-              src="/assets/images/logo.png"
-              alt="Sheffield Logo"
-              width="245"
-              height="auto"
-            />
+        <!-- End .container -->
+      </div>
+      <!-- End .header-middle -->
+    </header>
+
+    <header class="header header-6 mobile-header">
+      <div class="header-middle">
+        <div class="container">
+          <div class="header-left">
+            <div
+              class="header-search header-search-extended header-search-visible d-none d-lg-block"
+            >
+              <a href="#" class="search-toggle" role="button"
+                ><i class="icon-search"></i
+              ></a>
+              <form action="#" method="get">
+                <div
+                  class="header-search-wrapper search-wrapper-wide searchListMainDiv"
+                >
+                  <label for="q" class="sr-only">Search</label>
+                  <button class="btn btn-primary" type="submit">
+                    <i class="icon-search"></i>
+                  </button>
+                  <input
+                    id="q"
+                    v-model="query"
+                    type="search"
+                    class="form-control"
+                    name="q"
+                    autocomplete="off"
+                    placeholder="Search product ..."
+                    required=""
+                    @input="search"
+                  />
+                  <ul v-if="showResults" class="">
+                    <li v-for="result in results" :key="result.id">
+                      <NuxtLink :to="getProductLink(result)">
+                        <img
+                          style="display: inline"
+                          width="28"
+                          :src="assetsSync(result.main_image_path)"
+                          class="rounded profile-img"
+                          alt=""
+                        />
+                        {{ result.name }}
+                      </NuxtLink>
+                    </li>
+                  </ul>
+                </div>
+                <!-- End .header-search-wrapper -->
+              </form>
+            </div>
+            <!-- End .header-search -->
+          </div>
+          <div class="header-center">
+            <NuxtLink to="/" class="logo">
+              <img
+                src="/assets/images/logo.png"
+                alt="Sheffield Logo"
+                width="245"
+                height="auto"
+              />
+            </NuxtLink>
+          </div>
+          <!-- End .header-left -->
+
+          <div class="header-right">
+            <!-- <a class="header_phone" href="tel:+254713777111">+254 713 777 111</a> -->
+            <button
+              id="mobile-menu-toggler"
+              class="mobile-menu-toggler"
+              @click="addClassToBody"
+            >
+              <span class="sr-only">Toggle mobile menu</span>
+              <i class="icon-bars"></i>
+            </button>
+          </div>
+        </div>
+        <!-- End .container -->
+      </div>
+      <!-- End .header-middle -->
+    </header>
+
+    <div class="page-wrapper">
+      <main class="main1 container">
+        <div class="justify-content-center mt-4 home-design">
+          <NuxtLink
+            class="home-first home-section home-section-cat"
+            to="/about-us/sheffield-advantage"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/sheffield_engineer.jpg"
+                alt="Sheffield Engineer"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-cold-storage home-section home-section-cat"
+            to="cold-storage"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/cold_storage_home.jpg"
+                alt="Commercial Cold Storage"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-kitchen home-section home-section-cat"
+            to="/commercial-kitchen"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/food_service_equipment.jpg"
+                alt="Commercial Food Service Equipment"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-laundry home-section home-section-cat"
+            to="/laundry"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/laundry_and_cleaning.jpg"
+                alt="Commercial Laundry and Cleaning"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-last home-section home-section-cat"
+            to="/projects"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/female_worker.jpg"
+                alt="Sheffield Female Worker"
+              />
+            </div>
           </NuxtLink>
         </div>
-        <!-- End .header-left -->
 
-        <div class="header-right">
-          <CartComponent> </CartComponent>
-        </div>
-      </div>
-      <!-- End .container -->
-    </div>
-    <!-- End .header-middle -->
-  </header>
-
-  <header class="header header-6 mobile-header">
-    <div class="header-middle">
-      <div class="container">
-        <div class="header-left">
-          <div
-            class="header-search header-search-extended header-search-visible d-none d-lg-block"
+        <div class="justify-content-center mt-4 home-design-mobile">
+          <NuxtLink
+            class="home-kitchen home-section home-section-cat"
+            to="/commercial-kitchen"
+            as="a"
           >
-            <a href="#" class="search-toggle" role="button"
-              ><i class="icon-search"></i
-            ></a>
-            <form action="#" method="get">
-              <div
-                class="header-search-wrapper search-wrapper-wide searchListMainDiv"
-              >
-                <label for="q" class="sr-only">Search</label>
-                <button class="btn btn-primary" type="submit">
-                  <i class="icon-search"></i>
-                </button>
-                <input
-                  id="q"
-                  v-model="query"
-                  type="search"
-                  class="form-control"
-                  name="q"
-                  autocomplete="off"
-                  placeholder="Search product ..."
-                  required=""
-                  @input="search"
-                />
-                <ul v-if="showResults" class="">
-                  <li v-for="result in results" :key="result.id">
-                    <NuxtLink :to="getProductLink(result)">
-                      <img
-                        style="display: inline"
-                        width="28"
-                        :src="assetsSync(result.main_image_path)"
-                        class="rounded profile-img"
-                        alt=""
-                      />
-                      {{ result.name }}
-                    </NuxtLink>
-                  </li>
-                </ul>
-              </div>
-              <!-- End .header-search-wrapper -->
-            </form>
-          </div>
-          <!-- End .header-search -->
-        </div>
-        <div class="header-center">
-          <NuxtLink to="/" class="logo">
-            <img
-              src="/assets/images/logo.png"
-              alt="Sheffield Logo"
-              width="245"
-              height="auto"
-            />
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/food_service_equipment.jpg"
+                alt="Commercial Food Service Equipment"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-cold-storage home-section home-section-cat"
+            to="cold-storage"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/cold_storage_home.jpg"
+                alt="Commercial Cold Storage"
+              />
+            </div>
+          </NuxtLink>
+
+          <NuxtLink
+            class="home-laundry home-section home-section-cat"
+            to="/laundry"
+            as="a"
+          >
+            <div class="home-section-white">
+              <img
+                src="/assets/images/homepage/laundry_and_cleaning.jpg"
+                alt="Commercial Laundry and Cleaning"
+              />
+            </div>
           </NuxtLink>
         </div>
-        <!-- End .header-left -->
-
-        <div class="header-right">
-          <!-- <a class="header_phone" href="tel:+254713777111">+254 713 777 111</a> -->
-          <button
-            id="mobile-menu-toggler"
-            class="mobile-menu-toggler"
-            @click="addClassToBody"
-          >
-            <span class="sr-only">Toggle mobile menu</span>
-            <i class="icon-bars"></i>
-          </button>
-        </div>
-      </div>
-      <!-- End .container -->
-    </div>
-    <!-- End .header-middle -->
-  </header>
-
-  <div class="page-wrapper">
-    <main class="main1 container">
-      <div class="justify-content-center mt-4 home-design">
-        <NuxtLink
-          class="home-first home-section home-section-cat"
-          to="/about-us/sheffield-advantage"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/sheffield_engineer.jpg"
-              alt="Sheffield Engineer"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-cold-storage home-section home-section-cat"
-          to="cold-storage"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/cold_storage_home.jpg"
-              alt="Commercial Cold Storage"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-kitchen home-section home-section-cat"
-          to="/commercial-kitchen"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/food_service_equipment.jpg"
-              alt="Commercial Food Service Equipment"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-laundry home-section home-section-cat"
-          to="/laundry"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/laundry_and_cleaning.jpg"
-              alt="Commercial Laundry and Cleaning"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-last home-section home-section-cat"
-          to="/projects"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/female_worker.jpg"
-              alt="Sheffield Female Worker"
-            />
-          </div>
-        </NuxtLink>
-      </div>
-
-      <div class="justify-content-center mt-4 home-design-mobile">
-        <NuxtLink
-          class="home-kitchen home-section home-section-cat"
-          to="/commercial-kitchen"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/food_service_equipment.jpg"
-              alt="Commercial Food Service Equipment"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-cold-storage home-section home-section-cat"
-          to="cold-storage"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/cold_storage_home.jpg"
-              alt="Commercial Cold Storage"
-            />
-          </div>
-        </NuxtLink>
-
-        <NuxtLink
-          class="home-laundry home-section home-section-cat"
-          to="/laundry"
-          as="a"
-        >
-          <div class="home-section-white">
-            <img
-              src="/assets/images/homepage/laundry_and_cleaning.jpg"
-              alt="Commercial Laundry and Cleaning"
-            />
-          </div>
-        </NuxtLink>
-      </div>
-
-      <template v-if="promotionProducts?.length">
-        <div class="container-fluid">
+        <div v-if="promotionProducts?.length" class="container-fluid">
           <div
             class="d-flex align-items-center mt-1 row"
             style="min-height: 500px !important"
@@ -373,14 +372,12 @@
             </div>
           </div>
         </div>
-      </template>
-    </main>
-    <!-- End .main -->
-  </div>
-  <!-- End .page-wrapper -->
+      </main>
+      <!-- End .main -->
+    </div>
+    <!-- End .page-wrapper -->
 
-  <template v-if="showPopup">
-    <div class="popup-advert">
+    <div v-if="showPopup" class="popup-advert">
       <div class="popup-content">
         <img
           src="/assets/images/events/Rational Live 11 Dec.jpg"
@@ -404,7 +401,7 @@
         </div>
       </div>
     </div>
-  </template>
+  </div>
 </template>
 
 <script setup>
