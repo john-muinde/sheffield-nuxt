@@ -23,7 +23,7 @@
       <div class="col-xl-3 col-lg-4 col-md-12 mb-md-4">
         <div class="promo-image-wrapper">
           <img
-            src="/assets/images/events/november-promo.png"
+            src="/assets/images/events/december-promo.jpg"
             alt="Promotion Banner"
             class="img-fluid promo-image"
           />

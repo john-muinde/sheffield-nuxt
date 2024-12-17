@@ -279,7 +279,7 @@
             >
               <div class="promo-image-wrapper">
                 <img
-                  src="/assets/images/events/november-promo.png"
+                  src="/assets/images/events/december-promo.jpg"
                   alt="Promotion Banner"
                   class="img img-fluid contain promo-image"
                   style="height: 100%; width: 90%"
@@ -394,7 +394,11 @@
           </button>
           <button
             class="btn btn-secondary btn-footer col-4"
-            @click="viewProduct()"
+            @click="
+              viewProduct(
+                '/promotional-solutions/373/nov-16-2024-jan-15-2024-promotions'
+              )
+            "
           >
             View
           </button>
