@@ -155,5 +155,3 @@ useHead({
   ],
 });
 </script>
-
-<style></style>

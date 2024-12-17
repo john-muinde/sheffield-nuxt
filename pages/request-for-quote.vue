@@ -469,8 +469,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { useReCaptcha } from "vue-recaptcha-v3";
+import { computed } from "vue";
 import { ShoppingCartIcon } from "lucide-vue-next";
 import { VueTelInput } from "vue-tel-input";
 import { countries } from "countries-list";
@@ -510,7 +509,7 @@ const submitForm = async () => {
 };
 </script>
 
-<style>
+<style scoped>
 .my-header-image {
   margin-top: 0px !important;
   margin-bottom: -100px;

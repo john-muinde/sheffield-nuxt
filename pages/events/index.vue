@@ -272,7 +272,7 @@ onMounted(async () => {
 });
 </script>
 
-<style>
+<style scoped>
 .who-we-are-section {
   /* background-image: url("/assets/images/events_page1.jpg"); */
   background-size: cover;

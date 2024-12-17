@@ -23,17 +23,17 @@
 </template>
 
 <script setup>
-import {  computed } from 'vue';
-import DataTable from 'datatables.net-vue3';
-import DataTablesLib from 'datatables.net';
-import DataTablesCore from 'datatables.net-bs5';
-import 'datatables.net-buttons-bs5';
-import 'datatables.net-buttons/js/buttons.html5.mjs';
-import 'datatables.net-buttons/js/buttons.print.mjs';
-import 'datatables.net-responsive-bs5';
+import { computed } from "vue";
+import DataTable from "datatables.net-vue3";
+import DataTablesLib from "datatables.net";
+import DataTablesCore from "datatables.net-bs5";
+import "datatables.net-buttons-bs5";
+import "datatables.net-buttons/js/buttons.html5.mjs";
+import "datatables.net-buttons/js/buttons.print.mjs";
+import "datatables.net-responsive-bs5";
 
-import jszip from 'jszip';
-import pdfmake from 'pdfmake';
+import jszip from "jszip";
+import pdfmake from "pdfmake";
 
 DataTablesLib.Buttons.jszip(jszip);
 DataTablesLib.Buttons.pdfMake(pdfmake);
@@ -55,7 +55,6 @@ const props = defineProps({
   },
 });
 
-
 const defaultOptions = {
   responsive: {
     details: {
@@ -68,48 +67,48 @@ const defaultOptions = {
     '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
   buttons: [
     {
-      extend: 'collection',
-      className: 'btn btn-secondary dropdown-toggle',
+      extend: "collection",
+      className: "btn btn-secondary dropdown-toggle",
       text: '<i class="fas fa-download"></i>',
       buttons: [
         {
-          extend: 'excel',
-          className: 'dropdown-item',
+          extend: "excel",
+          className: "dropdown-item",
           text: '<i class="fas fa-file-excel me-2"></i>Excel',
           exportOptions: {
-            columns: ':not(:last-child)',
+            columns: ":not(:last-child)",
             format: {
               body: function (data, row, column, node) {
-                if (node && node.querySelector('a')) {
-                  const link = node.querySelector('a');
+                if (node && node.querySelector("a")) {
+                  const link = node.querySelector("a");
                   const text = link.textContent || link.innerText;
                   const href = link.href;
                   return `<a href="${href}" height="100" width="100">${text}</a>`;
                 }
 
                 // HANDLE IMAGES
-                if (node && node.querySelector('img')) {
-                  const img = node.querySelector('img');
+                if (node && node.querySelector("img")) {
+                  const img = node.querySelector("img");
                   const src = img.src;
-                  const alt = img.alt || 'image';
+                  const alt = img.alt || "image";
                   return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                 }
 
-                if (node && typeof data === 'object' && data !== null) {
-                  return node.textContent || node.innerText || '';
+                if (node && typeof data === "object" && data !== null) {
+                  return node.textContent || node.innerText || "";
                 }
 
                 if (
                   !node &&
-                  (typeof data === 'string' || typeof data === 'object')
+                  (typeof data === "string" || typeof data === "object")
                 ) {
                   const parser = new DOMParser();
                   const doc =
-                    typeof data === 'object'
+                    typeof data === "object"
                       ? data
-                      : parser.parseFromString(data, 'text/html');
-                  const link = doc.querySelector('a');
-                  const img = doc.querySelector('img');
+                      : parser.parseFromString(data, "text/html");
+                  const link = doc.querySelector("a");
+                  const img = doc.querySelector("img");
                   if (link) {
                     const text = link.textContent || link.innerText;
                     const href = link.href;
@@ -117,10 +116,10 @@ const defaultOptions = {
                   }
                   if (img) {
                     const src = img.src;
-                    const alt = img.alt || 'image';
+                    const alt = img.alt || "image";
                     return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                   }
-                  return doc.textContent || doc.innerText || '';
+                  return doc.textContent || doc.innerText || "";
                 }
 
                 return data;
@@ -129,43 +128,43 @@ const defaultOptions = {
           },
         },
         {
-          extend: 'pdfHtml5',
-          className: 'dropdown-item',
+          extend: "pdfHtml5",
+          className: "dropdown-item",
           text: '<i class="fas fa-file-pdf me-2"></i>PDF',
           exportOptions: {
-            columns: ':not(:last-child)',
+            columns: ":not(:last-child)",
             format: {
               body: function (data, row, column, node) {
-                if (node && node.querySelector('a')) {
-                  const link = node.querySelector('a');
+                if (node && node.querySelector("a")) {
+                  const link = node.querySelector("a");
                   const text = link.textContent || link.innerText;
                   const href = link.href;
                   return `<a href="${href}" height="100" width="100">${text}</a>`;
                 }
 
                 // HANDLE IMAGES
-                if (node && node.querySelector('img')) {
-                  const img = node.querySelector('img');
+                if (node && node.querySelector("img")) {
+                  const img = node.querySelector("img");
                   const src = img.src;
-                  const alt = img.alt || 'image';
+                  const alt = img.alt || "image";
                   return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                 }
 
-                if (node && typeof data === 'object' && data !== null) {
-                  return node.textContent || node.innerText || '';
+                if (node && typeof data === "object" && data !== null) {
+                  return node.textContent || node.innerText || "";
                 }
 
                 if (
                   !node &&
-                  (typeof data === 'string' || typeof data === 'object')
+                  (typeof data === "string" || typeof data === "object")
                 ) {
                   const parser = new DOMParser();
                   const doc =
-                    typeof data === 'object'
+                    typeof data === "object"
                       ? data
-                      : parser.parseFromString(data, 'text/html');
-                  const link = doc.querySelector('a');
-                  const img = doc.querySelector('img');
+                      : parser.parseFromString(data, "text/html");
+                  const link = doc.querySelector("a");
+                  const img = doc.querySelector("img");
                   if (link) {
                     const text = link.textContent || link.innerText;
                     const href = link.href;
@@ -173,10 +172,10 @@ const defaultOptions = {
                   }
                   if (img) {
                     const src = img.src;
-                    const alt = img.alt || 'image';
+                    const alt = img.alt || "image";
                     return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                   }
-                  return doc.textContent || doc.innerText || '';
+                  return doc.textContent || doc.innerText || "";
                 }
 
                 return data;
@@ -185,43 +184,43 @@ const defaultOptions = {
           },
         },
         {
-          extend: 'print',
-          className: 'dropdown-item',
+          extend: "print",
+          className: "dropdown-item",
           text: '<i class="fas fa-print me-2"></i>Print',
           exportOptions: {
-            columns: ':not(:last-child)',
+            columns: ":not(:last-child)",
             format: {
               body: function (data, row, column, node) {
-                if (node && node.querySelector('a')) {
-                  const link = node.querySelector('a');
+                if (node && node.querySelector("a")) {
+                  const link = node.querySelector("a");
                   const text = link.textContent || link.innerText;
                   const href = link.href;
                   return `<a href="${href}" height="100" width="100">${text}</a>`;
                 }
 
                 // HANDLE IMAGES
-                if (node && node.querySelector('img')) {
-                  const img = node.querySelector('img');
+                if (node && node.querySelector("img")) {
+                  const img = node.querySelector("img");
                   const src = img.src;
-                  const alt = img.alt || 'image';
+                  const alt = img.alt || "image";
                   return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                 }
 
-                if (node && typeof data === 'object' && data !== null) {
-                  return node.textContent || node.innerText || '';
+                if (node && typeof data === "object" && data !== null) {
+                  return node.textContent || node.innerText || "";
                 }
 
                 if (
                   !node &&
-                  (typeof data === 'string' || typeof data === 'object')
+                  (typeof data === "string" || typeof data === "object")
                 ) {
                   const parser = new DOMParser();
                   const doc =
-                    typeof data === 'object'
+                    typeof data === "object"
                       ? data
-                      : parser.parseFromString(data, 'text/html');
-                  const link = doc.querySelector('a');
-                  const img = doc.querySelector('img');
+                      : parser.parseFromString(data, "text/html");
+                  const link = doc.querySelector("a");
+                  const img = doc.querySelector("img");
                   if (link) {
                     const text = link.textContent || link.innerText;
                     const href = link.href;
@@ -229,10 +228,10 @@ const defaultOptions = {
                   }
                   if (img) {
                     const src = img.src;
-                    const alt = img.alt || 'image';
+                    const alt = img.alt || "image";
                     return `<img src="${src}" height="100" width="100" alt="${alt}" />`;
                   }
-                  return doc.textContent || doc.innerText || '';
+                  return doc.textContent || doc.innerText || "";
                 }
 
                 return data;
@@ -246,16 +245,16 @@ const defaultOptions = {
   pageLength: 10,
   lengthMenu: [
     [5, 10, 25, 50, -1],
-    [5, 10, 25, 50, 'All'],
+    [5, 10, 25, 50, "All"],
   ],
   processing: true,
   ordering: false,
   language: {
-    search: '',
-    searchPlaceholder: 'Search...',
+    search: "",
+    searchPlaceholder: "Search...",
     paginate: {
-      previous: '&lt;',
-      next: '&gt;',
+      previous: "&lt;",
+      next: "&gt;",
     },
   },
 };
@@ -268,7 +267,7 @@ const mergedOptions = computed(() => {
 });
 </script>
 
-<style>
+<style scoped>
 @import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 @import "datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css";
 @import "@fortawesome/fontawesome-free/css/all.css";

@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style>
+<style scoped>
 .plyr {
   height: 100%;
   width: 100%;

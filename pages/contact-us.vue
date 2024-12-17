@@ -1319,7 +1319,7 @@ const submitForm = async () => {
 };
 </script>
 
-<style>
+<style scoped>
 .my-header-image {
     margin-top: 0px !important;
     margin-bottom: -100px;

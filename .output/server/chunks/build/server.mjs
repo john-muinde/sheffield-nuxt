@@ -5896,7 +5896,7 @@ const _routes = [
   {
     name: "about-us",
     path: "/about-us",
-    component: () => import('./index-C-JmzdUw.mjs')
+    component: () => import('./index-oeXk3ML9.mjs')
   },
   {
     name: "about-us-sheffield-advantage",
@@ -5916,7 +5916,7 @@ const _routes = [
   {
     name: "contact-us",
     path: "/contact-us",
-    component: () => import('./contact-us-QeEtN2Et.mjs')
+    component: () => import('./contact-us-BtLS7W0C.mjs')
   },
   {
     name: "cookie-policy",
@@ -5931,7 +5931,7 @@ const _routes = [
   {
     name: "events",
     path: "/events",
-    component: () => import('./index-BDaZj9pk.mjs')
+    component: () => import('./index-BFVg4UaR.mjs')
   },
   {
     name: "faq",
@@ -5941,12 +5941,12 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-DmDHeSuE.mjs')
+    component: () => import('./index-CcRESmrk.mjs')
   },
   {
     name: "lease-and-finance",
     path: "/lease-and-finance",
-    component: () => import('./lease-and-finance-CXuLMTDf.mjs')
+    component: () => import('./lease-and-finance-BLIBD0x3.mjs')
   },
   {
     name: "login",
@@ -5991,12 +5991,12 @@ const _routes = [
   {
     name: "my-account",
     path: "/my-account",
-    component: () => import('./index-BYsFxDQI.mjs')
+    component: () => import('./index-l5C0wlam.mjs')
   },
   {
     name: "privacy-policy",
     path: "/privacy-policy",
-    component: () => import('./privacy-policy-iv716GfA.mjs')
+    component: () => import('./privacy-policy-Bm3Wgmca.mjs')
   },
   {
     name: "product-id-slug",
@@ -6016,17 +6016,17 @@ const _routes = [
   {
     name: "request-for-quote",
     path: "/request-for-quote",
-    component: () => import('./request-for-quote-D23XggL4.mjs')
+    component: () => import('./request-for-quote-CEqxGWK7.mjs')
   },
   {
     name: "terms-and-conditions",
     path: "/terms-and-conditions",
-    component: () => import('./terms-and-conditions-DlBHL34B.mjs')
+    component: () => import('./terms-and-conditions-CHCIzMFa.mjs')
   },
   {
     name: "warranty-terms",
     path: "/warranty-terms",
-    component: () => import('./warranty-terms-B5vnfL_P.mjs')
+    component: () => import('./warranty-terms-BstP3Pmy.mjs')
   },
   {
     name: void 0 ,
@@ -6584,7 +6584,7 @@ const plugins = [
   plugin_rEHAXyA4gp
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-I6Z-shlQ.mjs'))
+  default: defineAsyncComponent(() => import('./default-D6fCNVnS.mjs'))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",
@@ -6856,7 +6856,7 @@ _sfc_main$2.setup = (props, ctx) => {
   (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("app.vue");
   return _sfc_setup$2 ? _sfc_setup$2(props, ctx) : void 0;
 };
-const AppComponent = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["ssrRender", _sfc_ssrRender]]);
+const AppComponent = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["ssrRender", _sfc_ssrRender], ["__scopeId", "data-v-e2351780"]]);
 const _sfc_main$1 = {
   __name: "nuxt-error-page",
   __ssrInlineRender: true,

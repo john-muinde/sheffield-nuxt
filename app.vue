@@ -3,7 +3,7 @@
     <NuxtPage />
   </NuxtLayout>
 </template>
-<style>
+<style scoped>
 .page-enter-active,
 .page-leave-active {
   transition: all 0.4s;

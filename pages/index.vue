@@ -561,7 +561,7 @@ const viewProduct = (route = null) => {
 };
 </script>
 
-<style>
+<style scoped>
 .header-6 .btn-primary:hover,
 .header-6 .btn-primary:focus,
 .header-6 .btn-primary.focus,
@@ -596,9 +596,6 @@ const viewProduct = (route = null) => {
   background: #dc3545 !important;
   transform: scale(1.2);
 }
-</style>
-
-<style scoped>
 .cat-banner-row .carousel__prev {
   height: 92% !important;
   color: #8a8a8a !important;
