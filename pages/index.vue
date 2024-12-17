@@ -380,7 +380,7 @@
     <div v-if="showPopup" class="popup-advert">
       <div class="popup-content">
         <img
-          src="/assets/images/events/Rational Live 11 Dec.jpg"
+          src="/assets/images/events/december-promo.jpg"
           alt="Rotobake Ovens Solutions"
           class="popup-image"
           style="width: 100%; min-height: 480px"
