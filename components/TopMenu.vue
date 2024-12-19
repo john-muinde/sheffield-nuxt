@@ -1,51 +1,20 @@
 <template>
-  <!-- Error State -->
-  <div v-if="error" class="container mx-auto px-4">
-    <div class="flex items-center justify-center p-4 bg-red-50 rounded-lg">
-      <div class="text-center">
-        <p class="text-red-600 mb-2">Unable to load categories</p>
-        <button
-          class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
-          @click="refresh"
-        >
-          Retry
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <ClientOnly>
-    <!-- Loading Fallback -->
-    <template #fallback>
-      <div class="container mx-auto px-4 mt-5">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div
-            v-for="n in 6"
-            :key="n"
-            class="h-[33px] bg-gray-200 rounded animate-pulse"
-          >
-            <div class="flex items-center h-full px-2">
-              <div class="w-[15%] h-5 bg-gray-300 rounded mr-2"></div>
-              <div class="flex-1 h-4 bg-gray-300 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- Default Content -->
+  <div class="md:mt-44 mb-2">
     <div class="container mx-auto px-4 mt-5">
       <!-- Desktop Menu -->
-      <div class="hidden md:block">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div v-for="(category, index) in mainCategories" :key="index">
+      <div class="hidden md:block relative w-full bg-red-200">
+        <div class="grid grid-cols-8 gap-1">
+          <div
+            v-for="(category, index) in mainCategories"
+            :key="index"
+            @mouseenter="hoveredCategory = category.id"
+          >
             <NuxtLink
               :to="category?.url || getCategoryLink(category.id, category.name)"
               class="block"
             >
               <div
-                class="rounded-lg px-2 py-1 border transition-colors"
+                class="rounded-lg px-2 py-1 border transition-all duration-200 hover:scale-105"
                 :class="[
                   isActive(category.id)
                     ? 'bg-white border-2 border-dashed'
@@ -58,13 +27,13 @@
                   borderColor: segment.color,
                 }"
               >
-                <p class="flex items-center h-full px-2 text-sm">
+                <p class="flex items-center h-full px-2 text-lg">
                   <img
                     :src="`/assets/images/menu-icons/${formattedName(
                       category.name
                     )}.png`"
                     :alt="category.name"
-                    class="h-9 w-9 mr-2"
+                    class="h-9 w-9 flex-shrink-0 mr-2"
                     :class="[
                       isActive(category.id)
                         ? 'filter-primary'
@@ -72,6 +41,7 @@
                     ]"
                   />
                   <span
+                    class="truncate"
                     :class="[
                       isActive(category.id) ? 'text-primary' : 'text-white',
                     ]"
@@ -86,56 +56,100 @@
             </NuxtLink>
           </div>
         </div>
-      </div>
-
-      <!-- Mobile Menu -->
-      <div class="md:hidden">
-        <button
-          type="button"
-          class="w-full px-4 py-2 text-white rounded text-left flex justify-between items-center"
-          :style="{ backgroundColor: segment.color }"
-          @click="toggleMobileMenu"
-        >
-          <span class="font-semibold">BROWSE CATEGORIES</span>
-          <span
-            class="transition-transform"
-            :class="{ 'rotate-180': isMobileMenuOpen }"
-            >▼</span
-          >
-        </button>
-
+        <!-- Mega Menu Popup -->
         <div
-          v-show="isMobileMenuOpen"
-          class="mt-2 rounded shadow-lg"
-          :style="{ backgroundColor: segment.color }"
+          class="absolute z-50 max-h-[60vh] md:t-44 left-0 right-0 w-full mx-auto bg-white shadow-xl border-t transition-all duration-300 ease-in-out overflow-y-auto"
+          :class="[
+            hoveredCategory
+              ? 'opacity-100 visible'
+              : 'opacity-0 invisible pointer-events-none',
+          ]"
+          ref="mainModalContainer"
+          @mouseleave="hoveredCategory = null"
         >
-          <div class="py-2">
-            <NuxtLink
-              v-for="category in mainCategories"
-              :key="category.id"
-              :to="getCategoryLink(category.id, category.name, 1)"
-              class="block px-4 py-2 hover:bg-white/10 transition-colors"
-            >
-              <div class="flex items-center">
-                <img
-                  :src="`/assets/images/menu-icons/${formattedName(
-                    category.name
-                  )}.png`"
-                  :alt="category.name"
-                  class="w-8 mr-3 brightness-90 invert sepia-0 hue-rotate-0 saturate-0"
-                />
-                <span class="text-white text-sm">{{ category.name }}</span>
+          <div class="container mx-auto px-4 py-8 slide-solutions">
+            <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-4">
+              <div
+                v-for="subCategory in mainCategories"
+                :key="subCategory.id"
+                class="transform transition-transform duration-200 hover:-translate-y-1"
+              >
+                <NuxtLink
+                  class="cat-block"
+                  :to="
+                    subCategory?.url ||
+                    getCategoryLink(subCategory.id, subCategory.name)
+                  "
+                >
+                  <figure>
+                    <span>
+                      <img
+                        :src="`/assets/images/menu-icons/${formattedName(
+                          subCategory.name
+                        )}.png`"
+                        :alt="subCategory.name"
+                      />
+                    </span>
+                  </figure>
+
+                  <h3 class="cat-block-title">{{ subCategory.name }}</h3>
+                </NuxtLink>
               </div>
-            </NuxtLink>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </ClientOnly>
+
+    <!-- Mobile Menu -->
+    <div class="md:hidden">
+      <button
+        type="button"
+        class="w-full px-4 py-2 text-white rounded text-left flex justify-between items-center"
+        :style="{ backgroundColor: segment.color }"
+        @click="toggleMobileMenu"
+      >
+        <span class="font-semibold">BROWSE CATEGORIES</span>
+        <span
+          class="transition-transform"
+          :class="{ 'rotate-180': isMobileMenuOpen }"
+          >▼</span
+        >
+      </button>
+
+      <div
+        v-show="isMobileMenuOpen"
+        class="mt-2 rounded shadow-lg"
+        :style="{ backgroundColor: segment.color }"
+      >
+        <div class="py-2">
+          <NuxtLink
+            v-for="category in mainCategories"
+            :key="category.id"
+            :to="getCategoryLink(category.id, category.name)"
+            class="block px-4 py-2 hover:bg-white/10 transition-colors"
+            @click="toggleMobileMenu"
+          >
+            <div class="flex items-center">
+              <img
+                :src="`/assets/images/menu-icons/${formattedName(
+                  category.name
+                )}.png`"
+                :alt="category.name"
+                class="w-8 mr-3 brightness-90 invert sepia-0 hue-rotate-0 saturate-0"
+              />
+              <span class="text-white text-sm">{{ category.name }}</span>
+            </div>
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, watch } from "vue";
+import { onClickOutside } from "@vueuse/core";
 
 const props = defineProps({
   segment: {
@@ -147,13 +161,9 @@ const props = defineProps({
 const route = useRoute();
 const { api } = useAxios();
 const isMobileMenuOpen = ref(false);
-const arr = ref([
-  {
-    id: 24343434,
-    name: "Consultancy & Design",
-    url: "/consultancy-and-design",
-  },
-]);
+const hoveredCategory = ref(null);
+const mainModalContainer = ref(null);
+// Rest of the script remains the same
 const {
   data: mainCategories,
   pending,
@@ -170,19 +180,33 @@ const {
       `/api/get-main-categories/${props.segment.id}`
     );
 
-    arr.value.unshift(...data.data);
-    return arr.value;
+    return [
+      ...data.data,
+      {
+        id: 1,
+        name: "Consultancy & Design",
+        url: "/consultancy-and-design",
+      },
+    ];
   },
   {
     server: true,
-    lazy: false,
+    lazy: true,
   }
 );
 
 const formattedName = (name) => name?.toLowerCase().replace(/\s/g, "-");
 
+onClickOutside(mainModalContainer, () => {
+  hoveredCategory.value = null;
+});
+
 const isActive = (categoryId) => {
   return route.params.id === categoryId?.toString();
+};
+
+const getCategoryLink = (id, name) => {
+  return `/commercial-kitchen/${id}/${name.toLowerCase().replace(/\s+/g, "-")}`;
 };
 
 const toggleMobileMenu = () => {
@@ -201,19 +225,5 @@ watch(
 .filter-primary {
   filter: invert(20%) sepia(63%) saturate(3227%) hue-rotate(337deg)
     brightness(88%) contrast(94%);
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 </style>

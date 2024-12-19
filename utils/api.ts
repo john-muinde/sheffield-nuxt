@@ -127,9 +127,9 @@ export const APP_SEGMENTS: SegmentInterface[] = [
   },
   {
     id: 370,
-    active:
-      import.meta.browser &&
-      window.localStorage.getItem("promotionActive") === "true",
+    get active() {
+      return globalState.promotions.length > 0 || true;
+    },
     name: "Promotional Solutions",
     slug: "promotional-solutions",
     slugs: ["promotions"],

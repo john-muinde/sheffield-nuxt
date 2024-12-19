@@ -15,6 +15,7 @@ export default defineNuxtConfig({
     "@nuxt/image",
     "@nuxtjs/sitemap",
     "@morev/vue-transitions",
+    "@vueuse/nuxt",
   ],
   imports: {
     dirs: ["stores", "components"],

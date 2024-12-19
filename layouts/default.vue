@@ -3,7 +3,7 @@
     <Navbar v-if="!isHomePage" />
 
     <TopMenu
-      v-if="pageSegment != null && !$route.path.includes('/product')"
+      v-if="pageSegment != null && !route.path.includes('/product')"
       :segment="pageSegment"
     />
 
@@ -58,10 +58,6 @@ const generateRandomString = (length: number): string => {
 // Pixel tracking implementation
 const trackPixel = async () => {
   let trackingId = localStorage.getItem("pixel-tracker");
-
-  if (!localStorage.getItem("promotionActive")) {
-    localStorage.setItem("promotionActive", "true");
-  }
 
   if (!trackingId) {
     trackingId = generateRandomString(30);

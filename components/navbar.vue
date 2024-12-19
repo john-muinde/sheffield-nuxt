@@ -1,518 +1,428 @@
 <template>
-  <div>
-    <header class="header header-14 sticky-header fixed custom">
-      <div class="header-top header-top-color">
-        <div class="container">
-          <div class="header-left">
-            <a href="tel:+254713777111"
-              ><i class="icon-phone"></i>+254 713 777 111</a
-            >
+  <div class="">
+    <!-- Header -->
+    <header
+      :class="['fixed w-full top-0 z-40', { 'bg-white shadow-md': isScrolled }]"
+    >
+      <div class="bg-primary hidden md:block">
+        <div class="container mx-auto px-4">
+          <div class="flex justify-between items-center py-3">
+            <div class="flex items-center space-x-6">
+              <a
+                href="tel:+254713777111"
+                class="flex items-center text-white hover:text-secondary text-base"
+              >
+                <i class="icon-phone mr-3 text-lg"></i>
+                +254 713 777 111
+              </a>
+              <a
+                href="mailto:info@sheffieldafrica.com"
+                class="flex items-center text-white hover:text-secondary text-base"
+              >
+                <i class="icon-envelope mr-3 text-lg"></i>
+                info@sheffieldafrica.com
+              </a>
+            </div>
 
-            <a class="ml-5" href="mailto:info@sheffieldafrica.com"
-              ><i class="icon-envelope"></i> info@sheffieldafrica.com</a
-            >
-          </div>
-          <!-- End .header-left -->
-
-          <div class="header-right d-none d-lg-block">
-            <ul class="top-menu">
-              <li>
-                <a href="#">Links</a>
-                <ul class="menus">
-                  <ClientOnly>
-                    <template #fallback>
-                      <!-- shimmer using tailwind loading -->
-                      <li
-                        v-for="n in 4"
-                        :key="n"
-                        class="h-[20px] bg-gray-200 rounded animate-pulse"
-                      >
-                        <div class="flex items-center h-full px-2">
-                          <div
-                            class="w-[40px] h-5 bg-gray-300 rounded mr-2"
-                          ></div>
-                          <div class="flex-1 h-4 bg-gray-300 rounded"></div>
-                        </div>
-                      </li>
-                    </template>
-
-                    <li
-                      v-for="segment in APP_SEGMENTS?.filter(
-                        (segment) => segment.active
-                      )"
-                      :key="segment.id"
-                      :class="{
-                        'active-li': $route.path.includes(segment.slug),
-                      }"
-                    >
-                      <NuxtLink :to="`/${segment.slug}`">
-                        <span class="top-icon">
-                          <img class="top-menu-icon" :src="segment.icon" />
-                        </span>
-                        {{ segment.name.toUpperCase() }}
-                      </NuxtLink>
-                    </li>
-
-                    <li :class="{ 'active-li': isConsultancyDesignPage }">
-                      <NuxtLink to="/consultancy-and-design">
-                        <span class="top-icon">
-                          <img
-                            class="top-menu-icon"
-                            src="/assets/images/menu-icons/consultancy-&-design.png"
-                          />
-                        </span>
-                        Consultancy
-                      </NuxtLink>
-                    </li>
-                  </ClientOnly>
-                </ul>
-              </li>
-            </ul>
+            <nav class="hidden lg:block">
+              <ul class="flex">
+                <li
+                  v-for="segment in filteredSegments"
+                  :key="segment.slug"
+                  :class="[
+                    'px-4 py-2 rounded-md transition-colors text-base',
+                    isActiveSegment(segment.slug)
+                      ? 'bg-white text-primary'
+                      : 'text-white hover:bg-white/10',
+                  ]"
+                >
+                  <NuxtLink :to="`/${segment.slug}`" class="flex items-center">
+                    <img
+                      :src="segment.icon"
+                      :alt="segment.name"
+                      class="w-6 h-6 mr-3"
+                      :class="[
+                        isActiveSegment(segment.slug) ? '' : 'filter invert',
+                      ]"
+                    />
+                    <span class="font-medium">{{ segment.name }}</span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </nav>
           </div>
         </div>
-        <!-- End .container -->
       </div>
-      <!-- End .header-top -->
 
-      <div class="header-middle">
-        <div class="container-fluid">
-          <div class="row">
-            <div class="col-auto col-lg-3 col-xl-3">
-              <NuxtLink to="/" class="logo">
+      <div class="bg-white shadow-lg">
+        <div class="container mx-auto px-4">
+          <div class="flex items-center h-20">
+            <div class="w-36 md:w-48 flex-shrink-0">
+              <NuxtLink to="/" class="block">
                 <img
                   src="/assets/images/logo.png"
                   alt="Sheffield Logo"
-                  width="190"
-                  height="auto"
+                  class="w-full h-auto"
                 />
               </NuxtLink>
             </div>
-            <!-- End .col-xl-3 col-xxl-2 -->
 
-            <div class="col col-lg-9 col-xl-9 header-middle-right">
-              <div class="row">
-                <div class="col-lg-8 d-none d-lg-block">
+            <button
+              class="lg:hidden ml-auto p-2 hover:bg-gray-100 rounded-md"
+              @click="toggleMobileMenu"
+              aria-label="Toggle Menu"
+            >
+              <i
+                :class="[
+                  'text-2xl',
+                  mobileMenuOpen ? 'icon-close' : 'icon-menu',
+                ]"
+              ></i>
+            </button>
+
+            <div
+              class="hidden lg:flex flex-1 items-center justify-between ml-8"
+            >
+              <div class="flex-1 mx-auto max-w-3xl">
+                <div class="relative">
+                  <form @submit.prevent="handleSearch" class="relative">
+                    <input
+                      type="search"
+                      v-model="searchQuery"
+                      class="w-full px-5 py-3 border rounded-lg text-base outline-none focus:border-primary"
+                      placeholder="Search products..."
+                      @input="handleSearch"
+                      @focus="showSearchResults = true"
+                    />
+                    <button
+                      type="submit"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
+                    >
+                      <i class="icon-search text-xl"></i>
+                    </button>
+                  </form>
+
                   <div
-                    class="header-search header-search-extended header-search-visible header-search-no-radius"
+                    v-if="showSearchResults"
+                    ref="searchResultsContainer"
+                    class="absolute w-full mt-2 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50"
                   >
-                    <a href="#" class="search-toggle" role="button"
-                      ><i class="icon-search"></i
-                    ></a>
-                    <form action="#" method="get">
-                      <div
-                        class="header-search-wrapper search-wrapper-wide searchListMainDiv"
+                    <div v-if="!searchResults.length" class="p-4">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        class="w-12 h-12 mx-auto text-gray-300"
                       >
-                        <!-- End .select-custom -->
-                        <label for="q" class="sr-only">Search</label>
-                        <input
-                          id="q"
-                          v-model="query"
-                          type="search"
-                          class="form-control"
-                          name="q"
-                          placeholder="Search product ..."
-                          autocomplete="off"
-                          required
-                          @input="search"
+                        <path fill="none" d="M0 0h24v24H0z" />
+                        <path
+                          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-6h2v2h-2v-2zm0-6h2v4h-2V8z"
                         />
-
-                        <ul
-                          v-if="showResults"
-                          ref="resultsList"
-                          class=""
-                          @click.self="hideResults"
-                        >
-                          <li v-for="result in results" :key="result.id">
-                            <NuxtLink :to="getProductLink(result)">
-                              <img
-                                style="display: inline; height: 28px"
-                                :src="assetsSync(result.main_image_path)"
-                                class="rounded profile-img"
-                                alt=""
-                              />
-                              {{ result.name }}
-                            </NuxtLink>
-                          </li>
-                        </ul>
-
-                        <button class="btn btn-primary" type="submit">
-                          <i class="icon-search"></i>
-                        </button>
-                      </div>
-                      <!-- End .header-search-wrapper -->
-                    </form>
-                  </div>
-                  <!-- End .header-search -->
-                </div>
-                <!-- End .col-xxl-4-5col -->
-
-                <div
-                  class="col-lg-4 d-flex justify-content-end align-items-center"
-                >
-                  <div class="header-dropdown-link">
-                    <div class="dropdown compare-dropdown">
-                      <NuxtLink
-                        to="/my-account"
-                        class="dropdown-toggle"
-                        role="button"
-                        data-toggle="dropdown"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                        data-display="static"
-                        title="Compare Products"
-                        aria-label="Compare Products"
-                      >
-                        <i class="icon-user"></i>
-                        <span class="compare-txt">Account</span>
-                      </NuxtLink>
-
-                      <div class="dropdown-menu dropdown-menu-right">
-                        <ul class="compare-products">
-                          <li v-if="!user?.name" class="compare-product login">
-                            <NuxtLink to="/login" class="btn-remove">
-                              <i class="icon-arrow-right"></i>
-                            </NuxtLink>
-                            <NuxtLink to="/login"> LOG IN </NuxtLink>
-                          </li>
-
-                          <li v-if="!user?.name" class="compare-product">
-                            <NuxtLink to="/register" class="btn-remove">
-                              <i class="icon-arrow-right"></i>
-                            </NuxtLink>
-
-                            <h4 class="compare-product-title">
-                              <NuxtLink to="/register"> REGISTER </NuxtLink>
-                            </h4>
-                          </li>
-                        </ul>
-
-                        <div class="compare-actions">
-                          <a
-                            href="javascript:void(0)"
-                            class="btn btn-outline-primary-2"
-                            @click="logout"
-                            ><span>Logout</span
-                            ><i class="icon-long-arrow-right"></i
-                          ></a>
-                        </div>
-                      </div>
-                      <!-- End .dropdown-menu -->
+                      </svg>
+                      <p class="text-base text-gray-700 text-center mt-1">No results found</p>
                     </div>
-                    <!-- End .compare-dropdown -->
-
-                    <CartComponent />
+                    <div
+                      v-for="result in searchResults"
+                      :key="result.id"
+                      class="border-b last:border-b-0"
+                    >
+                      <NuxtLink
+                        :to="getProductLink(result)"
+                        class="flex items-center p-4 hover:bg-gray-50 transition-colors"
+                        @click="hideSearchResults"
+                      >
+                        <img
+                          :src="assetsSync(result.main_image_path)"
+                          :alt="result.name"
+                          class="w-12 h-12 rounded-lg object-cover mr-4"
+                        />
+                        <span class="text-base text-gray-700">{{
+                          result.name
+                        }}</span>
+                      </NuxtLink>
+                    </div>
                   </div>
-                  <!-- End .col-xxl-5col -->
                 </div>
-                <!-- End .row -->
               </div>
-              <!-- End .col-xl-9 col-xxl-10 -->
-            </div>
-            <!-- End .row -->
-          </div>
-          <!-- End .container-fluid -->
-        </div>
-        <!-- End .header-middle -->
 
-        <!-- old header was here -->
-        <!-- End .header-bottom -->
+              <div class="flex items-center ml-8 space-x-6 flex-shrink-0">
+                <div class="relative group">
+                  <button
+                    class="flex items-center text-gray-600 hover:text-primary text-base"
+                  >
+                    <i class="icon-user text-xl mr-2"></i>
+                    <span>Account</span>
+                  </button>
+
+                  <div
+                    class="absolute right-0 top-full hidden group-hover:block bg-white shadow-xl rounded-lg py-3 w-56 z-50"
+                  >
+                    <template v-if="!user?.name">
+                      <NuxtLink
+                        to="/login"
+                        class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
+                      >
+                        Log In
+                        <i class="icon-arrow-right ml-auto"></i>
+                      </NuxtLink>
+                      <NuxtLink
+                        to="/register"
+                        class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
+                      >
+                        Register
+                        <i class="icon-arrow-right ml-auto"></i>
+                      </NuxtLink>
+                    </template>
+                    <div v-else class="px-4 py-2">
+                      <button
+                        @click="handleLogout"
+                        class="w-full flex items-center justify-center px-5 py-3 text-base border border-primary text-primary rounded-lg hover:bg-primary/5"
+                      >
+                        Logout
+                        <i class="icon-long-arrow-right ml-2"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <CartComponent />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
-    <!-- End .header -->
-    <!-- End .mobile-menu-container -->
-  </div>
 
-  <!-- Mobile Menu -->
-  <div class="mobile-menu-overlay"></div>
-  <!-- End .mobil-menu-overlay -->
+    <!-- Mobile Menu -->
+    <Transition
+      enter-active-class="transition-transform duration-300 ease-out"
+      enter-from-class="translate-x-full"
+      enter-to-class="translate-x-0"
+      leave-active-class="transition-transform duration-300 ease-in"
+      leave-from-class="translate-x-0"
+      leave-to-class="translate-x-full"
+    >
+      <div v-if="mobileMenuOpen" class="fixed inset-0 z-50 lg:hidden">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/50" @click="toggleMobileMenu"></div>
 
-  <div class="mobile-menu-container">
-    <div class="mobile-menu-wrapper">
-      <span class="mobile-menu-close"><i class="icon-close"></i></span>
+        <!-- Menu Content -->
+        <div class="fixed inset-y-0 right-0 w-[280px] bg-white shadow-xl">
+          <div class="h-full flex flex-col">
+            <div class="p-4 border-b">
+              <button
+                @click="toggleMobileMenu"
+                class="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700"
+              >
+                <i class="icon-close text-2xl"></i>
+              </button>
 
-      <form action="#" method="get" class="mobile-search">
-        <label for="mobile-search" class="sr-only">Search</label>
-        <input
-          id="mobile-search"
-          type="search"
-          class="form-control"
-          name="mobile-search"
-          placeholder="Search in..."
-          required
-        />
-        <button class="btn btn-primary" type="submit">
-          <i class="icon-search"></i>
-        </button>
-      </form>
+              <!-- Mobile Search -->
+              <div class="mt-8">
+                <form @submit.prevent="handleMobileSearch" class="relative">
+                  <input
+                    type="search"
+                    v-model="mobileSearchQuery"
+                    class="w-full px-4 py-3 text-base border rounded-lg"
+                    placeholder="Search products..."
+                  />
+                  <button
+                    type="submit"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  >
+                    <i class="icon-search text-xl"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
 
-      <!-- End .mobile-nav -->
+            <!-- Mobile Navigation -->
+            <nav class="flex-1 overflow-y-auto p-4">
+              <ul class="space-y-0">
+                <li v-for="segment in filteredSegments" :key="segment.slug">
+                  <NuxtLink
+                    :to="`/${segment.slug}`"
+                    class="flex items-center p-4 rounded-lg text-base hover:bg-gray-50"
+                    :class="{
+                      'bg-primary/5 text-primary': isActiveSegment(
+                        segment.slug
+                      ),
+                    }"
+                    @click="toggleMobileMenu"
+                  >
+                    <img
+                      :src="segment.icon"
+                      :alt="segment.name"
+                      class="w-6 h-6"
+                      :class="[
+                        isActiveSegment(segment.slug) ? '' : 'filter grayscale',
+                      ]"
+                    />
+                    <span>{{ segment.name }}</span>
+                  </NuxtLink>
+                </li>
+              </ul>
+            </nav>
 
-      <div class="social-icons">
-        <a
-          href="https://www.facebook.com/SheffieldAfricaFacilitySolutions"
-          class="social-icon"
-          target="_blank"
-          title="Facebook"
-          ><i class="icon-facebook-f"></i
-        ></a>
-        <a
-          href="https://twitter.com/sheffield_afric/"
-          class="social-icon"
-          target="_blank"
-          title="Twitter"
-          ><i class="icon-twitter"></i
-        ></a>
-        <a
-          href="https://www.instagram.com/sheffieldafrica/"
-          class="social-icon"
-          target="_blank"
-          title="Instagram"
-          ><i class="icon-instagram"></i
-        ></a>
-        <a
-          href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew"
-          class="social-icon"
-          target="_blank"
-          title="Youtube"
-          ><i class="icon-youtube"></i
-        ></a>
-        <a
-          href="https://www.facebook.com/SheffieldAfricaFacilitySolutions"
-          class="social-icon"
-          target="_blank"
-          title="Facebook"
-          ><i class="icon-facebook-f"></i
-        ></a>
-        <a
-          href="https://twitter.com/sheffield_afric/"
-          class="social-icon"
-          target="_blank"
-          title="Twitter"
-          ><i class="icon-twitter"></i
-        ></a>
-        <a
-          href="https://www.instagram.com/sheffieldafrica/"
-          class="social-icon"
-          target="_blank"
-          title="Instagram"
-          ><i class="icon-instagram"></i
-        ></a>
-        <a
-          href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew"
-          class="social-icon"
-          target="_blank"
-          title="Youtube"
-          ><i class="icon-youtube"></i
-        ></a>
+            <!-- Mobile Menu Footer -->
+            <div class="p-4 border-t">
+              <div class="space-y-3 mb-6">
+                <a
+                  href="tel:+254713777111"
+                  class="flex items-center text-gray-600 text-base"
+                >
+                  <i class="icon-phone mr-3 text-lg"></i>
+                  +254 713 777 111
+                </a>
+                <a
+                  href="mailto:info@sheffieldafrica.com"
+                  class="flex items-center text-gray-600 text-base"
+                >
+                  <i class="icon-envelope mr-3 text-lg"></i>
+                  info@sheffieldafrica.com
+                </a>
+              </div>
+
+              <div class="flex space-x-6">
+                <a
+                  v-for="social in socialLinks"
+                  :key="social.name"
+                  :href="social.url"
+                  target="_blank"
+                  rel="noopener"
+                  :class="['text-gray-400 hover:text-' + social.color]"
+                >
+                  <i :class="[social.icon, 'text-xl']"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <!-- End .social-icons -->
-    </div>
-    <!-- End .mobile-menu-wrapper -->
+    </Transition>
   </div>
-  <!-- End .mobile-menu-container -->
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { onClickOutside } from "@vueuse/core";
 import { useRoute } from "vue-router";
 
+const route = useRoute();
+const isScrolled = ref(false);
+const mobileMenuOpen = ref(false);
+const searchQuery = ref("");
+const mobileSearchQuery = ref("");
+const showSearchResults = ref(false);
+const searchResults = ref([]);
+const searchResultsContainer = ref(null);
+
+const userStore = useAuthStore();
+
+const user = computed(() => userStore.user);
 const { api } = useAxios();
 
-const route = useRoute();
-const store = useAuthStore();
-
-const isConsultancyDesignPage = computed(() => {
-  return route.path.includes("/consultancy-and-design");
+// Filter active segments
+const filteredSegments = computed(() => {
+  return [
+    ...APP_SEGMENTS,
+    {
+      name: "Consultancy and Design",
+      active: true,
+      slug: "consultancy-and-design",
+      icon: "/assets/images/menu-icons/consultancy-&-design.png",
+    },
+  ].filter((segment) => segment.active);
 });
 
-const user = computed(() => store.user);
-const { processing, logout } = store;
+// Social media links
+const socialLinks = [
+  {
+    name: "Facebook",
+    url: "https://www.facebook.com/SheffieldAfricaFacilitySolutions",
+    icon: "icon-facebook-f",
+    color: "blue-600",
+  },
+  {
+    name: "Twitter",
+    url: "https://twitter.com/sheffield_afric/",
+    icon: "icon-twitter",
+    color: "blue-400",
+  },
+  {
+    name: "Instagram",
+    url: "https://www.instagram.com/sheffieldafrica/",
+    icon: "icon-instagram",
+    color: "pink-600",
+  },
+  {
+    name: "YouTube",
+    url: "https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew",
+    icon: "icon-youtube",
+    color: "red-600",
+  },
+];
 
-const categories = reactive([]);
-
-const fetchCategories = () => {
-  api
-    .get("/api/get-sidebar-categories")
-    .then((response) => {
-      categories.splice(
-        0,
-        categories.length,
-        ...response.data.map((category) => {
-          return {
-            id: category.id,
-            name: `${category.name}`,
-            columns: 3,
-            slug: category.name.toLowerCase().replace(/\s+/g, "-"),
-            subcategories: [
-              {
-                id: 1, // You can assign any unique ID for the subcategory
-
-                items: category.children.map((child) => {
-                  return {
-                    id: child.id,
-                    name: child.name,
-                    slug: child.name.toLowerCase().replace(/\s+/g, "-"),
-                  };
-                }),
-              },
-            ],
-          };
-        })
-      );
-    })
-    .catch((error) => {
-      console.error("Failed to fetch categories:", error);
-    });
+// Check if segment is active
+const isActiveSegment = (slug) => {
+  return route.params.segment === slug;
 };
 
-onMounted(() => {
-  fetchCategories();
-});
-
-const query = ref("");
-const results = ref([]);
-const showResults = ref(false);
-
-const search = async () => {
-  if (query.value.length >= 3) {
-    try {
-      const response = await api.get("/api/product_search" + `/${query.value}`);
-      results.value = response.data.data;
-      //
-      showResults.value = true;
-      //
-    } catch (error) {
-      console.error(error);
-    }
+// Toggle mobile menu
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+  if (mobileMenuOpen.value) {
+    document.body.style.overflow = "hidden";
   } else {
-    results.value = [];
-    showResults.value = false;
+    document.body.style.overflow = "";
   }
 };
 
-const hideResults = (event) => {
-  // Check if the click is outside the ul
-  if (!event.target.closest("#resultsList")) {
-    showResults.value = false;
-  }
-};
-
-onMounted(() => {
-  document.addEventListener("click", hideResults);
+onClickOutside(searchResultsContainer, () => {
+  hideSearchResults();
 });
+
+// Handle scroll effect
+onMounted(() => {
+  const handleScroll = () => {
+    isScrolled.value = window.scrollY > 50;
+  };
+  window.addEventListener("scroll", handleScroll);
+
+  onUnmounted(() => {
+    window.removeEventListener("scroll", handleScroll);
+    document.body.style.overflow = "";
+  });
+});
+
+// Handle search functionality
+const handleSearch = async () => {
+  if (searchQuery.value.length >= 3) {
+    try {
+      const response = await api.get(
+        `/api/product_search/${searchQuery.value}`
+      );
+      const data = await response.data;
+      searchResults.value = data.data;
+      showSearchResults.value = true;
+    } catch (error) {
+      console.error("Search error:", error);
+    }
+  }
+};
+
+const handleMobileSearch = async () => {
+  if (mobileSearchQuery.value.length >= 3) {
+    await handleSearch();
+    toggleMobileMenu();
+  }
+};
+
+const hideSearchResults = () => {
+  showSearchResults.value = false;
+};
 </script>
 
 <style scoped>
-.custom {
-  z-index: 1035;
-  top: -1px;
-}
-
-.menu-vertical-browse .megamenu-container {
-  border-bottom: Solid 1px #ececec;
-}
-
-.header-middle {
-  background-image: url(/assets/images/sheffield_stainless_steel_background.jpg);
-  background-size: cover;
-}
-
-.header-right li a:hover {
-  color: #3d62ad;
-}
-
-.menus .active-li {
-  background-color: #fff !important;
-  padding: 5px;
-}
-
-.menus .active-li a {
-  color: #c02434;
-  font-weight: 550 !important;
-}
-
-.searchListMainDiv {
-  min-width: 40%;
-  margin: 0 1rem;
-}
-
-.searchListMainDiv h1 {
-  margin-bottom: 1rem;
-}
-
-.searchListMainDiv ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  margin-top: 0.5rem;
-  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgb(255, 255, 255);
-  max-height: 250px;
-  overflow-y: auto;
-  position: absolute;
-  top: 40px;
-  z-index: 1200;
-  background-color: #fff;
-  width: 100%;
-}
-
-.searchListMainDiv ul::-webkit-scrollbar {
-  width: 5px;
-}
-
-.searchListMainDiv ul::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 5px #ddd;
-  border-radius: 10px;
-}
-
-.searchListMainDiv ul::-webkit-scrollbar-thumb {
-  background: rgb(183, 183, 183);
-  border-radius: 10px;
-}
-
-.searchListMainDiv ul::-webkit-scrollbar-thumb:hover {
-  background: #a2a2a2;
-}
-
-.searchListMainDiv ul li {
-  padding: 1.2rem 10px;
-  font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.3rem;
-  border-bottom: 1px solid #ddd;
-  color: #333;
-  cursor: pointer;
-  overflow-wrap: break-word;
-}
-
-.searchListMainDiv ul li a {
-  color: #666;
-}
-
-.searchListMainDiv ul li a:hover {
-  color: #c02434;
-}
-
-.searchListMainDiv ul li:last-child {
-  border: none;
-}
-
-.top-menu-icon {
-  width: 30px;
-  height: 25px;
-  padding-right: 10px;
-  filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(288deg)
-    brightness(102%) contrast(102%);
-}
-
-.active-li .top-menu-icon {
-  filter: invert(14%) sepia(97%) saturate(3017%) hue-rotate(342deg)
-    brightness(102%) contrast(87%);
-}
-
-@media only screen and (max-width: 768px) {
-  .cart-txt {
-    display: none;
-  }
-}
+/* Add any additional custom styles here */
 </style>

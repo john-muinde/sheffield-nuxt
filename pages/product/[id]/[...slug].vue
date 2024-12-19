@@ -225,7 +225,7 @@
                       >
                         <li class="nav-item">
                           <a
-                            class="nav-link active"
+                            class="nav-link"
                             :class="{ active: activeTab === 'description' }"
                             href="#"
                             @click.prevent="activeTab = 'description'"
@@ -335,8 +335,8 @@ const {
     }
   },
   {
-    server: true,
-    lazy: false,
+    server: false,
+    lazy: true,
     immediate: true,
   }
 );
@@ -361,8 +361,7 @@ useHead(() => {
     meta: [
       {
         name: "description",
-        content:
-          product.value?.short_description?.replace(/<[^>]*>/g, "") || "",
+        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
       },
       {
         property: "og:title",
@@ -370,8 +369,7 @@ useHead(() => {
       },
       {
         property: "og:description",
-        content:
-          product.value?.short_description?.replace(/<[^>]*>/g, "") || "",
+        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
       },
       {
         property: "og:image",
@@ -392,7 +390,7 @@ useHead(() => {
       {
         property: "twitter:description",
         content:
-          product.value?.short_description?.replace(/<[^>]*>/g, "") || "",
+          product.value?.description?.replace(/<[^>]*>/g, "") || "",
       },
       {
         property: "twitter:image",

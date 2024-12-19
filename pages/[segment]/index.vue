@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper">
     <main class="main">
-      <div class="container" style="margin-top: 1px">
+      <div class="container">
         <LoadingData v-if="pending" />
 
         <div v-else class="row cat-banner-row">
@@ -11,7 +11,7 @@
               <div class="col-sm-12 col-xl-12 col-xxl-12">
                 <div class="banner banner-overlay solution-image">
                   <a href="#">
-                    <img :src="segment?.image" :alt="segment?.name" />
+                    <NuxtImg :src="segment?.image" :alt="segment?.name" />
                   </a>
                 </div>
               </div>
@@ -91,7 +91,7 @@ const { data: solutions, pending } = await useAsyncData(
   },
   {
     server: true,
-    lazy: false,
+    lazy: true,
   }
 );
 

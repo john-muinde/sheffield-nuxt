@@ -9,11 +9,20 @@
       aria-expanded="false"
       data-display="static"
     >
-      <i class="icon-shopping-cart"></i>
-      <ClientOnly>
-        <span class="cart-count">{{ cartItems?.length }}</span>
-      </ClientOnly>
-      <span class="cart-txt">Cart</span>
+      <div class="relative">
+        <i class="icon-shopping-cart text-6xl"></i>
+        <ClientOnly>
+          <span
+            class="bg-primary font-medium text-white w-8 h-8 flex items-center justify-center text-xl rounded-full absolute top-0 right-0"
+          >
+            {{ cartItems?.length }}
+          </span>
+        </ClientOnly>
+      </div>
+      <span
+        class="text-2xl font-[500] text-black ml-2 -mt-2 transition-all duration-300"
+        >Cart</span
+      >
     </NuxtLink>
 
     <div class="dropdown-menu dropdown-menu-right">

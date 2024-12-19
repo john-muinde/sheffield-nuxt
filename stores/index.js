@@ -12,6 +12,7 @@ export const useLayoutStore = defineStore("layoutStore", {
     locale: null,
     menu_style: "vertical",
     layout_style: "full",
+    promotions_active: false,
     countryList: [
       { code: "zh", name: "Chinese" },
       { code: "da", name: "Danish" },
@@ -89,6 +90,9 @@ export const useLayoutStore = defineStore("layoutStore", {
       value = value || "";
       localStorage.setItem("layout_style", value);
       this.layout_style = value;
+    },
+    togglePromotionsActive(value) {
+      this.promotions_active = value;
     },
   },
   getters: {
