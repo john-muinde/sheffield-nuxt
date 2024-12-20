@@ -44,9 +44,17 @@ export default defineNuxtConfig({
     preset: "static",
     prerender: {
       crawlLinks: true,
-      failOnError: false,
-      ignore: ["/api/**", "/backend/**"],
       routes: ["/"],
+      ignore: ["/api/**", "/backend/**"],
+      concurrency: 1, // Reduce concurrent requests
+      delay: 500, // Add delay between requests
+      // @ts-ignore
+      retry: {
+        // Add retry logic
+        attempts: 3,
+        delay: 1000,
+        statusCodes: [429, 503],
+      },
     },
     static: true,
     // Development server configuration
@@ -125,6 +133,7 @@ export default defineNuxtConfig({
   // Runtime config
   runtimeConfig: {
     API_URL: process.env.API_URL || "https://sheffieldafrica.com",
+    buildToken: process.env.BUILD_TOKEN,
     public: {
       API_URL: process.env.API_URL || "https://sheffieldafrica.com",
       PUBLIC_URL: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
