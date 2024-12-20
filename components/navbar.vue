@@ -1,36 +1,42 @@
 <template>
   <div class="">
-    <!-- Header -->
     <header
       :class="['fixed w-full top-0 z-40', { 'bg-white shadow-md': isScrolled }]"
     >
-      <div class="bg-primary hidden md:block">
+      <!-- Top Bar -->
+      <div class="bg-primary hidden sm:block">
         <div class="container mx-auto px-4">
-          <div class="flex justify-between items-center py-3">
-            <div class="flex items-center space-x-6">
+          <div
+            class="flex flex-wrap lg:flex-nowrap justify-between items-center py-3"
+          >
+            <!-- Contact Info - Always visible on tablet and up -->
+            <div
+              class="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-6"
+            >
               <a
                 href="tel:+254713777111"
-                class="flex items-center text-white hover:text-secondary text-base"
+                class="flex items-center text-white hover:text-secondary text-medium lg:text-base whitespace-nowrap"
               >
-                <i class="icon-phone mr-3 text-lg"></i>
+                <i class="icon-phone mr-2 text-lg"></i>
                 +254 713 777 111
               </a>
               <a
                 href="mailto:info@sheffieldafrica.com"
-                class="flex items-center text-white hover:text-secondary text-base"
+                class="flex items-center text-white hover:text-secondary text-medium lg:text-base whitespace-nowrap"
               >
-                <i class="icon-envelope mr-3 text-lg"></i>
+                <i class="icon-envelope mr-2 text-lg"></i>
                 info@sheffieldafrica.com
               </a>
             </div>
 
-            <nav class="hidden lg:block">
-              <ul class="flex">
+            <!-- Navigation - Hidden on mobile/tablet, visible on desktop -->
+            <nav class="hidden xl:block">
+              <ul class="flex flex-wrap gap-2">
                 <li
                   v-for="segment in filteredSegments"
                   :key="segment.slug"
                   :class="[
-                    'px-4 py-2 rounded-md transition-colors text-base',
+                    'px-3 py-1.5 rounded-md transition-colors text-medium xl:text-base',
                     isActiveSegment(segment.slug)
                       ? 'bg-white text-primary'
                       : 'text-white hover:bg-white/10',
@@ -40,12 +46,14 @@
                     <img
                       :src="segment.icon"
                       :alt="segment.name"
-                      class="w-6 h-6 mr-3"
+                      class="w-5 h-5 mr-2"
                       :class="[
                         isActiveSegment(segment.slug) ? '' : 'filter invert',
                       ]"
                     />
-                    <span class="font-medium">{{ segment.name }}</span>
+                    <span class="font-medium whitespace-nowrap">{{
+                      segment.name
+                    }}</span>
                   </NuxtLink>
                 </li>
               </ul>
@@ -54,10 +62,12 @@
         </div>
       </div>
 
+      <!-- Main Header -->
       <div class="bg-white shadow-lg">
         <div class="container mx-auto px-4">
-          <div class="flex items-center h-20">
-            <div class="w-36 md:w-48 flex-shrink-0">
+          <div class="flex items-center justify-between h-20">
+            <!-- Logo -->
+            <div class="w-32 md:w-48 flex-shrink-0">
               <NuxtLink to="/" class="block">
                 <img
                   src="/assets/images/logo.png"
@@ -67,132 +77,131 @@
               </NuxtLink>
             </div>
 
-            <button
-              class="lg:hidden ml-auto p-2 hover:bg-gray-100 rounded-md"
-              @click="toggleMobileMenu"
-              aria-label="Toggle Menu"
-            >
-              <i
-                :class="[
-                  'text-2xl',
-                  mobileMenuOpen ? 'icon-close' : 'icon-menu',
-                ]"
-              ></i>
-            </button>
-
-            <div
-              class="hidden lg:flex flex-1 items-center justify-between ml-8"
-            >
-              <div class="flex-1 mx-auto max-w-3xl">
-                <div class="relative">
-                  <form @submit.prevent="handleSearch" class="relative">
-                    <input
-                      type="search"
-                      v-model="searchQuery"
-                      class="w-full px-5 py-3 border rounded-lg text-base outline-none focus:border-primary"
-                      placeholder="Search products..."
-                      @input="handleSearch"
-                      @focus="showSearchResults = true"
-                    />
-                    <button
-                      type="submit"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
-                    >
-                      <i class="icon-search text-xl"></i>
-                    </button>
-                  </form>
-
-                  <div
-                    v-if="showSearchResults"
-                    ref="searchResultsContainer"
-                    class="absolute w-full mt-2 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50"
-                  >
-                    <div v-if="!searchResults?.length" class="p-4">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        class="w-12 h-12 mx-auto text-gray-300"
-                      >
-                        <path fill="none" d="M0 0h24v24H0z" />
-                        <path
-                          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-6h2v2h-2v-2zm0-6h2v4h-2V8z"
-                        />
-                      </svg>
-                      <p class="text-base text-gray-700 text-center mt-1">
-                        {{
-                          searchQuery?.length < 3
-                            ? "Type at least 3 characters to search"
-                            : "No results found"
-                        }}
-                      </p>
-                    </div>
-                    <div
-                      v-for="result in searchResults"
-                      :key="result.id"
-                      class="border-b last:border-b-0"
-                    >
-                      <NuxtLink
-                        :to="getProductLink(result)"
-                        class="flex items-center p-4 hover:bg-gray-50 transition-colors"
-                        @click="hideSearchResults"
-                      >
-                        <img
-                          :src="assetsSync(result.main_image_path)"
-                          :alt="result.name"
-                          class="w-12 h-12 rounded-lg object-cover mr-4"
-                        />
-                        <span class="text-base text-gray-700">{{
-                          result.name
-                        }}</span>
-                      </NuxtLink>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex items-center ml-8 space-x-6 flex-shrink-0">
-                <div class="relative group">
+            <!-- Search Bar - Hidden on mobile -->
+            <div class="hidden md:flex flex-1 max-w-2xl mx-8">
+              <div class="relative w-full">
+                <form @submit.prevent="handleSearch" class="relative">
+                  <input
+                    type="search"
+                    v-model="searchQuery"
+                    @input="handleSearch"
+                    class="w-full px-4 py-2 border rounded-lg text-medium lg:text-base outline-none focus:border-primary"
+                    placeholder="Search products..."
+                  />
                   <button
-                    class="flex items-center text-gray-600 hover:text-primary text-base"
+                    v-if="searchQuery?.length <= 0"
+                    type="submit"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
                   >
-                    <i class="icon-user text-xl mr-2"></i>
-                    <span>Account</span>
+                    <i class="icon-search text-2xl"></i>
                   </button>
+                </form>
 
+                <div
+                  v-if="showSearchResults"
+                  ref="searchResultsContainer"
+                  class="absolute w-full mt-2 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50"
+                >
+                  <div v-if="!searchResults?.length" class="p-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      class="w-12 h-12 mx-auto text-gray-300"
+                    >
+                      <path fill="none" d="M0 0h24v24H0z" />
+                      <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-6h2v2h-2v-2zm0-6h2v4h-2V8z"
+                      />
+                    </svg>
+                    <p class="text-base text-gray-700 text-center mt-1">
+                      {{
+                        searchQuery?.length < 3
+                          ? "Type at least 3 characters to search"
+                          : "No results found"
+                      }}
+                    </p>
+                  </div>
                   <div
-                    class="absolute right-0 top-full hidden group-hover:block bg-white shadow-xl rounded-lg py-3 w-56 z-50"
+                    v-for="result in searchResults"
+                    :key="result.id"
+                    class="border-b last:border-b-0"
                   >
-                    <template v-if="!user?.name">
-                      <NuxtLink
-                        to="/login"
-                        class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
-                      >
-                        Log In
-                        <i class="icon-arrow-right ml-auto"></i>
-                      </NuxtLink>
-                      <NuxtLink
-                        to="/register"
-                        class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
-                      >
-                        Register
-                        <i class="icon-arrow-right ml-auto"></i>
-                      </NuxtLink>
-                    </template>
-                    <div v-else class="px-4 py-2">
-                      <button
-                        @click="handleLogout"
-                        class="w-full flex items-center justify-center px-5 py-3 text-base border border-primary text-primary rounded-lg hover:bg-primary/5"
-                      >
-                        Logout
-                        <i class="icon-long-arrow-right ml-2"></i>
-                      </button>
-                    </div>
+                    <NuxtLink
+                      :to="getProductLink(result)"
+                      class="flex items-center p-4 hover:bg-gray-50 transition-colors"
+                      @click="hideSearchResults"
+                    >
+                      <img
+                        :src="assetsSync(result.main_image_path)"
+                        :alt="result.name"
+                        class="w-12 h-12 rounded-lg object-cover mr-4"
+                      />
+                      <span class="text-base text-gray-700">{{
+                        result.name
+                      }}</span>
+                    </NuxtLink>
                   </div>
                 </div>
-
-                <CartComponent />
               </div>
+            </div>
+
+            <!-- Right Actions -->
+            <div class="flex items-center gap-4 md:gap-6">
+              <!-- Account - Hidden on mobile -->
+              <div class="hidden md:block relative group">
+                <button
+                  class="flex items-center text-gray-600 hover:text-primary text-medium lg:text-base"
+                >
+                  <i class="icon-user text-xl mr-2"></i>
+                  <span>Account</span>
+                </button>
+
+                <div
+                  class="absolute right-0 top-full hidden group-hover:block bg-white shadow-xl rounded-lg py-3 w-56 z-50"
+                >
+                  <template v-if="!user?.name">
+                    <NuxtLink
+                      to="/login"
+                      class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
+                    >
+                      Log In
+                      <i class="icon-arrow-right ml-auto"></i>
+                    </NuxtLink>
+                    <NuxtLink
+                      to="/register"
+                      class="flex items-center px-5 py-3 text-base hover:bg-gray-50"
+                    >
+                      Register
+                      <i class="icon-arrow-right ml-auto"></i>
+                    </NuxtLink>
+                  </template>
+                  <div v-else class="px-4 py-2">
+                    <button
+                      @click="handleLogout"
+                      class="w-full flex items-center justify-center px-5 py-3 text-base border border-primary text-primary rounded-lg hover:bg-primary/5"
+                    >
+                      Logout
+                      <i class="icon-long-arrow-right ml-2"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <CartComponent />
+              <!-- Mobile Menu Button - Visible on tablet and below -->
+              <button
+                class="xl:hidden p-2 hover:bg-gray-100 rounded-md"
+                @click="toggleMobileMenu"
+                aria-label="Toggle Menu"
+              >
+                <i
+                  :class="[
+                    'text-2xl',
+                    mobileMenuOpen ? 'icon-close' : 'icon-menu',
+                  ]"
+                ></i>
+              </button>
             </div>
           </div>
         </div>
@@ -229,12 +238,14 @@
                   <input
                     type="search"
                     v-model="mobileSearchQuery"
+                    @input="handleMobileSearch"
                     class="w-full px-4 py-3 text-base border rounded-lg"
                     placeholder="Search products..."
                   />
                   <button
+                    v-if="mobileSearchQuery?.length <= 0"
                     type="submit"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
                   >
                     <i class="icon-search text-xl"></i>
                   </button>
@@ -248,7 +259,7 @@
                 <li v-for="segment in filteredSegments" :key="segment.slug">
                   <NuxtLink
                     :to="`/${segment.slug}`"
-                    class="flex items-center p-4 rounded-lg text-base hover:bg-gray-50"
+                    class="flex items-center p-4 rounded-lg text-base hover:bg-gray-50 hover:!text-primary"
                     :class="{
                       'bg-primary/5 text-primary': isActiveSegment(
                         segment.slug
@@ -403,6 +414,7 @@ onMounted(() => {
 
 // Handle search functionality
 const handleSearch = async () => {
+  showSearchResults.value = true;
   if (searchQuery.value?.length >= 3) {
     try {
       const response = await api.get(
@@ -418,6 +430,7 @@ const handleSearch = async () => {
 };
 
 const handleMobileSearch = async () => {
+  showSearchResults.value = true;
   if (mobileSearchQuery.value?.length >= 3) {
     await handleSearch();
     toggleMobileMenu();
@@ -430,5 +443,15 @@ const hideSearchResults = () => {
 </script>
 
 <style scoped>
-/* Add any additional custom styles here */
+@screen md {
+  .container {
+    @apply px-6;
+  }
+}
+
+@screen lg {
+  .container {
+    @apply px-8;
+  }
+}
 </style>

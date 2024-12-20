@@ -2,38 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@media only screen and (max-width: 768px) {
-  .page-content,
-  main.main {
-    padding: 6rem 20px;
-  }
+.main {
+  @apply mt-40 md:mt-1;
+}
+
+.about-us-title {
+  @apply text-5xl font-bold text-primary;
 }
 
 .terms_page h4 {
-  margin-top: 20px;
+  @apply mt-5;
 }
 
 .terms_page ul {
-  list-style-type: none;
-  padding-left: 0;
+  @apply list-none pl-0;
 }
 
 .terms_page ol {
-  padding-left: 0;
+  @apply pl-0;
 }
 
 .terms_page li {
-  margin-bottom: 10px;
+  @apply mb-2.5;
 }
 
 .terms_page li > ol {
-  margin-top: 10px;
+  @apply mt-2.5;
 }
 
 .terms_page .headings {
-  margin-bottom: 20px;
+  @apply mb-5;
 }
 
 .terms_page .heading {
-  font-weight: bold;
+  @apply font-bold;
 }

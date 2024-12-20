@@ -2,15 +2,7 @@
   <div>
     <main class="main">
       <!-- End .breadcrumb-nav -->
-
       <div class="page-content pb-0 my-header-image-section">
-        <!--  <img class="my-header-image mb-1" src="/assets/images/contact_us_banner.jpg">
-              <div class="container">
-                  <div class="row justify-content-center mb-4">
-  
-                  </div>
-                </div> -->
-
         <div class="pt-1 page-content-contact">
           <div class="container">
             <div class="row">
@@ -22,14 +14,6 @@
                 </p>
               </div>
 
-              <!--   <div class="col-lg-10 offset-lg-1">
-  
-  
-                          <p class="mb-t">
-                            Use the form below to get in touch with our team
-                          </p>
-  
-                      </div> -->
               <div class="offset-lg-1 col-lg-5 mb-3 mb-lg-0 contact-form-div">
                 <form
                   class="contact-form mb-3 my_form_contact_us"
@@ -651,15 +635,6 @@
                         </span>
                       </label>
                     </div>
-
-                    <div class="col-lg-12 mt-1">
-                      <vue-recaptcha
-                        ref="recaptcha"
-                        :sitekey="'6Ldyw1wpAAAAAGx6vRq1hhnnfKaKHPmcuJ0imPkT'"
-                        size="normal"
-                        @verify="onRecaptchaVerify"
-                      />
-                    </div>
                   </div>
                   <!-- End .row -->
 
@@ -709,10 +684,6 @@
                       loading="lazy"
                       referrerpolicy="no-referrer-when-downgrade"
                     ></iframe>
-                    <!-- gmaps-map requires a height to fill -->
-                    <!--<gmaps-map :zoom="16" :center="{ lat: -1.3553082, lng: 36.9030187 }">-->
-                    <!--  <gmaps-marker :position="{ lat: -1.3553082, lng: 36.9030187 }" />-->
-                    <!--</gmaps-map>-->
                   </div>
                 </div>
               </div>
@@ -920,8 +891,4 @@ const submitForm = async () => {
 .contact-info span {
   color: #ffffff;
 }
-
-/* .the_main_div {
-      margin-top: 0px !important;
-  } */
 </style>
