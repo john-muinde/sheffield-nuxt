@@ -21,7 +21,7 @@ export const useMetaGenerator = () => {
     defaultImage: assetsSync("/assets/images/logo.png", { local: true }),
     styles: [
       "/assets/css/bootstrap.min.css",
-      
+
       "/assets/css/style.css",
       "/assets/css/skins/skin-demo-14.css",
       "/assets/css/demos/demo-14.css",
