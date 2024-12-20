@@ -2,7 +2,7 @@
   <div class="md:mt-48 mb-2">
     <div class="container mx-auto px-4 mt-5">
       <!-- Desktop Menu -->
-      <div class="hidden md:block relative w-full bg-red-200">
+      <div class="hidden md:block relative w-full">
         <div class="grid grid-cols-8 gap-1">
           <div
             v-for="(category, index) in mainCategories"

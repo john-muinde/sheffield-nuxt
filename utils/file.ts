@@ -25,6 +25,12 @@ const config = {
   SUPPORTED_FORMATS: ["webp", "jpeg", "png", "avif"] as const,
   MAX_IMAGE_SIZE: 5000,
   DEFAULT_QUALITY: 80,
+  DEFAULT_PRODUCT_IMAGE: {
+    width: 350,
+    height: 350,
+    quality: 85,
+    format: "webp" as const,
+  },
 };
 
 /**
@@ -183,10 +189,10 @@ export function assetsSync(
     encode: true,
     local: false,
     quality: config.DEFAULT_QUALITY,
+    transform: config.DEFAULT_PRODUCT_IMAGE, // Apply default product image settings
   }
 ): string {
   try {
-    // Same logic as async version but without existence checks
     if (!path) return `${config.API_URL}${config.DEFAULT_IMAGE}`;
 
     if (path.startsWith("http")) return path;

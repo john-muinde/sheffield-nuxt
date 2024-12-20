@@ -46,6 +46,8 @@ class CsrfTokenManager {
 export default function useAxios() {
   const rtConfig = useRuntimeConfig();
   const url = rtConfig.public.API_URL || "https://dev.sheffieldafrica.com";
+  const BASE_URL =
+    rtConfig.public.BASE_URL || "https://dev.sheffieldafrica.com";
   const loading = ref<boolean>(false);
   const csrfManager = CsrfTokenManager.getInstance();
 
@@ -98,6 +100,7 @@ export default function useAxios() {
     api,
     refreshCsrf,
     loading,
+    BASE_URL,
     API_URL: url,
   };
 }

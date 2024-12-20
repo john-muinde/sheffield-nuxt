@@ -6,7 +6,13 @@
       v-if="pageSegment != null && !route.path.includes('/product')"
       :segment="pageSegment"
     />
-    <div class="mt-8">
+    <div
+      :class="{
+        'md:mt-48':
+          (pageSegment == null || route.path.includes('/product')) &&
+          !isHomePage,
+      }"
+    >
       <slot />
     </div>
 

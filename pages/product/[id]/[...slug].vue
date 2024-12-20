@@ -335,7 +335,7 @@ const {
     }
   },
   {
-    server: false,
+    server: true,
     lazy: true,
     immediate: true,
   }
@@ -349,7 +349,7 @@ const retryLoading = async () => {
   }
 };
 
-const { API_URL } = useAxios();
+const { BASE_URL } = useAxios();
 
 // SEO
 useHead(() => {
@@ -377,7 +377,7 @@ useHead(() => {
       },
       {
         property: "og:url",
-        content: API_URL + route.fullPath,
+        content: BASE_URL + route.fullPath,
       },
       {
         property: "og:type",
@@ -389,8 +389,7 @@ useHead(() => {
       },
       {
         property: "twitter:description",
-        content:
-          product.value?.description?.replace(/<[^>]*>/g, "") || "",
+        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
       },
       {
         property: "twitter:image",
@@ -398,7 +397,7 @@ useHead(() => {
       },
       {
         property: "twitter:url",
-        content: API_URL + route.fullPath,
+        content: BASE_URL + route.fullPath,
       },
     ],
     script: [
@@ -414,7 +413,7 @@ useHead(() => {
 const generateQRCode = () => {
   if (!import.meta.client) return;
   const qr = QRCode(0, "L");
-  qr.addData(API_URL + route.fullPath);
+  qr.addData(BASE_URL + route.fullPath);
   qr.make();
   qrCodeDataUrl.value = qr.createDataURL();
 };

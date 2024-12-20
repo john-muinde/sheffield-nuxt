@@ -293,15 +293,17 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
 import VueEasyLightbox from "vue-easy-lightbox";
 import QRCode from "qrcode-generator";
+import type { SegmentInterface } from "~/types/meta-tags";
 
 const route = useRoute();
 const { api } = useAxios();
 
 const { createProductSchema } = useSchemas();
+const { generateSeoMeta, generateHeadInput } = useMetaGenerator();
 
 const segment = computed(() =>
   getSegment(product.value?.categories_json[0].parent_name_with_slashes)
@@ -312,7 +314,7 @@ const visible = ref(false);
 const indexRef = ref(0);
 const mainImage = ref("");
 const activeIndex = ref(0);
-const qrCodeDataUrl = ref(null);
+const qrCodeDataUrl = ref(null as string | null);
 const activeTab = ref("description");
 
 // Fetch product data using useAsyncData
@@ -335,7 +337,7 @@ const {
     }
   },
   {
-    server: false,
+    server: true,
     lazy: true,
     immediate: true,
   }
@@ -349,81 +351,36 @@ const retryLoading = async () => {
   }
 };
 
-const { API_URL } = useAxios();
+const { BASE_URL } = useAxios();
 
-// SEO
-useHead(() => {
-  if (!product.value) return {};
+// SEO setup
+const { metaTags, productSchema, breadcrumbSchema } = useProductsPageSEO(
+  product,
+  segment.value as SegmentInterface,
+  true
+);
 
-  const schema = createProductSchema(product.value);
-  return {
-    title: product.value?.name,
-    meta: [
-      {
-        name: "description",
-        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "og:title",
-        content: product.value?.name,
-      },
-      {
-        property: "og:description",
-        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "og:image",
-        content: assetsSync(product.value?.main_image_path),
-      },
-      {
-        property: "og:url",
-        content: API_URL + route.fullPath,
-      },
-      {
-        property: "og:type",
-        content: "product",
-      },
-      {
-        property: "twitter:title",
-        content: product.value?.name,
-      },
-      {
-        property: "twitter:description",
-        content:
-          product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "twitter:image",
-        content: assetsSync(product.value?.main_image_path),
-      },
-      {
-        property: "twitter:url",
-        content: API_URL + route.fullPath,
-      },
-    ],
-    script: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify(schema),
-      },
-    ],
-  };
-});
+// Apply meta tags
+useHead(() => ({
+  ...generateHeadInput(route, [productSchema.value, breadcrumbSchema.value]),
+  title: product.value?.theCategory?.name
+    ? `${product.value?.name} Details`
+    : "Product Details",
+}));
+
+useSeoMeta(generateSeoMeta(metaTags.value, route));
 
 // Methods
 const generateQRCode = () => {
   if (!import.meta.client) return;
   const qr = QRCode(0, "L");
-  qr.addData(API_URL + route.fullPath);
+  qr.addData(BASE_URL + route.fullPath);
   qr.make();
   qrCodeDataUrl.value = qr.createDataURL();
 };
 
 const showMultiple = () => {
   if (!product.value?.product_images) return;
-  imgs.value = product.value.product_images.map((item) =>
-    assetsSync(item.name)
-  );
   indexRef.value = activeIndex.value;
   visible.value = true;
 };
@@ -432,7 +389,7 @@ const handleHide = () => {
   visible.value = false;
 };
 
-const changeMainImage = (imageName, index) => {
+const changeMainImage = (imageName: string, index: number) => {
   mainImage.value = imageName;
   activeIndex.value = index;
 };
@@ -440,7 +397,8 @@ const changeMainImage = (imageName, index) => {
 // Computed
 const imgs = computed(
   () =>
-    product.value?.product_images?.map((item) => assetsSync(item.name)) || []
+    product.value?.product_images?.map((item: any) => assetsSync(item.name)) ||
+    []
 );
 
 // Watch route changes for navigation

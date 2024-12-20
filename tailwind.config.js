@@ -30,6 +30,9 @@ export default {
       fontFamily: {
         body: ["Nunito"],
       },
+      fontSize: {
+        base: "14px", // Default font size
+      },
       borderWidth: {
         3: "3px",
       },
