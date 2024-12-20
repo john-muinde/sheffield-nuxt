@@ -194,9 +194,6 @@ const { data, pending, refresh } = await useAsyncData(
       }),
     ]);
 
-    console.log(categoriesRes.data.data);
-    console.log(productsRes.data.products.data);
-
     return {
       categories: categoriesRes.data.data,
       products: productsRes.data.products.data,
