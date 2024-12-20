@@ -1,5 +1,5 @@
 <template>
-  <div class="md:mt-44 mb-2">
+  <div class="md:mt-48 mb-2">
     <div class="container mx-auto px-4 mt-5">
       <!-- Desktop Menu -->
       <div class="hidden md:block relative w-full bg-red-200">
@@ -29,9 +29,7 @@
               >
                 <p class="flex items-center h-full px-2 text-lg">
                   <img
-                    :src="`/assets/images/menu-icons/${formattedName(
-                      category.name
-                    )}.png`"
+                    :src="getMenuIcon(category.name)"
                     :alt="category.name"
                     class="h-9 w-9 flex-shrink-0 mr-2"
                     :class="[
@@ -39,6 +37,7 @@
                         ? 'filter-primary'
                         : 'brightness-90 invert sepia-0 hue-rotate-0 saturate-0',
                     ]"
+                    @error="handleImageError"
                   />
                   <span
                     class="truncate"
@@ -58,7 +57,7 @@
         </div>
         <!-- Mega Menu Popup -->
         <div
-          class="absolute z-50 max-h-[60vh] md:t-44 left-0 right-0 w-full mx-auto bg-white shadow-xl border-t transition-all duration-300 ease-in-out overflow-y-auto"
+          class="absolute z-50 max-h-[60vh] md:t-48 left-0 right-0 w-full mx-auto bg-white shadow-xl border-t transition-all duration-300 ease-in-out overflow-y-auto"
           :class="[
             hoveredCategory
               ? 'opacity-100 visible'
@@ -84,10 +83,9 @@
                   <figure>
                     <span>
                       <img
-                        :src="`/assets/images/menu-icons/${formattedName(
-                          subCategory.name
-                        )}.png`"
+                        :src="getMenuIcon(subCategory.name)"
                         :alt="subCategory.name"
+                        @error="handleImageError"
                       />
                     </span>
                   </figure>
@@ -132,11 +130,10 @@
           >
             <div class="flex items-center">
               <img
-                :src="`/assets/images/menu-icons/${formattedName(
-                  category.name
-                )}.png`"
+                :src="getMenuIcon(category.name)"
                 :alt="category.name"
                 class="w-8 mr-3 brightness-90 invert sepia-0 hue-rotate-0 saturate-0"
+                @error="handleImageError"
               />
               <span class="text-white text-sm">{{ category.name }}</span>
             </div>
@@ -148,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { onClickOutside } from "@vueuse/core";
 
 const props = defineProps({
@@ -163,7 +160,8 @@ const { api } = useAxios();
 const isMobileMenuOpen = ref(false);
 const hoveredCategory = ref(null);
 const mainModalContainer = ref(null);
-// Rest of the script remains the same
+
+// Fetch categories
 const {
   data: mainCategories,
   pending,
@@ -195,8 +193,35 @@ const {
   }
 );
 
-const formattedName = (name) => name?.toLowerCase().replace(/\s/g, "-");
+// Image handling functions
+const getMenuIcon = (categoryName) => {
+  if (!categoryName) return "";
 
+  const transformedName = transformName(categoryName);
+  const isPromotional = categoryName.toLowerCase().includes("promotions");
+
+  // Handle promotions specially
+  if (isPromotional) {
+    return "/assets/images/menu-icons/promotions.webp";
+  }
+
+  // Return standard path
+  return `/assets/images/menu-icons/${transformedName}.png`;
+};
+
+const handleImageError = (event) => {
+  const src = event.target.src;
+  // If top-menu image fails, try regular menu-icons directory
+  if (src.includes("/")) {
+    const fileName = src.split("/").pop();
+    event.target.src = `/assets/images/menu-icons/${fileName}`;
+  } else {
+    // If all else fails, use default icon
+    event.target.src = "/assets/images/menu-icons/default.png";
+  }
+};
+
+// Other functions
 onClickOutside(mainModalContainer, () => {
   hoveredCategory.value = null;
 });
@@ -206,13 +231,14 @@ const isActive = (categoryId) => {
 };
 
 const getCategoryLink = (id, name) => {
-  return `/commercial-kitchen/${id}/${name.toLowerCase().replace(/\s+/g, "-")}`;
+  return `/commercial-kitchen/${id}/${transformName(name)}`;
 };
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
+// Watch for segment changes
 watch(
   () => props.segment,
   () => {

@@ -6,6 +6,9 @@
 dist
 .output
 
+# Laravel Public
+public/storage
+
 
 # Node dependencies
 node_modules

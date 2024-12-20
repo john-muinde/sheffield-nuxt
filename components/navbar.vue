@@ -107,7 +107,7 @@
                     ref="searchResultsContainer"
                     class="absolute w-full mt-2 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50"
                   >
-                    <div v-if="!searchResults.length" class="p-4">
+                    <div v-if="!searchResults?.length" class="p-4">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -119,7 +119,13 @@
                           d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-6h2v2h-2v-2zm0-6h2v4h-2V8z"
                         />
                       </svg>
-                      <p class="text-base text-gray-700 text-center mt-1">No results found</p>
+                      <p class="text-base text-gray-700 text-center mt-1">
+                        {{
+                          searchQuery?.length < 3
+                            ? "Type at least 3 characters to search"
+                            : "No results found"
+                        }}
+                      </p>
                     </div>
                     <div
                       v-for="result in searchResults"
@@ -397,7 +403,7 @@ onMounted(() => {
 
 // Handle search functionality
 const handleSearch = async () => {
-  if (searchQuery.value.length >= 3) {
+  if (searchQuery.value?.length >= 3) {
     try {
       const response = await api.get(
         `/api/product_search/${searchQuery.value}`
@@ -412,7 +418,7 @@ const handleSearch = async () => {
 };
 
 const handleMobileSearch = async () => {
-  if (mobileSearchQuery.value.length >= 3) {
+  if (mobileSearchQuery.value?.length >= 3) {
     await handleSearch();
     toggleMobileMenu();
   }

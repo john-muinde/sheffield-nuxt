@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -84,12 +84,12 @@ jobs:
           chmod -R 775 dist/backend/storage
 
           # Create Laravel storage symlink
-          if [ ! -d "dist/backend/public/storage" ]; then
-            ln -s ../storage/app/public dist/backend/public/storage
-          fi
+          # if [ ! -d "dist/backend/public/storage" ]; then
+          #   ln -s ../storage/app/public dist/backend/public/storage
+          # fi
 
-          # Create symlink from Laravel storage to Nuxt public
-          ln -s ../backend/storage/app/public dist/public/storage
+          # # Create symlink from Laravel storage to Nuxt public
+          # ln -s ../backend/storage/app/public dist/public/storage
 
       - name: 📂 Deploy to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

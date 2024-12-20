@@ -64,7 +64,7 @@ export const APP_SEGMENTS: SegmentInterface[] = [
       ice cream storage solutions, vaccine storage systems, blood bank refrigeration`,
     color: "#3d62ad",
     image: "/assets/images/homepage/cold_storage_page.jpg",
-    icon: "/assets/images/menu-icons/top-menu/cold-room.png",
+    icon: "/assets/images/menu-icons/cold-room.png",
   },
   {
     id: 247,
@@ -92,7 +92,7 @@ export const APP_SEGMENTS: SegmentInterface[] = [
       laundry facility design, commercial laundry planning, industrial cleaning solutions`,
     color: "#7ab337",
     image: "/assets/images/homepage/laundry_page.jpg",
-    icon: "/assets/images/menu-icons/top-menu/laundry.png",
+    icon: "/assets/images/menu-icons/laundry.png",
   },
   {
     id: 21,
@@ -123,7 +123,7 @@ export const APP_SEGMENTS: SegmentInterface[] = [
       cafe equipment setup, fast food kitchen systems, industrial kitchen design`,
     color: "#c02434",
     image: "/assets/images/homepage/commercial_kitchen.jpg",
-    icon: "/assets/images/menu-icons/top-menu/kitchen.png",
+    icon: "/assets/images/menu-icons/kitchen.png",
   },
   {
     id: 370,
@@ -151,7 +151,7 @@ export const APP_SEGMENTS: SegmentInterface[] = [
       business equipment packages, industrial machinery offers, seasonal equipment deals, 
       promotional equipment packages, limited time offers, special equipment deals`,
     color: "#f4a261",
-    image: "/assets/images/events/november-promo.png",
-    icon: "/assets/images/menu-icons/top-menu/kitchen.png",
+    image: "/assets/images/events/december-promo.jpg",
+    icon: "/assets/images/menu-icons/promotions.webp",
   },
 ];

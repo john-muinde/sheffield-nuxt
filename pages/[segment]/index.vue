@@ -11,7 +11,10 @@
               <div class="col-sm-12 col-xl-12 col-xxl-12">
                 <div class="banner banner-overlay solution-image">
                   <a href="#">
-                    <NuxtImg :src="segment?.image" :alt="segment?.name" />
+                    <NuxtImg
+                      :src="assetsSync(segment?.image, { local: true })"
+                      :alt="segment?.name"
+                    />
                   </a>
                 </div>
               </div>

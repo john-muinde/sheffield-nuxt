@@ -6,8 +6,9 @@
       v-if="pageSegment != null && !route.path.includes('/product')"
       :segment="pageSegment"
     />
-
-    <slot />
+    <div class="mt-8">
+      <slot />
+    </div>
 
     <MobileMenu />
     <Footer />

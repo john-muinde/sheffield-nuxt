@@ -4,19 +4,17 @@ import { APP_SEGMENTS } from "./api";
 import axios from "axios";
 
 export const stripHtml = (html: string) => {
-  if (!html) return ''
-  return html.replace(/<[^>]*>/g, '').substring(0, 160)
-}
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, "").substring(0, 160);
+};
 
 export function getSegment(slug: string | string[]) {
-  if (typeof slug == 'string' && slug.includes('/')) {
-    slug = slug.split('/')[0];
+  if (typeof slug == "string" && slug.includes("/")) {
+    slug = slug.split("/")[0];
   }
   slug = Array.isArray(slug) ? slug[0] : slug;
   return APP_SEGMENTS.find((item) =>
-    [item.slug, ...(item.slugs || [])].includes(
-      slug
-    )
+    [item.slug, ...(item.slugs || [])].includes(slug)
   );
 }
 
@@ -27,21 +25,23 @@ export const getSolutionLink = (id: number, name: string, segment: any) => {
 };
 
 export const transformName = (name?: string): string => {
-  if (!name) return '';
+  if (!name) return "";
   return name
     .toLowerCase()
-    .replace(/[\s/]+/g, '-') // Replace spaces and slashes with hyphens
-    .replace(/[^\w-]+/g, '') // Remove non-word characters except hyphens
-    .replace(/-+/g, '-') // Replace consecutive hyphens with a single hyphen
-    .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
-}
+    .replace(/[\s/]+/g, "-") // Replace spaces and slashes with hyphens
+    .replace(/[^\w-&]+/g, "") // Remove non-word characters except hyphens
+    .replace(/-+/g, "-") // Replace consecutive hyphens with a single hyphen
+    .replace(/^-+|-+$/g, ""); // Remove leading and trailing hyphens
+};
 
 export function getProductLink(product: any = {}): string {
   if (!product) return `/${APP_SEGMENTS[0].slug}`;
 
   const { id, name, model_number, categories_json: categories } = product;
 
-  const firstPart = getSegment(categories?.[0]?.parent_name_with_slashes?.split("/")[0])?.slug;
+  const firstPart = getSegment(
+    categories?.[0]?.parent_name_with_slashes?.split("/")[0]
+  )?.slug;
 
   // Replace spaces with dashes
   const transformedName = transformName(name);
@@ -98,8 +98,6 @@ export const getCategoryLink = (
     : `/product/${id}/${transformedName}`;
 };
 
-
-
 export function removeFromCart(index: number) {
   const store = useCartStore();
   store.removeFromCart(index);
@@ -136,7 +134,8 @@ export async function generateSolutionRoutes() {
 
   for (const [index, segment] of APP_SEGMENTS.entries()) {
     console.log(
-      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name
+      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${
+        segment.name
       }`
     );
 
@@ -188,7 +187,8 @@ export async function generateCategoryRoutes() {
 
   for (const [index, segment] of APP_SEGMENTS.entries()) {
     console.log(
-      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${segment.name
+      `\n🔍 Processing Segment ${index + 1}/${APP_SEGMENTS.length}: ${
+        segment.name
       }`
     );
 

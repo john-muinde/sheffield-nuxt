@@ -234,7 +234,11 @@
         <!-- Scrollable Content Area -->
         <div class="flex-1 overflow-y-auto p-4">
           <NuxtImg
-            src="/assets/images/events/december-promo.jpg"
+            :src="
+              assetsSync('/assets/images/events/december-promo.jpg', {
+                local: true,
+              })
+            "
             alt="December Promos"
             class="w-full max-h-[80vh] rounded-lg object-cover"
             format="webp"

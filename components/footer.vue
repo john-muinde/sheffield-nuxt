@@ -119,11 +119,7 @@
                     Bugalobi Hardware City Opposite Uganda Baati, Block 3 Room
                     102, Mulwana Road.
                   </li>
-                  <!-- <li class="my-footer-li">
-                       <img src="/assets/images/footer-icons/footer_postbox.png" alt="Icon 1">
 
-                      P. O. Box 29 – 00606, Nairobi Kenya
-                    </li> -->
                   <li class="my-footer-li">
                     <img
                       src="/assets/images/footer-icons/footer_phone.png"
@@ -208,13 +204,6 @@
 
       <!-- End .cta -->
       <div class="footer-middle border-0">
-        <!-- <div class="waves">
-        <div class="wave" id="wave1"></div>
-        <div class="wave" id="wave2"></div>
-        <div class="wave" id="wave3"></div>
-        <div class="wave" id="wave4"></div>
-      </div> -->
-
         <div class="container-fluid footer-middle-content">
           <div class="row">
             <div class="col-sm-4 col-lg-3">
@@ -241,7 +230,10 @@
                     target="_blank"
                     title="Instagram"
                   >
-                    <img src="/assets/images/social-icons/instagram.png" alt="Instagram Logo" />
+                    <img
+                      src="/assets/images/social-icons/instagram.png"
+                      alt="Instagram Logo"
+                    />
                   </a>
                   <a
                     href="https://www.threads.net/@sheffieldafrica"
@@ -250,7 +242,10 @@
                     target="_blank"
                     title="Threads"
                   >
-                    <img src="/assets/images/social-icons/threads.png" alt="Threads Logo" />
+                    <img
+                      src="/assets/images/social-icons/threads.png"
+                      alt="Threads Logo"
+                    />
                   </a>
                   <a
                     href="https://wa.me/+254114838130?text=Hello%20Sheffield, I need assistance in "
@@ -259,7 +254,10 @@
                     target="_blank"
                     title="WhatsApp"
                   >
-                    <img src="/assets/images/social-icons/whatsapp.png" alt="WhatsApp Logo" />
+                    <img
+                      src="/assets/images/social-icons/whatsapp.png"
+                      alt="WhatsApp Logo"
+                    />
                   </a>
                   <a
                     href="https://twitter.com/sheffield_afric/"
@@ -277,7 +275,10 @@
                     target="_blank"
                     title="Linkedin"
                   >
-                    <img src="/assets/images/social-icons/linkedin.png" alt="Linkedin Logo" />
+                    <img
+                      src="/assets/images/social-icons/linkedin.png"
+                      alt="Linkedin Logo"
+                    />
                   </a>
                   <a
                     href="https://www.youtube.com/channel/UCK-oWPdQazenIHndl4zABew"
@@ -286,7 +287,10 @@
                     target="_blank"
                     title="Youtube"
                   >
-                    <img src="/assets/images/social-icons/youtube.png" alt="Youtube Logo" />
+                    <img
+                      src="/assets/images/social-icons/youtube.png"
+                      alt="Youtube Logo"
+                    />
                   </a>
                   <a
                     href="http://tiktok.com/@sheffieldafrica"
@@ -295,7 +299,10 @@
                     target="_blank"
                     title="TikTok"
                   >
-                    <img src="/assets/images/social-icons/tiktok.png" alt="TikTok Logo" />
+                    <img
+                      src="/assets/images/social-icons/tiktok.png"
+                      alt="TikTok Logo"
+                    />
                   </a>
                 </div>
                 <!-- End .soial-icons -->
@@ -348,33 +355,6 @@
               </div>
               <!-- End .widget -->
             </div>
-            <!-- End .col-sm-4 col-lg-2 -->
-
-            <!-- <div class="col-sm-4 col-lg-2">
-              <div class="widget">
-                <h4 class="widget-title footer-title">Account</h4>
-
-
-                <ul class="widget-list">
-                  <li class="ec-footer-link">
-                    <a href="user-profile.html">My Account</a>
-                  </li>
-                  <li class="ec-footer-link">
-                    <a href="track-order.html">Order History</a>
-                  </li>
-                  <li class="ec-footer-link">
-                    <a href="/wishlist">Wish List</a>
-                  </li>
-                  <li class="ec-footer-link">
-                    <a href="offer.html">Specials</a>
-                  </li>
-                </ul>
-
-
-              </div>
-
-            </div> -->
-            <!-- End .col-sm-4 col-lg-2 -->
 
             <div class="col-sm-4 col-lg-3">
               <div class="widget">
@@ -465,12 +445,6 @@
     </footer>
     <!-- End .footer -->
   </div>
-
-  <!--  <div class="whatsapp-chat">
-    <a @click="openWhatsAppChat" href="#">
-      <img src="whatsapp-icon.png" alt="WhatsApp Chat">
-    </a>
-  </div> -->
 
   <div v-if="showPopup" class="cookie-policy-popup">
     <div class="cookie-policy-content">
