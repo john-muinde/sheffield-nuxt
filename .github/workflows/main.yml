@@ -55,11 +55,8 @@ jobs:
               RewriteCond %{REQUEST_FILENAME} !-f
               RewriteCond %{REQUEST_FILENAME} !-d
 
-              # For API requests
-              RewriteRule ^api/(.*)$ backend/public/api/$1 [L]
-
-              # For backend admin routes
-              RewriteRule ^backend/(.*)$ backend/public/$1 [L]
+              # Handle all backend requests (API, storage, pixel-tracker, etc)
+              RewriteRule ^(api|backend|storage|pixel-tracker) backend/public/$1 [L]
 
               # For all other routes, redirect to index.html
               RewriteRule ^(.*)$ index.html [L]

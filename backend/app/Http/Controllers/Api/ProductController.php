@@ -6,14 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
-use Intervention\Image\Laravel\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -310,7 +306,7 @@ class ProductController extends Controller
         $allProducts = $category_products->flatMap->products;
         $total = $allProducts->count();
         $products = $allProducts->slice(($page - 1) * $perPage, $perPage)->all();
-
+        $products = json_decode(json_encode(ProductResource::collection($products)), true);
         $products = new LengthAwarePaginator($products, $total, $perPage, $page);
 
         $categories = Category::withCount('categoryProducts')
@@ -368,7 +364,9 @@ class ProductController extends Controller
 
         if ($search != "") {
             $Product = $Product->where('name', 'like', '%' . $search . '%')
-                ->orWhere('model_number', 'like', '%' . $search . '%');
+                ->orWhere('model_number', 'like', '%' . $search . '%')
+                ->orWhere('brand', 'like', '%' . $search . '%')
+                ->orWhere('sku', 'like', '%' . $search . '%');
         }
 
         if ($mainCategory != "" && $filter_category_id == "") {

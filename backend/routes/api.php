@@ -146,22 +146,6 @@ Route::get('user-roles', function (Request $request) {
     return User::with('roles')->get();
 });
 
-
-Route::get('/', function () {
-    $routes = collect(Route::getRoutes())->map(function ($route) {
-        $middleware = $route->middleware();
-        $authRequired = in_array('auth:sanctum', $middleware);
-
-        return [
-            'uri' => $route->uri(),
-            'auth_required' => $authRequired ? 'Yes' : 'No',
-            'methods' => $route->methods(),
-        ];
-    });
-
-    return $routes;
-});
-
 Route::fallback(function () {
     abort(404, 'API resource not found');
 });

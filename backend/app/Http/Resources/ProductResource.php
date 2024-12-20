@@ -50,30 +50,4 @@ class ProductResource extends JsonResource
             'created_at' => $this->created_at->toDateString()
         ];
     }
-
-
-
-    // private function computeMainSecParentNameWithDashes()
-    // {
-    //     $category = $this;
-    //     $name = $this->name;
-    //     $parentNames = [];
-
-    //     while ($category->parent) {
-    //         $parentNames[] = $category->parent->name;
-    //         $category = $category->parent;
-    //     }
-
-    //     if(count($parentNames) > 0){
-
-    //         $the_caregory_name = implode(' - ', array_reverse($parentNames))." - ".$name;
-
-    //     }else{
-
-    //         $the_caregory_name = $name;
-
-    //     }
-
-    //     return $the_caregory_name;
-    // }
 }
