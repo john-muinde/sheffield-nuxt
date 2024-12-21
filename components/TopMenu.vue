@@ -1,5 +1,5 @@
 <template>
-  <div class="md:mt-48 mt-28 mb-2">
+  <div class="mt-24 sm:mt-40 md:mt-48">
     <div class="container mx-auto px-4 mt-5">
       <!-- Desktop Menu -->
       <div class="hidden md:block relative w-full">
@@ -228,10 +228,6 @@ onClickOutside(mainModalContainer, () => {
 
 const isActive = (categoryId) => {
   return route.params.id === categoryId?.toString();
-};
-
-const getCategoryLink = (id, name) => {
-  return `/commercial-kitchen/${id}/${transformName(name)}`;
 };
 
 const toggleMobileMenu = () => {

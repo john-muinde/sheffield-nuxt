@@ -180,7 +180,7 @@
             >
               <NuxtLink
                 to="/about-us"
-                class="btn btn-primary btn-footer"
+                class="btn btn-secondary"
                 style="border: solid 2px; min-width: fit-content"
               >
                 <span><b>About Us</b></span
@@ -189,7 +189,7 @@
 
               <NuxtLink
                 to="/contact-us"
-                class="btn btn-primary btn-footer"
+                class="btn btn-secondary"
                 style="border: solid 2px; min-width: fit-content"
               >
                 <span><b>Contact Us</b></span
@@ -864,10 +864,6 @@ input::placeholder {
 .social-icon:hover img {
   filter: invert(99%) sepia(0%) saturate(2%) hue-rotate(132deg) brightness(111%)
     contrast(101%);
-}
-
-.btn-footer {
-  background-color: #304296;
 }
 
 .footer-banner {

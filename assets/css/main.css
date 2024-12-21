@@ -1,39 +1,204 @@
+/* main.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-.main {
-  @apply mt-40 md:mt-1;
+/* Base Styles */
+@layer base {
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+  }
+
+  h1 {
+    @apply text-3xl;
+  }
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  h3 {
+    @apply text-4xl md:text-3xl;
+  }
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+  h5 {
+    @apply text-lg md:text-xl;
+  }
+  h6 {
+    @apply text-base md:text-lg;
+  }
+
+  a {
+    @apply !no-underline transition-colors duration-200;
+  }
 }
 
-.about-us-title {
-  @apply text-5xl font-bold text-primary;
+/* Components */
+@layer components {
+  /* Button Base */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-sm font-semibold 
+           transition-all duration-200 ease-in-out cursor-pointer 
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Button Sizes */
+  .btn-sm {
+    @apply px-4 py-2 text-sm;
+  }
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  /* Button Variants */
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-secondary focus:ring-2 focus:ring-secondary 
+           active:bg-secondary;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-primary focus:ring-2 focus:ring-primary
+           active:bg-primary;
+  }
+
+  .btn-outline-primary {
+    @apply border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-white 
+           focus:ring-2 focus:ring-primary/20;
+  }
+
+  .btn-outline-secondary {
+    @apply border-2 border-secondary text-secondary bg-transparent hover:bg-secondary hover:text-white 
+           focus:ring-2 focus:ring-secondary/20;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-primary hover:bg-primary/10 focus:ring-2 focus:ring-primary/20;
+  }
+
+  .btn-white {
+    @apply bg-white text-primary shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-primary/20;
+  }
+
+  /* Product Button Variants */
+  .btn-product {
+    @apply inline-flex items-center justify-center flex-1 basis-0
+           px-6 py-4 w-3/4 text-lg font-medium
+           transition-all duration-300 ease-in-out
+           hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-primary hover:text-white;
+  }
+
+  .btn-product:before {
+    font-family: "molla";
+    margin-right: 0.9rem;
+    content: "\e812";
+    @apply text-3xl;
+  }
+
+  /* Product Button Colors */
+  .btn-product-primary {
+    @apply text-white bg-primary 
+           hover:bg-primary/90 focus:ring-primary/50
+           active:bg-primary/80;
+  }
+
+  .btn-product-secondary {
+    @apply text-white bg-secondary
+           hover:bg-secondary/90 focus:ring-secondary/50
+           active:bg-secondary/80;
+  }
+
+  .btn-product-outline {
+    @apply text-primary bg-transparent border-2 border-primary
+           hover:bg-primary hover:text-white focus:ring-primary/50;
+  }
+
+  .btn-product-light {
+    @apply text-gray-800 bg-gray-100
+           hover:bg-gray-200 focus:ring-gray-400
+           active:bg-gray-300;
+  }
+
+  /* Layout Components */
+  .main {
+    @apply mt-0 sm:pt-20 md:pt-1;
+  }
+
+  /* Title Components */
+  .section-title {
+    @apply text-4xl md:text-5xl font-bold mb-6;
+  }
+
+  .section-title-primary {
+    @apply section-title text-primary;
+  }
+
+  .about-us-title,
+  .our-history-title,
+  .footer-banner-header {
+    @apply section-title-primary;
+  }
+
+  /* Card Components */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg transition-shadow duration-200;
+  }
 }
 
-.terms_page h4 {
-  @apply mt-5;
+/* Terms Page Specific Styles */
+.terms_page {
+  @apply max-w-4xl mx-auto px-4;
+
+  h4 {
+    @apply mt-8 mb-4;
+  }
+
+  ul,
+  ol {
+    @apply space-y-2 mt-4 mb-6;
+  }
+
+  ul {
+    @apply list-none pl-0;
+  }
+
+  ol {
+    @apply list-decimal pl-5;
+  }
+
+  li > ol {
+    @apply mt-2;
+  }
+
+  .headings {
+    @apply mb-8 border-b pb-4;
+  }
+
+  .heading {
+    @apply font-bold text-2xl text-white bg-primary-heading py-4;
+  }
 }
 
-.terms_page ul {
-  @apply list-none pl-0;
-}
+/* Utility Classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 
-.terms_page ol {
-  @apply pl-0;
-}
+  .text-pretty {
+    text-wrap: pretty;
+  }
 
-.terms_page li {
-  @apply mb-2.5;
-}
-
-.terms_page li > ol {
-  @apply mt-2.5;
-}
-
-.terms_page .headings {
-  @apply mb-5;
-}
-
-.terms_page .heading {
-  @apply font-bold;
+  .bg-primary-heading {
+    @apply bg-gradient-to-r from-primary via-primary/40 to-transparent;
+  }
 }

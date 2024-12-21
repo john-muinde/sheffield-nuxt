@@ -5,7 +5,7 @@
         <div class="page-content pg-white who-we-are-section">
           <div class="overlay"></div>
 
-          <div class="pt-5 pb-2">
+          <div class="pb-2">
             <div class="container">
               <div class="row">
                 <div class="col-md-12">

@@ -93,7 +93,7 @@
         </div>
       </div>
     </div>
-    <button class="mobile-menu-toggler" @click="addClassToBody">
+    <button class="mobile-menu-toggler ml-3" @click="addClassToBody">
       <span class="sr-only">Toggle mobile menu</span>
       <i class="icon-bars"></i>
     </button>

@@ -4,7 +4,7 @@
   <div class="mobile-menu-overlay" @click="closeMenu"></div>
   <!-- End .mobil-menu-overlay -->
 
-  <div class="mobile-menu-container" :class="{ 'active': isMenuActive }">
+  <div class="mobile-menu-container" :class="{ active: isMenuActive }">
     <div class="mobile-menu-wrapper">
       <span class="mobile-menu-close mobile-menu-toggler" @click="toggleMenu">
         <i class="icon-close"></i>
@@ -12,35 +12,65 @@
 
       <ul class="nav nav-pills-mobile" role="tablist">
         <li class="nav-item">
-          <a id="mobile-menu-link" class="nav-link active" data-toggle="tab" href="#mobile-menu-tab" role="tab"
-            aria-controls="mobile-menu-tab" aria-selected="true">Menu</a>
+          <a
+            id="mobile-menu-link"
+            class="nav-link"
+            :class="{ active: currentTab === 'menu' }"
+            data-toggle="tab"
+            href="#mobile-menu-tab"
+            @click="currentTab = 'menu'"
+            role="tab"
+            aria-controls="mobile-menu-tab"
+            aria-selected="true"
+            >Menu</a
+          >
         </li>
         <li class="nav-item">
-          <a id="mobile-cats-link" class="nav-link" data-toggle="tab" href="#mobile-cats-tab" role="tab"
-            aria-controls="mobile-cats-tab" aria-selected="false">Solutions</a>
+          <a
+            id="mobile-cats-link"
+            class="nav-link"
+            data-toggle="tab"
+            href="#mobile-cats-tab"
+             :class="{ active: currentTab === 'cats' }"
+            @click="currentTab = 'cats'"
+            role="tab"
+            aria-controls="mobile-cats-tab"
+            aria-selected="false"
+            >Solutions</a
+          >
         </li>
       </ul>
 
       <div class="tab-content">
-        <div id="mobile-menu-tab" class="tab-pane fade show active" role="tabpanel" aria-labelledby="mobile-menu-link">
+        <div
+          id="mobile-menu-tab"
+          class="tab-pane fade"
+          :class="{ 'show active': currentTab === 'menu' }"
+          role="tabpanel"
+          aria-labelledby="mobile-menu-link"
+        >
           <nav class="mobile-nav">
             <ul class="mobile-menu">
               <li class="active">
-                <NuxtLink to="/" @click="closeMenu">
-                  Home
-                </NuxtLink>
+                <NuxtLink to="/" @click="closeMenu"> Home </NuxtLink>
               </li>
               <li>
                 <NuxtLink to="/commercial-kitchen" class="sf-with-ul">
                   Kitchen
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="category in mainKitchenCategories" :key="category.id">
-                    <NuxtLink :to="getKitchenCategoryLink(
-                      category.id,
-                      category.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="category in mainKitchenCategories"
+                    :key="category.id"
+                  >
+                    <NuxtLink
+                      :to="getKitchenCategoryLink(category.id, category.name)"
+                      @click="closeMenu"
+                    >
                       {{ category.name }}
                     </NuxtLink>
                   </li>
@@ -50,14 +80,20 @@
               <li>
                 <NuxtLink to="/laundry" class="sf-with-ul">
                   LAUNDRY & FLOOR CLEANING
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="category in mainLaundryCategories" :key="category.id">
-                    <NuxtLink :to="getLaundryCategoryLink(
-                      category.id,
-                      category.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="category in mainLaundryCategories"
+                    :key="category.id"
+                  >
+                    <NuxtLink
+                      :to="getLaundryCategoryLink(category.id, category.name)"
+                      @click="closeMenu"
+                    >
                       {{ category.name }}
                     </NuxtLink>
                   </li>
@@ -67,14 +103,20 @@
               <li>
                 <NuxtLink to="/cold-storage" class="sf-with-ul">
                   Cold Storage
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="category in mainColdRoomCategories" :key="category.id">
-                    <NuxtLink :to="getColdRoomCategoryLink(
-                      category.id,
-                      category.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="category in mainColdRoomCategories"
+                    :key="category.id"
+                  >
+                    <NuxtLink
+                      :to="getColdRoomCategoryLink(category.id, category.name)"
+                      @click="closeMenu"
+                    >
                       {{ category.name }}
                     </NuxtLink>
                   </li>
@@ -84,14 +126,22 @@
               <li v-if="promotionExists">
                 <NuxtLink to="/promotional-solutions" class="sf-with-ul">
                   Promotions
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="category in mainPromotionalCategories" :key="category.id">
-                    <NuxtLink :to="getPromotionalCategoryLink(
-                      category.id,
-                      category.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="category in mainPromotionalCategories"
+                    :key="category.id"
+                  >
+                    <NuxtLink
+                      :to="
+                        getPromotionalCategoryLink(category.id, category.name)
+                      "
+                      @click="closeMenu"
+                    >
                       {{ category.name }}
                     </NuxtLink>
                   </li>
@@ -99,7 +149,11 @@
               </li>
 
               <li>
-                <NuxtLink to="/consultancy-and-design" class="sf-with-ul" @click="closeMenu">
+                <NuxtLink
+                  to="/consultancy-and-design"
+                  class="sf-with-ul"
+                  @click="closeMenu"
+                >
                   Consultancy & Design
                 </NuxtLink>
               </li>
@@ -110,9 +164,12 @@
               </li>
 
               <li>
-                <NuxtLink to="/about-us/sheffield-advantage" class="sf-with-ul" @click="closeMenu">
-                  Sheffield
-                  Advantages
+                <NuxtLink
+                  to="/about-us/sheffield-advantage"
+                  class="sf-with-ul"
+                  @click="closeMenu"
+                >
+                  Sheffield Advantages
                 </NuxtLink>
               </li>
               <li>
@@ -142,7 +199,11 @@
                 </NuxtLink>
               </li>
               <li>
-                <NuxtLink to="/contact-us" class="sf-with-ul" @click="closeMenu">
+                <NuxtLink
+                  to="/contact-us"
+                  class="sf-with-ul"
+                  @click="closeMenu"
+                >
                   Contact us
                 </NuxtLink>
               </li>
@@ -151,20 +212,32 @@
           <!-- End .mobile-nav -->
         </div>
         <!-- .End .tab-pane -->
-        <div id="mobile-cats-tab" class="tab-pane fade" role="tabpanel" aria-labelledby="mobile-cats-link">
+        <div
+          id="mobile-cats-tab"
+          class="tab-pane fade"
+          :class="{ 'show active': currentTab === 'cats' }"
+          role="tabpanel"
+          aria-labelledby="mobile-cats-link"
+        >
           <nav class="mobile-cats-nav">
             <ul class="mobile-menu">
               <li>
                 <NuxtLink to="/commercial-kitchen" class="sf-with-ul">
                   KITCHEN SOLUTIONS
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="solution in mainKitchenSolutions" :key="solution.id">
-                    <NuxtLink :to="getSolutionKitchenLink(
-                      solution.id,
-                      solution.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="solution in mainKitchenSolutions"
+                    :key="solution.id"
+                  >
+                    <NuxtLink
+                      :to="getSolutionKitchenLink(solution.id, solution.name)"
+                      @click="closeMenu"
+                    >
                       {{ solution.name }}
                     </NuxtLink>
                   </li>
@@ -174,14 +247,20 @@
               <li>
                 <NuxtLink to="/laundry" class="sf-with-ul">
                   LAUNDRY & FLOOR CLEANING SOLUTIONS
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="solution in mainLaundrySolutions" :key="solution.id">
-                    <NuxtLink :to="getSolutionLaundryLink(
-                      solution.id,
-                      solution.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="solution in mainLaundrySolutions"
+                    :key="solution.id"
+                  >
+                    <NuxtLink
+                      :to="getSolutionLaundryLink(solution.id, solution.name)"
+                      @click="closeMenu"
+                    >
                       {{ solution.name }}
                     </NuxtLink>
                   </li>
@@ -191,14 +270,20 @@
               <li>
                 <NuxtLink to="/cold-storage" class="sf-with-ul">
                   COLD STORAGE SOLUTIONS
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="solution in mainColdRoomSolutions" :key="solution.id">
-                    <NuxtLink :to="getSolutionColdRoomLink(
-                      solution.id,
-                      solution.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="solution in mainColdRoomSolutions"
+                    :key="solution.id"
+                  >
+                    <NuxtLink
+                      :to="getSolutionColdRoomLink(solution.id, solution.name)"
+                      @click="closeMenu"
+                    >
                       {{ solution.name }}
                     </NuxtLink>
                   </li>
@@ -208,14 +293,22 @@
               <li v-if="promotionExists">
                 <NuxtLink to="/promotional-solutions" class="sf-with-ul">
                   PROMOTIONAL SOLUTIONS
-                  <ChevronDown class="chevron-icon" @click="toggleSubMenu($event)" />
+                  <ChevronDown
+                    class="chevron-icon"
+                    @click="toggleSubMenu($event)"
+                  />
                 </NuxtLink>
                 <ul class="submenu">
-                  <li v-for="solution in mainPromotionalSolutions" :key="solution.id">
-                    <NuxtLink :to="getSolutionPromotionalLink(
-                      solution.id,
-                      solution.name
-                    )" @click="closeMenu">
+                  <li
+                    v-for="solution in mainPromotionalSolutions"
+                    :key="solution.id"
+                  >
+                    <NuxtLink
+                      :to="
+                        getSolutionPromotionalLink(solution.id, solution.name)
+                      "
+                      @click="closeMenu"
+                    >
                       {{ solution.name }}
                     </NuxtLink>
                   </li>
@@ -234,11 +327,22 @@
   <!-- End .mobile-menu-container -->
 
   <!-- Sign in / Register Modal -->
-  <div id="signin-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+  <div
+    id="signin-modal"
+    class="modal fade"
+    tabindex="-1"
+    role="dialog"
+    aria-hidden="true"
+  >
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-body">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
             <span aria-hidden="true"><i class="icon-close"></i></span>
           </button>
 
@@ -246,28 +350,61 @@
             <div class="form-tab">
               <ul class="nav nav-pills nav-fill" role="tablist">
                 <li class="nav-item">
-                  <a id="signin-tab" class="nav-link active" data-toggle="tab" href="#signin" role="tab"
-                    aria-controls="signin" aria-selected="true">Sign In</a>
+                  <a
+                    id="signin-tab"
+                    class="nav-link active"
+                    data-toggle="tab"
+                    href="#signin"
+                    role="tab"
+                    aria-controls="signin"
+                    aria-selected="true"
+                    >Sign In</a
+                  >
                 </li>
                 <li class="nav-item">
-                  <a id="register-tab" class="nav-link" data-toggle="tab" href="#register" role="tab"
-                    aria-controls="register" aria-selected="false">Register</a>
+                  <a
+                    id="register-tab"
+                    class="nav-link"
+                    data-toggle="tab"
+                    href="#register"
+                    role="tab"
+                    aria-controls="register"
+                    aria-selected="false"
+                    >Register</a
+                  >
                 </li>
               </ul>
               <div id="tab-content-5" class="tab-content">
-                <div id="signin" class="tab-pane fade show active" role="tabpanel" aria-labelledby="signin-tab">
+                <div
+                  id="signin"
+                  class="tab-pane fade show active"
+                  role="tabpanel"
+                  aria-labelledby="signin-tab"
+                >
                   <form action="#">
                     <div class="form-group">
-                      <label for="singin-email">Username or email address
-                        *</label>
-                      <input id="singin-email" type="text" class="form-control" name="singin-email" required />
+                      <label for="singin-email"
+                        >Username or email address *</label
+                      >
+                      <input
+                        id="singin-email"
+                        type="text"
+                        class="form-control"
+                        name="singin-email"
+                        required
+                      />
                     </div>
                     <!-- End .form-group -->
 
                     <div class="form-group">
                       <label for="singin-password">Password *</label>
-                      <input id="singin-password" type="password" class="form-control" name="singin-password"
-                        required />
+                      <input
+                        id="singin-password"
+                        type="password"
+                        class="form-control"
+                        name="singin-password"
+                        required
+                      />
                     </div>
                     <!-- End .form-group -->
 
@@ -278,9 +415,16 @@
                       </button>
 
                       <div class="custom-control custom-checkbox">
-                        <input id="signin-remember" type="checkbox" class="custom-control-input" />
-                        <label class="custom-control-label" for="signin-remember">Remember
-                          Me</label>
+                        <input
+                          id="signin-remember"
+                          type="checkbox"
+                          class="custom-control-input"
+                        />
+                        <label
+                          class="custom-control-label"
+                          for="signin-remember"
+                          >Remember Me</label
+                        >
                       </div>
                       <!-- End .custom-checkbox -->
 
@@ -292,18 +436,34 @@
                   <!-- End .form-choice -->
                 </div>
                 <!-- .End .tab-pane -->
-                <div id="register" class="tab-pane fade" role="tabpanel" aria-labelledby="register-tab">
+                <div
+                  id="register"
+                  class="tab-pane fade"
+                  role="tabpanel"
+                  aria-labelledby="register-tab"
+                >
                   <form action="#">
                     <div class="form-group">
                       <label for="register-email">Your email address *</label>
-                      <input id="register-email" type="email" class="form-control" name="register-email" required />
+                      <input
+                        id="register-email"
+                        type="email"
+                        class="form-control"
+                        name="register-email"
+                        required
+                      />
                     </div>
                     <!-- End .form-group -->
 
                     <div class="form-group">
                       <label for="register-password">Password *</label>
-                      <input id="register-password" type="password" class="form-control" name="register-password"
-                        required />
+                      <input
+                        id="register-password"
+                        type="password"
+                        class="form-control"
+                        name="register-password"
+                        required
+                      />
                     </div>
                     <!-- End .form-group -->
 
@@ -314,10 +474,19 @@
                       </button>
 
                       <div class="custom-control custom-checkbox">
-                        <input id="register-policy" type="checkbox" class="custom-control-input" required />
-                        <label class="custom-control-label" for="register-policy">I agree to the
+                        <input
+                          id="register-policy"
+                          type="checkbox"
+                          class="custom-control-input"
+                          required
+                        />
+                        <label
+                          class="custom-control-label"
+                          for="register-policy"
+                          >I agree to the
                           <a href="#">privacy policy</a>
-                          *</label>
+                          *</label
+                        >
                       </div>
                       <!-- End .custom-checkbox -->
                     </div>
@@ -344,24 +513,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 const { api } = useAxios();
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDown } from "lucide-vue-next";
+const currentTab = ref("menu");
 
 const isMenuActive = ref(false);
 
 const toggleMenu = () => {
   isMenuActive.value = !isMenuActive.value;
-  document.body.classList.toggle('mmenu-active', isMenuActive.value);
-  const targetElement = document.querySelector('.the_main_div');
-  targetElement.classList.toggle('mmenu-active');
+  document.body.classList.toggle("mmenu-active", isMenuActive.value);
+  const targetElement = document.querySelector(".the_main_div");
+  targetElement.classList.toggle("mmenu-active");
 };
 
 const closeMenu = () => {
   isMenuActive.value = false;
-  document.body.classList.remove('mmenu-active');
-  const targetElement = document.querySelector('.the_main_div');
-  targetElement.classList.remove('mmenu-active');
+  document.body.classList.remove("mmenu-active");
+  const targetElement = document.querySelector(".the_main_div");
+  targetElement.classList.remove("mmenu-active");
 };
 
 const toggleSubMenu = (event) => {
@@ -369,28 +539,28 @@ const toggleSubMenu = (event) => {
   event.preventDefault();
 
   // Toggle the 'show' class on the immediate parent <li> element
-  const parentLi = event.target.closest('li');
-  parentLi.classList.toggle('show');
+  const parentLi = event.target.closest("li");
+  parentLi.classList.toggle("show");
 
   // Optionally, close other open submenus
-  const otherOpenLis = document.querySelectorAll('.mobile-menu > li.show');
-  otherOpenLis.forEach(li => {
+  const otherOpenLis = document.querySelectorAll(".mobile-menu > li.show");
+  otherOpenLis.forEach((li) => {
     if (li !== parentLi) {
-      li.classList.remove('show');
+      li.classList.remove("show");
     }
   });
 };
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener("click", handleClickOutside);
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener("click", handleClickOutside);
 });
 
 const handleClickOutside = (event) => {
-  if (!event.target.closest('.mobile-menu') && isMenuActive.value) {
+  if (!event.target.closest(".mobile-menu") && isMenuActive.value) {
     closeMenu();
   }
 };
@@ -405,7 +575,9 @@ const mainLaundryCategories = ref([]);
 const mainColdRoomCategories = ref([]);
 const mainPromotionalCategories = ref([]);
 
-const promotionExists = computed(() => mainPromotionalCategories.value.length > 0);
+const promotionExists = computed(
+  () => mainPromotionalCategories.value.length > 0
+);
 
 const fetchData = async (url, stateVariable) => {
   try {
@@ -420,32 +592,47 @@ const generateLink = (basePath, id, name) => {
   const transformedName = name
     .toLowerCase()
     // remove any previous hyphens
-    .replace(/-/g, ' ')
-    .replace(/[\s/]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/-/g, " ")
+    .replace(/[\s/]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
   return `${basePath}/${id}/${transformedName}`;
 };
 
-const fetchMainKitchenSolutions = () => fetchData('/api/get-solutions/21', mainKitchenSolutions);
-const fetchMainLaundrySolutions = () => fetchData('/api/get-solutions/247', mainLaundrySolutions);
-const fetchMainColdRoomSolutions = () => fetchData('/api/get-solutions/301', mainColdRoomSolutions);
-const fetchMainPromotionalSolutions = () => fetchData('/api/get-solutions/370', mainPromotionalSolutions);
+const fetchMainKitchenSolutions = () =>
+  fetchData("/api/get-solutions/21", mainKitchenSolutions);
+const fetchMainLaundrySolutions = () =>
+  fetchData("/api/get-solutions/247", mainLaundrySolutions);
+const fetchMainColdRoomSolutions = () =>
+  fetchData("/api/get-solutions/301", mainColdRoomSolutions);
+const fetchMainPromotionalSolutions = () =>
+  fetchData("/api/get-solutions/370", mainPromotionalSolutions);
 
-const getSolutionKitchenLink = (id, name) => generateLink('/commercial-kitchen/solutions', id, name);
-const getSolutionLaundryLink = (id, name) => generateLink('/laundry/solutions', id, name);
-const getSolutionColdRoomLink = (id, name) => generateLink('/cold-storage/solutions', id, name);
-const getSolutionPromotionalLink = (id, name) => generateLink('/promotional-solutions', id, name);
+const getSolutionKitchenLink = (id, name) =>
+  generateLink("/commercial-kitchen/solutions", id, name);
+const getSolutionLaundryLink = (id, name) =>
+  generateLink("/laundry/solutions", id, name);
+const getSolutionColdRoomLink = (id, name) =>
+  generateLink("/cold-storage/solutions", id, name);
+const getSolutionPromotionalLink = (id, name) =>
+  generateLink("/promotional-solutions", id, name);
 
-const fetchMainKitchenCategories = () => fetchData('/api/get-main-categories/21', mainKitchenCategories);
-const fetchMainLaundryCategories = () => fetchData('/api/get-main-categories/247', mainLaundryCategories);
-const fetchMainColdRoomCategories = () => fetchData('/api/get-main-categories/301', mainColdRoomCategories);
-const fetchMainPromotionalCategories = () => fetchData('/api/get-main-categories/370', mainPromotionalCategories);
+const fetchMainKitchenCategories = () =>
+  fetchData("/api/get-main-categories/21", mainKitchenCategories);
+const fetchMainLaundryCategories = () =>
+  fetchData("/api/get-main-categories/247", mainLaundryCategories);
+const fetchMainColdRoomCategories = () =>
+  fetchData("/api/get-main-categories/301", mainColdRoomCategories);
+const fetchMainPromotionalCategories = () =>
+  fetchData("/api/get-main-categories/370", mainPromotionalCategories);
 
-const getKitchenCategoryLink = (id, name) => generateLink('/commercial-kitchen', id, name);
-const getLaundryCategoryLink = (id, name) => generateLink('/laundry', id, name);
-const getColdRoomCategoryLink = (id, name) => generateLink('/cold-storage', id, name);
-const getPromotionalCategoryLink = (id, name) => generateLink('/promotional-solutions', id, name);
+const getKitchenCategoryLink = (id, name) =>
+  generateLink("/commercial-kitchen", id, name);
+const getLaundryCategoryLink = (id, name) => generateLink("/laundry", id, name);
+const getColdRoomCategoryLink = (id, name) =>
+  generateLink("/cold-storage", id, name);
+const getPromotionalCategoryLink = (id, name) =>
+  generateLink("/promotional-solutions", id, name);
 
 onMounted(() => {
   fetchMainKitchenSolutions();
@@ -453,14 +640,12 @@ onMounted(() => {
   fetchMainColdRoomSolutions();
   fetchMainPromotionalSolutions();
 
-
   fetchMainKitchenCategories();
   fetchMainLaundryCategories();
   fetchMainColdRoomCategories();
   fetchMainPromotionalCategories();
 });
 </script>
-
 
 <style scoped>
 .mobile-menu li .submenu {
@@ -470,7 +655,7 @@ onMounted(() => {
   transition: max-height 0.3s ease-out;
 }
 
-.mobile-menu li.show>.submenu {
+.mobile-menu li.show > .submenu {
   display: block;
   max-height: 1000px;
   /* Adjust as needed */

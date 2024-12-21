@@ -46,7 +46,7 @@
                 <div
                   v-for="product in data.products"
                   :key="product.id"
-                  class="col-6 col-md-2 col-lg-2 col-xl-2 image-container"
+                  class="col-6 col-md-3 col-lg-2 col-xl-2 image-container"
                 >
                   <div class="product product-7 text-center">
                     <figure class="product-media">
@@ -76,11 +76,10 @@
                           {{ product.product_brand?.name }}
                         </NuxtLink>
                       </div>
-                      <h3 class="product-title">
-                        <NuxtLink :to="getProductLink(product)">
-                          {{ product.name }}
-                        </NuxtLink>
-                      </h3>
+
+                      <NuxtLink :to="getProductLink(product)">
+                        {{ product.name }}
+                      </NuxtLink>
                     </div>
                   </div>
                 </div>
@@ -292,24 +291,4 @@ const handleCategoryFilter = (categoryId: number) => {
 };
 </script>
 
-<style scoped>
-.card-title a:before {
-  content: " ";
-}
-.product-title a {
-  font-weight: 550 !important;
-}
-
-.sidebar-shop-solution .filter-items-count .filter-item {
-  padding-right: 0 !important;
-}
-
-.swal2-popup.swal2-toast .swal2-title {
-  font-size: 1.5rem !important;
-  color: #ffffff;
-}
-
-.swal2-container.swal2-bottom-end > .swal2-popup {
-  background-color: #c02434;
-}
-</style>
+<style scoped></style>

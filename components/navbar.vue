@@ -189,19 +189,6 @@
               </div>
 
               <CartComponent />
-              <!-- Mobile Menu Button - Visible on tablet and below -->
-              <button
-                class="xl:hidden p-2 hover:bg-gray-100 rounded-md"
-                @click="toggleMobileMenu"
-                aria-label="Toggle Menu"
-              >
-                <i
-                  :class="[
-                    'text-2xl',
-                    mobileMenuOpen ? 'icon-close' : 'icon-menu',
-                  ]"
-                ></i>
-              </button>
             </div>
           </div>
         </div>

@@ -8,9 +8,9 @@
             <li class="breadcrumb-item">
               <NuxtLink to="/">Home</NuxtLink>
             </li>
-            <li class="breadcrumb-item">
+            <!-- <li class="breadcrumb-item">
               <a href="#">Pages</a>
-            </li>
+            </li> -->
             <li class="breadcrumb-item active" aria-current="page">404</li>
           </ol>
         </div>
@@ -21,12 +21,11 @@
         style="background-image: url('/assets/images/backgrounds/error-bg.jpg')"
       >
         <div class="container">
-          <h1 class="error-title">Error 404</h1>
+          <h1 class="error-title">Error {{ error?.statusCode }}</h1>
           <p>We are sorry, the page you've requested is not available.</p>
-          <h2>{{ error?.statusCode }}</h2>
           <NuxtLink
             to="/"
-            class="btn btn-outline-primary-2 btn-minwidth-lg"
+            class="btn btn-outline-primary-2 btn-minwidth-lg mt-4"
           >
             <span>BACK TO HOMEPAGE</span>
             <i class="icon-long-arrow-right"></i>
@@ -52,5 +51,9 @@ useHead({
       content: "404 Error Page",
     },
   ],
+});
+
+onUnmounted(() => {
+  clearError();
 });
 </script>

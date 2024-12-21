@@ -24,7 +24,7 @@
             ><template #default>
               <!-- Loading state -->
               <div
-                v-if="status === 'pending'"
+                v-if="status === 'pending' && !store.isFilterLoading"
                 :key="'loading'"
                 class="products mb-3"
               >
@@ -95,10 +95,15 @@
                       <div class="toolbox-left">
                         <div class="toolbox-info">
                           Showing
-                          <span
-                            >{{ productsData?.perPage }} of
-                            {{ productsData?.total }}</span
-                          >
+                          <span>
+                            {{
+                              Math.min(
+                                productsData?.products.length,
+                                productsData?.perPage
+                              )
+                            }}
+                            of {{ productsData?.total }}
+                          </span>
                           Products
                         </div>
                       </div>
@@ -175,6 +180,7 @@
                     </div>
 
                     <nav aria-label="Page navigation">
+                      Current Page: {{ store.currentPage }}
                       <ul class="pagination justify-content-center">
                         <li
                           v-for="page in productsData?.links"
@@ -383,19 +389,10 @@ const store = useProductsStore();
 const slug = Array.isArray(route.params.slug)
   ? route.params.slug
   : [route.params.slug];
-const [category, , page] = slug;
+const [category] = slug;
 
 // State with SSR-safe initialization
 const category_id = ref(id ? parseInt(id as string) : 1);
-
-// Initialize store state server-side
-if (import.meta.server) {
-  if (page) {
-    store.setCurrentPage(parseInt(page));
-  }
-  // Reset filters on server-side to ensure clean state
-  store.resetFilters();
-}
 
 // Get current segment
 const pageSegment = computed(() => getSegment(segment));
@@ -409,9 +406,6 @@ const {
   `products-${category_id.value}-${store.currentPage}`,
   async () => {
     try {
-      // Add a small delay to ensure smooth transitions
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       const response = await api.get("/api/get-products", {
         params: {
           category_id: category_id.value,
@@ -453,24 +447,23 @@ const {
   }
 );
 
-// SEO setup
-const { metaTags, productListSchema, breadcrumbSchema, filterSchema } =
-  useProductsPageSEO(productsData, pageSegment.value as SegmentInterface);
-
 // Link generator
 const createPageLink = (page: string | undefined) => {
   const label = page?.split("page=")[1];
   return page
-    ? `/${segment}/${id}/${category}/page/${label}`
+    ? `/${segment}/${id}/${category}?page=${label}`
     : `/${segment}/${id}/${category}`;
 };
+// SEO setup
+const { metaTags, productListSchema, breadcrumbSchema, filterSchema } =
+  useProductsPageSEO(productsData, pageSegment.value as SegmentInterface);
 
 // Apply meta tags
 useHead(() => ({
   ...generateHeadInput(route, [
     productListSchema.value,
     breadcrumbSchema.value,
-    filterSchema.value,
+    filterSchema?.value,
   ]),
   title: productsData.value?.theCategory?.name
     ? `${productsData.value.theCategory.name} - ${pageSegment.value?.name} Products`
@@ -497,7 +490,6 @@ useHead(() => ({
 
 useSeoMeta(generateSeoMeta(metaTags.value, route));
 
-// Filter handlers with proper state management
 const handleFilters = async (filterType: "category" | "brand", id: number) => {
   if (!productsData.value?.theCategory?.id) return;
 
@@ -510,13 +502,46 @@ const handleFilters = async (filterType: "category" | "brand", id: number) => {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (filterType === "category") {
-      // Your existing category filter logic
+      // Initialize the array for this category if it doesn't exist
+      if (!store.checkedCategories[mainCategoryId]) {
+        store.checkedCategories[mainCategoryId] = [];
+      }
+
+      const index = store.checkedCategories[mainCategoryId].indexOf(id);
+
+      if (index === -1) {
+        // Add the category
+        store.checkedCategories[mainCategoryId].push(id);
+      } else {
+        // Remove the category
+        store.checkedCategories[mainCategoryId].splice(index, 1);
+      }
     } else {
-      // Your existing brand filter logic
+      // Brand filtering
+      if (!store.checkedBrands[mainCategoryId]) {
+        store.checkedBrands[mainCategoryId] = [];
+      }
+
+      const index = store.checkedBrands[mainCategoryId].indexOf(id);
+
+      if (index === -1) {
+        // Add the brand
+        store.checkedBrands[mainCategoryId].push(id);
+      } else {
+        // Remove the brand
+        store.checkedBrands[mainCategoryId].splice(index, 1);
+      }
     }
 
+    // Reset to first page when applying filters
+    store.setCurrentPage(1);
+    router.replace(createPageLink(undefined));
+
+    // Update URL and refresh data
     await store.applyFilters(mainCategoryId, router, createPageLink);
     await refreshProducts();
+  } catch (error) {
+    console.error("Error applying filters:", error);
   } finally {
     store.setIsFilterLoading(false);
   }
@@ -536,6 +561,16 @@ const resetSortValues = async () => {
     store.setIsFilterLoading(false);
   }
 };
+
+watch(
+  () => route.query.page,
+  (page) => {
+    if (page) {
+      store.setCurrentPage(parseInt(page as string));
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
