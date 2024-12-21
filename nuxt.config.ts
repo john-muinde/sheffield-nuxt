@@ -94,7 +94,7 @@ export default defineNuxtConfig({
 
     // Redirects
     "/kitchen": { redirect: "commercial-kitchen" },
-    "/kitchen/**": { redirect: "/commercial-kitchen/**" },
+    "/kitchen/": { redirect: "/commercial-kitchen/" },
   },
 
   // Vue transitions configuration
@@ -189,4 +189,6 @@ export default defineNuxtConfig({
 
   // CSS files
   css: ["~/assets/css/main.css"],
+
+  compatibilityDate: "2024-12-21",
 });

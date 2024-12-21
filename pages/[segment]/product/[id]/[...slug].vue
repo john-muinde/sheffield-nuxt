@@ -298,16 +298,13 @@ import { ref, computed } from "vue";
 import VueEasyLightbox from "vue-easy-lightbox";
 import QRCode from "qrcode-generator";
 import type { SegmentInterface } from "~/types/meta-tags";
+import productMiddleWare from "~/middleware/product";
 
 const route = useRoute();
-const { api } = useAxios();
+const { BASE_URL } = useAxios();
 
-const { createProductSchema } = useSchemas();
-const { generateSeoMeta, generateHeadInput } = useMetaGenerator();
-
-const segment = computed(() =>
-  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
-);
+// Use the product composable
+const { product, error, fetchProduct } = useProduct();
 
 // State
 const visible = ref(false);
@@ -317,41 +314,26 @@ const activeIndex = ref(0);
 const qrCodeDataUrl = ref(null as string | null);
 const activeTab = ref("description");
 
-// Fetch product data using useAsyncData
-const {
-  data: product,
-  pending,
-  error,
-} = await useAsyncData(
-  `product-${route.params.id}`,
-  async () => {
-    try {
-      const response = await api.get("/api/get-product", {
-        params: {
-          product_id: route.params.id,
-        },
-      });
-      return response.data.data;
-    } catch (err) {
-      throw new Error("Failed to load product data");
-    }
-  },
-  {
-    server: true,
-    lazy: true,
-    immediate: true,
-  }
+const productId = computed(() =>
+  Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 );
 
+definePageMeta({
+  middleware: productMiddleWare,
+});
+
+const segment = computed(() =>
+  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
+);
+
+// Retry loading function
 const retryLoading = async () => {
   try {
-    await refreshNuxtData(`product-${route.params.id}`);
+    await fetchProduct(productId.value);
   } catch (err) {
-    // Error will be handled by the error state display
+    console.error("Error retrying product load:", err);
   }
 };
-
-const { BASE_URL } = useAxios();
 
 // SEO setup
 const { metaTags, productSchema, breadcrumbSchema } = useProductsPageSEO(
@@ -360,7 +342,8 @@ const { metaTags, productSchema, breadcrumbSchema } = useProductsPageSEO(
   true
 );
 
-// Apply meta tags
+const { generateSeoMeta, generateHeadInput } = useMetaGenerator();
+
 useHead(() => ({
   ...generateHeadInput(route, [productSchema.value, breadcrumbSchema.value]),
   title: product.value?.theCategory?.name
@@ -401,17 +384,17 @@ const imgs = computed(
     []
 );
 
-// Watch route changes for navigation
+// Watch for navigation
 watch(
   () => route.params.id,
   async (newId, oldId) => {
     if (newId !== oldId) {
-      await refreshNuxtData(`product-${newId}`);
+      await retryLoading();
     }
   }
 );
 
-// Watch for product data changes
+// Watch for product changes
 watch(
   () => product.value,
   (newProduct) => {
@@ -425,7 +408,7 @@ watch(
   { immediate: true }
 );
 
-// Client-side only operations
+// Client-side operations
 onMounted(() => {
   if (import.meta.client) {
     generateQRCode();
