@@ -11,9 +11,14 @@
         <div class="container-fluid">
           <div class="row mt-3">
             <div class="col-xl-12 justify-content-center footer-banner mb-1">
-              <h1 class="cta-title cta-title-footer text-primary">
-                SHEFFIELD STEEL SYSTEMS LIMITED
-              </h1>
+              <template>
+                <component
+                  :is="headingTag"
+                  class="cta-title cta-title-footer text-base text-primary"
+                >
+                  SHEFFIELD STEEL SYSTEMS LIMITED
+                </component>
+              </template>
             </div>
 
             <div class="col-xl-3 footer-contacts-col mt-2">
@@ -485,6 +490,8 @@ import { ref, onMounted } from "vue";
 
 const showPopup = ref(false);
 const showAd = ref(false);
+
+const headingTag = computed(() => (document.querySelector("h1") ? "h2" : "h1"));
 
 const acceptCookies = () => {
   // Set a cookie to track user's choice to accept cookies
