@@ -1,5 +1,8 @@
 <template>
-  <div class="min-h-[70vh] flex flex-col items-center justify-center bg-white">
+  <div
+    v-if="shouldShowLoading"
+    class="min-h-[70vh] flex flex-col items-center justify-center bg-white"
+  >
     <!-- Primary Spinner -->
     <div class="relative">
       <div
@@ -26,40 +29,25 @@
 </template>
 
 <script setup>
-const route = useRoute();
-const router = useRouter();
-const { api } = useAxios();
+const shouldShowLoading = ref(true);
 
-const { data: product } = await useAsyncData(
-  `product-${route.params.id}`,
-  async () => {
-    try {
-      const response = await api.get("/api/get-product", {
-        params: {
-          product_id: route.params.id,
-        },
-      });
-      return response.data.data;
-    } catch (err) {
-      throw new Error("Failed to load product data");
-    }
-  }
-);
+// Use middleware
+definePageMeta({
+  middleware: "product",
+});
 
-watch(
-  () => product.value,
-  (newProduct) => {
-    if (newProduct?.name) {
-      const correctSlug = transformName(newProduct.name);
-      const correctPath = `/${route.params.segment}/product/${route.params.id}/${correctSlug}`;
+// Handle client-side only
+onMounted(() => {
+  // Hide loading after a short delay
+  setTimeout(() => {
+    shouldShowLoading.value = false;
+  }, 100);
+});
 
-      if (route.path !== correctPath) {
-        router.replace(correctPath);
-      }
-    }
-  },
-  { immediate: true }
-);
+// Ensure cleanup
+onBeforeUnmount(() => {
+  shouldShowLoading.value = false;
+});
 </script>
 
 <style>

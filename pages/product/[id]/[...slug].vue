@@ -1,38 +1,44 @@
 <template>
   <main class="main">
-    <nav aria-label="breadcrumb" class="breadcrumb-nav border-0 mb-0">
-      <div class="container d-flex align-items-center">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item">
-            <NuxtLink to="/">HOME</NuxtLink>
+    <nav aria-label="breadcrumb" class="border-0 mb-4">
+      <div class="container flex items-center">
+        <ol class="flex flex-wrap items-center gap-2 text-md md:text-base">
+          <li class="flex items-center">
+            <NuxtLink
+              to="/"
+              class="text-gray-600 hover:text-primary transition-colors"
+              >HOME</NuxtLink
+            >
+            <span class="mx-2 text-gray-400"> > </span>
+          </li>
+
+          <li v-if="reversedCategories.length > 0" class="flex items-center">
+            <NuxtLink
+              :to="'/' + segment?.slug"
+              class="text-gray-600 hover:text-primary transition-colors"
+            >
+              {{ segment?.name.toUpperCase() }}
+            </NuxtLink>
+            <span class="mx-2 text-gray-400"> > </span>
           </li>
 
           <li
-            v-if="
-              product?.categories_json &&
-              product?.categories_json.length > 0 &&
-              product?.categories_json[0].parent_name_with_slashes
-            "
-            class="breadcrumb-item"
+            v-for="category in reversedCategories"
+            :key="category.id"
+            class="flex items-center"
           >
-            <NuxtLink :to="'/' + segment?.slug">
-              {{ segment?.name.toUpperCase() }}
-            </NuxtLink>
-          </li>
-
-          <li class="breadcrumb-item">
             <NuxtLink
-              v-for="category in product?.categories_json"
-              :key="category.id"
               :to="
                 getCategoryLink(category.id, category.name, undefined, segment)
               "
+              class="text-gray-600 hover:text-primary transition-colors"
             >
               {{ category.name }}
             </NuxtLink>
+            <span class="mx-2 text-gray-400"> > </span>
           </li>
 
-          <li class="breadcrumb-item active" aria-current="page">
+          <li class="text-gray-400">
             {{ product?.name }}
           </li>
         </ol>
@@ -41,40 +47,54 @@
 
     <div class="page-content mt-0">
       <div class="container">
-        <div v-if="error" class="product-error-state">
+        <div
+          v-if="error"
+          class="min-h-[60vh] flex items-center justify-center bg-white rounded-lg shadow-sm"
+        >
           <div class="row justify-content-center">
             <div class="col-md-8 text-center py-5">
-              <div class="error-icon mb-4">
-                <i
-                  class="icon-exclamation-circle text-danger"
-                  style="font-size: 3rem"
-                ></i>
+              <div class="mb-4">
+                <i class="icon-exclamation-circle text-red-500 text-5xl"></i>
               </div>
-              <h2 class="error-title mb-3">Unable to Load Product</h2>
-              <p class="error-message text-muted mb-4">
+              <h2 class="text-gray-800 font-semibold mb-3 text-2xl">
+                Unable to Load Product
+              </h2>
+              <p class="text-gray-600 text-lg mb-4">
                 We're having trouble loading this product's information. This
                 might be because:
               </p>
-              <ul
-                class="error-reasons text-left mb-4 mx-auto"
-                style="max-width: 400px"
-              >
-                <li>The product may no longer be available</li>
-                <li>There might be a temporary connection issue</li>
-                <li>The product URL might be incorrect</li>
+              <ul class="text-left mb-4 mx-auto max-w-[400px] list-none">
+                <li
+                  class="py-2 text-gray-600 border-b border-gray-200 pl-4 relative before:content-['•'] before:text-red-500 before:font-bold before:inline-block before:w-4 before:ml-[-1em]"
+                >
+                  The product may no longer be available
+                </li>
+                <li
+                  class="py-2 text-gray-600 border-b border-gray-200 pl-4 relative before:content-['•'] before:text-red-500 before:font-bold before:inline-block before:w-4 before:ml-[-1em]"
+                >
+                  There might be a temporary connection issue
+                </li>
+                <li
+                  class="py-2 text-gray-600 pl-4 relative before:content-['•'] before:text-red-500 before:font-bold before:inline-block before:w-4 before:ml-[-1em]"
+                >
+                  The product URL might be incorrect
+                </li>
               </ul>
-              <div class="error-actions">
-                <button class="btn btn-primary me-3" @click="retryLoading">
+              <div class="my-8 flex flex-col md:flex-row gap-4 justify-center">
+                <button
+                  class="px-6 py-3 bg-primary text-white font-medium transition-all duration-300 hover:bg-secondary rounded-sm"
+                  @click="retryLoading"
+                >
                   Try Again
                 </button>
                 <NuxtLink
                   to="/"
-                  class="btn btn-outline-primary whitespace-nowrap"
+                  class="px-6 py-3 text-primary border-2 border-primary font-medium transition-all duration-300 hover:bg-secondary hover:text-white hover:border-secondary rounded-sm whitespace-nowrap"
                 >
                   Return to Homepage
                 </NuxtLink>
               </div>
-              <p class="mt-4 small text-muted">
+              <p class="mt-4 text-sm text-gray-500">
                 If this problem persists, please contact our support team
               </p>
             </div>
@@ -83,106 +103,121 @@
         <div v-else class="product-details-top">
           <div class="row">
             <div class="col-md-5">
-              <ClientOnly>
-                <template #default>
-                  <div class="product-gallery">
-                    <figure class="product-main-image">
-                      <NuxtImg
-                        id="product-zoom"
-                        :src="assetsSync(mainImage)"
-                        :alt="product?.name"
-                        style="
-                          display: grid;
-                          max-width: 100%;
-                          max-height: 350px;
-                          min-height: 350px;
-                          height: auto;
-                          margin-left: auto;
-                          margin-right: auto;
-                          width: auto;
-                        "
-                        @click="showMultiple"
-                      />
-
-                      <a
-                        id="btn-product-gallery"
-                        href="#"
-                        class="btn-product-gallery"
-                        @click.prevent="showMultiple"
-                      >
-                        <i class="icon-arrows"></i>
-                      </a>
-                    </figure>
-
-                    <div>
-                      <vue-easy-lightbox
-                        esc-disabled
-                        :visible="visible"
-                        :imgs="imgs"
-                        :index="indexRef"
-                        @hide="handleHide"
-                      />
-                    </div>
-
+              <!-- Loading State -->
+              <template v-if="loading">
+                <div class="space-y-4">
+                  <div
+                    class="w-full h-[350px] bg-gray-200 animate-pulse rounded-lg"
+                  ></div>
+                  <div class="grid grid-cols-6 gap-2">
                     <div
-                      id="product-zoom-gallery"
-                      class="product-image-gallery max-col-6"
+                      v-for="n in 4"
+                      :key="n"
+                      class="h-16 bg-gray-200 animate-pulse rounded"
+                    ></div>
+                  </div>
+                </div>
+              </template>
+              <!-- Main Product Section -->
+              <template v-else>
+                <div class="product-gallery">
+                  <figure class="relative">
+                    <NuxtImg
+                      id="product-zoom"
+                      :src="assetsSync(mainImage)"
+                      :alt="product?.name"
+                      class="grid max-w-full max-h-[350px] min-h-[350px] h-auto mx-auto w-auto"
+                      @click="showMultiple"
+                    />
+
+                    <a
+                      href="#"
+                      class="absolute right-4 top-4 flex items-center justify-center w-10 h-10 bg-white bg-opacity-80 rounded-full shadow-lg transition-all duration-300 hover:bg-opacity-100"
+                      @click.prevent="showMultiple"
                     >
-                      <a
-                        v-for="(image, index) in product?.product_images"
-                        :key="image.id"
-                        :class="[
-                          'product-gallery-item',
-                          { active: index === activeIndex },
-                        ]"
-                        href="#"
-                        :data-image="assetsSync(image.name)"
-                        :data-zoom-image="assetsSync(image.name)"
-                        @click.prevent
-                        @mouseover="changeMainImage(image.name, index)"
-                      >
-                        <img
-                          :src="assetsSync(image.name)"
-                          :alt="product?.name"
-                        />
-                      </a>
-                    </div>
+                      <i class="icon-arrows"></i>
+                    </a>
+                  </figure>
+
+                  <div>
+                    <vue-easy-lightbox
+                      esc-disabled
+                      :visible="visible"
+                      :imgs="imgs"
+                      :index="indexRef"
+                      @hide="handleHide"
+                    />
                   </div>
-                </template>
-                <template #fallback>
-                  <div class="product-gallery-shimmer">
-                    <div class="main-image-shimmer shimmer"></div>
-                    <div class="thumbnail-container">
-                      <div
-                        class="thumbnail-shimmer shimmer"
-                        v-for="n in 4"
-                        :key="n"
-                      ></div>
-                    </div>
+
+                  <div class="grid grid-cols-6 gap-2 mt-4">
+                    <a
+                      v-for="(image, index) in product?.product_images"
+                      :key="image.id"
+                      :class="[
+                        'cursor-pointer border-2 rounded overflow-hidden transition-all duration-300',
+                        index === activeIndex
+                          ? 'border-primary'
+                          : 'border-transparent hover:border-gray-300',
+                      ]"
+                      href="#"
+                      @click.prevent
+                      @mouseover="changeMainImage(image.name, index)"
+                    >
+                      <img
+                        :src="assetsSync(image.name)"
+                        :alt="product?.name"
+                        class="w-full h-full object-cover"
+                      />
+                    </a>
                   </div>
-                </template>
-              </ClientOnly>
+                </div>
+              </template>
             </div>
 
             <div class="col-md-7">
-              <ClientOnly>
-                <template #default>
-                  <div class="product-details">
-                    <h1 class="header text-primary">{{ product?.name }}</h1>
+              <!-- Loading State -->
+              <template v-if="loading">
+                <div class="space-y-6">
+                  <div
+                    class="h-8 bg-gray-200 w-3/4 animate-pulse rounded"
+                  ></div>
+                  <div class="space-y-2">
+                    <div class="h-4 bg-gray-200 animate-pulse rounded"></div>
                     <div
-                      class="short_description"
-                      v-html="product?.short_description"
+                      class="h-4 bg-gray-200 w-5/6 animate-pulse rounded"
                     ></div>
-                    <p>
-                      <span>Brand : </span>
-                      {{ product?.brand_name }}
-                    </p>
-                    <span>Category : </span>
+                    <div
+                      class="h-4 bg-gray-200 w-4/6 animate-pulse rounded"
+                    ></div>
+                  </div>
+                  <div
+                    class="h-12 bg-gray-200 w-48 animate-pulse rounded"
+                  ></div>
+                </div>
+              </template>
+              <!-- Main Product Section -->
+              <template v-else>
+                <div class="space-y-4">
+                  <h1 class="text-3xl md:text-4xl font-bold text-primary">
+                    {{ product?.name }}
+                  </h1>
 
+                  <div
+                    class="text-gray-700 w-4/5"
+                    v-html="product?.short_description"
+                  ></div>
+
+                  <p class="flex gap-2">
+                    <span class="font-medium">Brand:</span>
+                    {{ product?.brand_name }}
+                  </p>
+
+                  <div class="flex gap-2">
+                    <span class="font-medium">Categories:</span>
                     <NuxtLink
-                      v-for="category in product?.categories_json"
+                      v-for="(category, index) in product?.categories_json"
                       :key="category.id"
-                      style="font-weight: 500"
+                      class="font-medium hover:text-primary transition-colors"
                       :to="
                         getCategoryLink(
                           category.id,
@@ -193,98 +228,77 @@
                       "
                     >
                       {{ category.name }}
+                      {{
+                        index < product?.categories_json.length - 1 ? ", " : ""
+                      }}
                     </NuxtLink>
+                  </div>
 
-                    <div v-if="qrCodeDataUrl" class="qr_section">
-                      <small class="mb-1">Product QR</small>
+                  <div class="flex items-center gap-8 mt-6 rounded-md">
+                    <div v-if="qrCodeDataUrl" class="text-center">
+                      <small class="block mb-1 text-gray-600">Product QR</small>
                       <img
-                        style="width: 120px"
+                        class="w-[120px]"
                         :src="qrCodeDataUrl"
                         alt="QR Code"
                       />
                     </div>
-
-                    <div
-                      class="product-details-action product-details-sheffield mt-2"
+                    <button
+                      type="button"
+                      class="btn btn-primary py-3"
+                      :disabled="!product?.id"
+                      @click="addToCart(product)"
                     >
-                      <button
-                        type="button"
-                        class="btn-product btn-cart"
-                        :class="{ 'disabled cursor-not-allowed': !product?.id }"
-                        :disabled="!product?.id"
-                        @click="addToCart(product)"
-                      >
-                        <span>Add to Cart</span>
-                      </button>
-                    </div>
-
-                    <div class="product-details-tab mt-2">
-                      <ul
-                        class="nav nav-pills justify-content-left mobile-description"
-                        role="tablist"
-                      >
-                        <li class="nav-item">
-                          <a
-                            class="nav-link"
-                            :class="{ active: activeTab === 'description' }"
-                            href="#"
-                            @click.prevent="activeTab = 'description'"
-                            >Description</a
-                          >
-                        </li>
-                        <li class="nav-item">
-                          <a
-                            class="nav-link"
-                            :class="{ active: activeTab === 'specs' }"
-                            href="#"
-                            @click.prevent="activeTab = 'specs'"
-                            >Technical Specifications</a
-                          >
-                        </li>
-                      </ul>
-                      <div class="tab-content">
-                        <div
-                          v-show="activeTab === 'description'"
-                          class="tab-pane fade active show"
-                        >
-                          <div class="product-desc-content">
-                            <div v-html="product?.description"></div>
-                          </div>
-                        </div>
-                        <div
-                          v-show="activeTab === 'specs'"
-                          class="tab-pane fade"
-                          :class="{ 'active show': activeTab === 'specs' }"
-                        >
-                          <div class="product-desc-content">
-                            <div
-                              v-html="product?.technical_specification"
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      <span>Add to Cart</span>
+                      <i class="icon-shopping-cart text-4xl ml-1"></i>
+                    </button>
                   </div>
-                </template>
-                <template #fallback>
-                  <div class="product-details-shimmer">
-                    <div class="shimmer title-shimmer mb-4"></div>
-                    <div
-                      class="shimmer text-shimmer mb-3"
-                      v-for="n in 3"
-                      :key="n"
-                    ></div>
-                    <div class="shimmer button-shimmer mt-4"></div>
-                    <div class="tabs-shimmer mt-4">
+
+                  <div class="mt-8">
+                    <ul class="flex gap-4 border-b border-gray-200">
+                      <li
+                        v-for="tab in ['description', 'specs']"
+                        :key="tab"
+                        class="relative"
+                      >
+                        <a
+                          href="#"
+                          class="block px-4 py-2 text-2xl transition-colors hover:text-primary"
+                          :class="
+                            activeTab === tab
+                              ? 'text-primary font-medium'
+                              : 'text-gray-600'
+                          "
+                          @click.prevent="activeTab = tab"
+                        >
+                          {{
+                            tab === "specs"
+                              ? "Technical Specifications"
+                              : "Description"
+                          }}
+                        </a>
+                        <div
+                          v-if="activeTab === tab"
+                          class="absolute bottom-0 left-0 w-full h-0.5 bg-primary"
+                        ></div>
+                      </li>
+                    </ul>
+
+                    <div class="py-4">
                       <div
-                        class="shimmer tab-shimmer"
-                        v-for="n in 2"
-                        :key="n"
+                        v-show="activeTab === 'description'"
+                        class="product-desc-content"
+                        v-html="product?.description"
+                      ></div>
+                      <div
+                        v-show="activeTab === 'specs'"
+                        class="product-desc-content"
+                        v-html="product?.technical_specification"
                       ></div>
                     </div>
                   </div>
-                </template>
-              </ClientOnly>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -293,125 +307,80 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
+definePageMeta({
+  middleware: "product", // middleware name only
+});
+
 import { ref, computed } from "vue";
 import VueEasyLightbox from "vue-easy-lightbox";
 import QRCode from "qrcode-generator";
+import type { SegmentInterface } from "~/types/meta-tags";
 
 const route = useRoute();
-const { api } = useAxios();
-
-const { createProductSchema } = useSchemas();
-
-const segment = computed(() =>
-  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
-);
+const { BASE_URL } = useAxios();
+const { $product } = useNuxtApp();
 
 // State
 const visible = ref(false);
 const indexRef = ref(0);
 const mainImage = ref("");
 const activeIndex = ref(0);
-const qrCodeDataUrl = ref(null);
+const qrCodeDataUrl = ref(null as string | null);
+
+const loading = computed(() => $product.isLoading());
+
 const activeTab = ref("description");
 
-// Fetch product data using useAsyncData
-const {
-  data: product,
-  pending,
-  error,
-} = await useAsyncData(
-  `product-${route.params.id}`,
-  async () => {
-    try {
-      const response = await api.get("/api/get-product", {
-        params: {
-          product_id: route.params.id,
-        },
-      });
-      return response.data.data;
-    } catch (err) {
-      throw new Error("Failed to load product data");
-    }
-  },
-  {
-    server: true,
-    lazy: true,
-    immediate: true,
-  }
+const productId = computed(() =>
+  Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 );
 
+// Get product data (will use cache from middleware)
+const { data: product, error } = await useAsyncData(
+  `product-${productId.value}`,
+  () => $product.getCachedProduct(productId.value)
+);
+
+const segment = computed(() =>
+  getSegment(product.value?.categories_json[0].parent_name_with_slashes)
+);
+
+const reversedCategories = computed(() =>
+  product.value?.categories_json.slice().reverse()
+);
+
+// Retry loading function
 const retryLoading = async () => {
   try {
-    await refreshNuxtData(`product-${route.params.id}`);
+    // Force fresh fetch
+    const freshProduct = await $product.getProduct(productId.value, true);
+    product.value = freshProduct;
   } catch (err) {
-    // Error will be handled by the error state display
+    console.error("Error retrying product load:", err);
   }
 };
 
-const { BASE_URL } = useAxios();
+// SEO setup
+const { metaTags, productSchema, breadcrumbSchema } = useProductsPageSEO(
+  computed(() => product.value),
+  segment.value as SegmentInterface,
+  true
+);
 
-// SEO
-useHead(() => {
-  if (!product.value) return {};
+const { generateSeoMeta, generateHeadInput } = useMetaGenerator();
 
-  const schema = createProductSchema(product.value);
-  return {
-    title: product.value?.name,
-    meta: [
-      {
-        name: "description",
-        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "og:title",
-        content: product.value?.name,
-      },
-      {
-        property: "og:description",
-        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "og:image",
-        content: assetsSync(product.value?.main_image_path),
-      },
-      {
-        property: "og:url",
-        content: BASE_URL + route.fullPath,
-      },
-      {
-        property: "og:type",
-        content: "product",
-      },
-      {
-        property: "twitter:title",
-        content: product.value?.name,
-      },
-      {
-        property: "twitter:description",
-        content: product.value?.description?.replace(/<[^>]*>/g, "") || "",
-      },
-      {
-        property: "twitter:image",
-        content: assetsSync(product.value?.main_image_path),
-      },
-      {
-        property: "twitter:url",
-        content: BASE_URL + route.fullPath,
-      },
-    ],
-    script: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify(schema),
-      },
-    ],
-  };
-});
+useHead(() => ({
+  ...generateHeadInput(route, [productSchema.value, breadcrumbSchema.value]),
+  title: product.value?.theCategory?.name
+    ? `${product.value?.name} Details`
+    : "Product Details",
+}));
+
+useSeoMeta(generateSeoMeta(metaTags.value, route));
 
 // Methods
 const generateQRCode = () => {
-  if (!import.meta.client) return;
   const qr = QRCode(0, "L");
   qr.addData(BASE_URL + route.fullPath);
   qr.make();
@@ -420,9 +389,6 @@ const generateQRCode = () => {
 
 const showMultiple = () => {
   if (!product.value?.product_images) return;
-  imgs.value = product.value.product_images.map((item) =>
-    assetsSync(item.name)
-  );
   indexRef.value = activeIndex.value;
   visible.value = true;
 };
@@ -431,7 +397,7 @@ const handleHide = () => {
   visible.value = false;
 };
 
-const changeMainImage = (imageName, index) => {
+const changeMainImage = (imageName: string, index: number) => {
   mainImage.value = imageName;
   activeIndex.value = index;
 };
@@ -439,266 +405,35 @@ const changeMainImage = (imageName, index) => {
 // Computed
 const imgs = computed(
   () =>
-    product.value?.product_images?.map((item) => assetsSync(item.name)) || []
+    product.value?.product_images?.map((item: any) => assetsSync(item.name)) ||
+    []
 );
 
-// Watch route changes for navigation
+// Watch for navigation
 watch(
   () => route.params.id,
   async (newId, oldId) => {
     if (newId !== oldId) {
-      await refreshNuxtData(`product-${newId}`);
+      await retryLoading();
     }
   }
 );
 
-// Watch for product data changes
+// Watch for product changes
 watch(
   () => product.value,
-  (newProduct) => {
+  (newProduct: any) => {
     if (newProduct?.product_images?.length > 0) {
       mainImage.value = newProduct.product_images[0].name;
     }
-    if (import.meta.client) {
-      generateQRCode();
-    }
+
+    generateQRCode();
   },
   { immediate: true }
 );
 
-// Client-side only operations
+// Client-side operations
 onMounted(() => {
-  if (import.meta.client) {
-    generateQRCode();
-  }
+  generateQRCode();
 });
 </script>
-
-<style scoped>
-.product-error-state {
-  min-height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.error-title {
-  color: #333;
-  font-weight: 600;
-}
-
-.error-message {
-  font-size: 1.1rem;
-}
-
-.error-reasons {
-  list-style: none;
-  padding: 0;
-}
-
-.error-reasons li {
-  padding: 8px 0;
-  color: #666;
-  border-bottom: 1px solid #eee;
-}
-
-.error-reasons li:last-child {
-  border-bottom: none;
-}
-
-.error-reasons li:before {
-  content: "•";
-  color: #dc3545;
-  font-weight: bold;
-  display: inline-block;
-  width: 1em;
-  margin-left: -1em;
-}
-
-.error-actions {
-  margin: 2rem 0;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: #c02434;
-  border-color: #c02434;
-}
-
-.btn-primary:hover {
-  background-color: #304296;
-  border-color: #304296;
-}
-
-.btn-outline-primary {
-  color: #c02434;
-  border-color: #c02434;
-}
-
-.btn-outline-primary:hover {
-  color: #fff;
-  background-color: #304296;
-  border-color: #304296;
-}
-
-@media (max-width: 768px) {
-  .error-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .error-actions .btn {
-    width: 100%;
-  }
-
-  .error-message {
-    font-size: 1rem;
-  }
-}
-
-/* Shimmer animation */
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-.shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear;
-}
-
-/* Shimmer placeholders */
-.product-gallery-shimmer {
-  width: 100%;
-}
-
-.main-image-shimmer {
-  width: 100%;
-  height: 350px;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-}
-
-.thumbnail-container {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.thumbnail-shimmer {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
-}
-
-.product-details-shimmer {
-  padding: 1rem;
-}
-
-.title-shimmer {
-  height: 2rem;
-  width: 80%;
-  margin-bottom: 2rem;
-  border-radius: 4px;
-}
-
-.text-shimmer {
-  height: 1rem;
-  width: 100%;
-  margin-bottom: 0.5rem;
-  border-radius: 4px;
-}
-
-.button-shimmer {
-  height: 3rem;
-  width: 200px;
-  border-radius: 4px;
-}
-
-.tabs-shimmer {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.tab-shimmer {
-  height: 2rem;
-  width: 120px;
-  border-radius: 4px;
-}
-</style>
-
-<style scoped>
-.product-item {
-  margin-bottom: 20px;
-}
-.short_description p strong {
-  font-weight: 300 !important;
-}
-
-.qr_section {
-  position: absolute;
-  right: 30px;
-  top: 40px;
-}
-
-.product-details .short_description {
-  width: 80%;
-}
-
-.product-details-sheffield .btn-cart {
-  color: #ffffff !important;
-}
-
-.product-details-sheffield .btn-cart:hover {
-  color: #ffffff !important;
-  background-color: #304296 !important;
-  border-color: #304296 !important;
-}
-
-.product-details-sheffield .btn-cart:focus {
-  color: #ffffff !important;
-  background-color: #c02434 !important;
-  border-color: #c02434 !important;
-}
-
-.product-details-sheffield .btn-cart:hover span,
-.product-details-sheffield .btn-cart:focus span {
-  color: #ffffff !important;
-}
-
-@media only screen and (max-width: 768px) {
-  .header {
-    font-size: 18px;
-  }
-  .mobile-description {
-    display: block;
-  }
-  .nav-item {
-    font-size: 68px;
-  }
-  .breadcrumb-item {
-    font-size: 12px;
-  }
-  .nav-link {
-    font-size: 1rem;
-  }
-  .product-details-tab .nav.nav-pills .nav-link {
-    font-size: 1.3rem;
-    font-weight: 500;
-  }
-}
-</style>

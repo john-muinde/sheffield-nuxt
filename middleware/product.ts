@@ -1,27 +1,45 @@
 // middleware/product.ts
 export default defineNuxtRouteMiddleware(async (to) => {
+  const { $product } = useNuxtApp() as unknown as {
+    $product: {
+      getProduct: (id: string) => Promise<any>;
+    };
+  };
+
   const { id } = to.params;
-  const { fetchProduct, setProduct } = useProduct();
-  const productId = Array.isArray(id) ? id[0] : id;
+
   if (!id) {
-    throw createError({ statusCode: 404, statusMessage: "Page Not Found" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Page Not Found",
+    });
   }
 
   try {
-    const product = await fetchProduct(productId);
-    setProduct(product);
+    const productId = Array.isArray(id) ? id[0] : id;
+    const product = await $product.getProduct(productId);
 
-    // Generate the correct link
-    const link = getProductLink(product);
+    // Handle missing product
+    if (!product) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Product Not Found",
+      });
+    }
 
-    // Redirect to the correct URL if the slug is incorrect
-    if (to.fullPath !== link) {
-      return navigateTo(link, {
+    const correctLink = getProductLink(product);
+
+    if (to.fullPath !== correctLink) {
+      return navigateTo(correctLink, {
         redirectCode: 301,
+        replace: true,
       });
     }
   } catch (error) {
-    console.error("Error fetching product:", error);
-    throw createError({ statusCode: 404, statusMessage: "Page Not Found" });
+    console.error("Error in product middleware:", error);
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Page Not Found",
+    });
   }
 });

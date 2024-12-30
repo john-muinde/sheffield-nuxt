@@ -155,10 +155,7 @@ export class RouteGenerator {
     return routes;
   }
 
-  private async getProductsForCategory(
-    categoryId: number,
-    segment: any
-  ): Promise<string[]> {
+  private async getProductsForCategory(categoryId: number): Promise<string[]> {
     const routes: string[] = [];
     try {
       const response = await this.makeRequest("/api/get-products", {
@@ -235,8 +232,7 @@ export class RouteGenerator {
 
             // Get products for this category
             const productRoutes = await this.getProductsForCategory(
-              category.id,
-              segment
+              category.id
             );
             allRoutes.push(...productRoutes);
           }

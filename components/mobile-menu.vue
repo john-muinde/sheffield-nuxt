@@ -31,7 +31,7 @@
             class="nav-link"
             data-toggle="tab"
             href="#mobile-cats-tab"
-             :class="{ active: currentTab === 'cats' }"
+            :class="{ active: currentTab === 'cats' }"
             @click="currentTab = 'cats'"
             role="tab"
             aria-controls="mobile-cats-tab"
@@ -383,26 +383,28 @@
                 >
                   <form action="#">
                     <div class="form-group">
-                      <label for="singin-email"
+                      <label for="signin-email"
                         >Username or email address *</label
                       >
                       <input
-                        id="singin-email"
+                        id="signin-email"
                         type="text"
                         class="form-control"
-                        name="singin-email"
+                        autocomplete="username"
+                        name="signin-email"
                         required
                       />
                     </div>
                     <!-- End .form-group -->
 
                     <div class="form-group">
-                      <label for="singin-password">Password *</label>
+                      <label for="signin-password">Password *</label>
                       <input
-                        id="singin-password"
+                        id="signin-password"
                         type="password"
                         class="form-control"
-                        name="singin-password"
+                        name="signin-password"
+                        autocomplete="current-password"
                         required
                       />
                     </div>
@@ -449,6 +451,7 @@
                         id="register-email"
                         type="email"
                         class="form-control"
+                        autocomplete="username"
                         name="register-email"
                         required
                       />
@@ -461,6 +464,7 @@
                         id="register-password"
                         type="password"
                         class="form-control"
+                        autocomplete="current-password"
                         name="register-password"
                         required
                       />

@@ -126,7 +126,7 @@
 
   /* Layout Components */
   .main {
-    @apply mt-0 sm:pt-20 md:pt-1;
+    @apply mt-0 pt-48 md:pt-1;
   }
 
   /* Title Components */

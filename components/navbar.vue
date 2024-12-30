@@ -4,25 +4,26 @@
       :class="['fixed w-full top-0 z-40', { 'bg-white shadow-md': isScrolled }]"
     >
       <!-- Top Bar -->
-      <div class="bg-primary hidden sm:block">
+      <div class="bg-primary sm:block">
         <div class="container mx-auto px-4">
           <div
             class="flex flex-wrap lg:flex-nowrap justify-between items-center py-3"
           >
             <!-- Contact Info - Always visible on tablet and up -->
+
             <div
-              class="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-6"
+              class="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-6 max-[346px]:text-sm sm:text-base md:text-base lg:text-base"
             >
               <a
                 href="tel:+254713777111"
-                class="flex items-center text-white hover:text-secondary text-medium lg:text-base whitespace-nowrap"
+                class="flex items-center text-white hover:text-secondary whitespace-nowrap"
               >
                 <i class="icon-phone mr-2 text-lg"></i>
                 +254 713 777 111
               </a>
               <a
                 href="mailto:info@sheffieldafrica.com"
-                class="flex items-center text-white hover:text-secondary text-medium lg:text-base whitespace-nowrap"
+                class="flex items-center text-white hover:text-secondary whitespace-nowrap"
               >
                 <i class="icon-envelope mr-2 text-lg"></i>
                 info@sheffieldafrica.com

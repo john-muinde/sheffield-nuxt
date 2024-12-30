@@ -154,6 +154,13 @@
 </template>
 
 <script setup lang="ts">
+// Validate page
+definePageMeta({
+  validate: (route) => {
+    return getSegment(route.params.segment) !== undefined;
+  },
+});
+
 import type { Ref } from "vue";
 
 // Composables
@@ -162,13 +169,6 @@ const { segment, id } = route.params;
 const { api } = useAxios();
 const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
   useMetaGenerator();
-
-// Validate page
-definePageMeta({
-  validate: (route) => {
-    return getSegment(route.params.segment) !== undefined;
-  },
-});
 
 // State
 const selectedCategories: Ref<Record<number, number[]>> = ref({});

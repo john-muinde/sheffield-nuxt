@@ -58,6 +58,13 @@
 </template>
 
 <script setup lang="ts">
+// Page validation
+definePageMeta({
+  validate: async (route: any) => {
+    return getSegment(route.params.segment) !== undefined;
+  },
+});
+
 import type { SolutionInterface } from "~/types/meta-tags";
 
 // Composables
@@ -68,13 +75,6 @@ const { generateSeoMeta, generateHeadInput, generateContentMetaTags } =
 
 // Get segment from route
 const segment = computed(() => getSegment(route.params.segment));
-
-// Page validation
-definePageMeta({
-  validate: async (route) => {
-    return getSegment(route.params.segment) !== undefined;
-  },
-});
 
 // Fetch solutions data
 const { data: solutions, pending } = await useAsyncData(

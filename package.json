@@ -6,6 +6,8 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "prepreview": "nuxt build",
+    "typecheck": "nuxt typecheck",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "deploy": "git add . && git commit -m",
