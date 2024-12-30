@@ -110,6 +110,7 @@ jobs:
             **/backend/storage/logs/**
             **/backend/bootstrap/cache/**
             **/.nuxt/**
+            **/_ipx/**
             **/.output/**
             **/dist/**
             **/.DS_Store
