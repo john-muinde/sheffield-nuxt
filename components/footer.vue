@@ -12,12 +12,9 @@
           <div class="row mt-3">
             <div class="col-xl-12 justify-content-center footer-banner mb-1">
               <template>
-                <component
-                  :is="headingTag"
-                  class="cta-title cta-title-footer text-base text-primary"
-                >
+                <h1 class="cta-title cta-title-footer text-base text-primary">
                   SHEFFIELD STEEL SYSTEMS LIMITED
-                </component>
+                </h1>
               </template>
             </div>
 
@@ -490,15 +487,6 @@ import { ref, onMounted } from "vue";
 
 const showPopup = ref(false);
 const showAd = ref(false);
-
-const hasH1 = ref(false);
-useHead({
-  mounted() {
-    hasH1.value = !!document.querySelector("h1");
-  },
-});
-
-const headingTag = computed(() => (hasH1.value ? "h2" : "h1"));
 
 const acceptCookies = () => {
   // Set a cookie to track user's choice to accept cookies
