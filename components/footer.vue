@@ -491,7 +491,14 @@ import { ref, onMounted } from "vue";
 const showPopup = ref(false);
 const showAd = ref(false);
 
-const headingTag = computed(() => (document.querySelector("h1") ? "h2" : "h1"));
+const hasH1 = ref(false);
+useHead({
+  mounted() {
+    hasH1.value = !!document.querySelector("h1");
+  },
+});
+
+const headingTag = computed(() => (hasH1.value ? "h2" : "h1"));
 
 const acceptCookies = () => {
   // Set a cookie to track user's choice to accept cookies
