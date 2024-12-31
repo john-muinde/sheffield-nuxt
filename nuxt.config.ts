@@ -25,10 +25,26 @@ export default defineNuxtConfig({
     dirs: ["stores", "components"],
   },
 
-  // Ignore backend directory in Nuxt processing
   ignore: ["backend/**"],
 
   app: {
+    head: {
+      // @ts-ignore
+      script: [
+        process.env.NODE_ENV === "production" && {
+          src: "https://www.googletagmanager.com/gtag/js?id=G-GEKN7GV7YC",
+          async: true,
+        },
+        process.env.NODE_ENV === "production" && {
+          children: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-GEKN7GV7YC');
+          `,
+        },
+      ].filter(Boolean),
+    },
     pageTransition: { name: "page", mode: "out-in" },
   },
 
