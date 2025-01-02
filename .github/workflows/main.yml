@@ -97,7 +97,6 @@ jobs:
 
       - name: 📂 Deploy to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        continue-on-error: true
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
