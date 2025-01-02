@@ -1,3 +1,5 @@
+[![Deploy to cPanel](https://github.com/john-muinde/sheffield-nuxt/actions/workflows/main.yml/badge.svg)](https://github.com/john-muinde/sheffield-nuxt/actions/workflows/main.yml)
+
 # Nuxt Minimal Starter
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
