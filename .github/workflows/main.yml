@@ -27,6 +27,7 @@ jobs:
         run: pnpm run generate
         env:
           NODE_ENV: production
+          BUILD_TOKEN: ${{ secrets.BUILD_TOKEN }}
           API_URL: ${{ secrets.API_URL }}
           PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
@@ -70,7 +71,7 @@ jobs:
           </IfModule>
 
           ErrorDocument 404 /404.html
-          
+
           # PHP settings
           <IfModule mod_php8.c>
               php_value upload_max_filesize 64M
@@ -78,7 +79,7 @@ jobs:
               php_value max_execution_time 300
               php_value max_input_time 300
           </IfModule>
-          
+
           # Security headers
           <IfModule mod_headers.c>
               Header set X-XSS-Protection "1; mode=block"
@@ -88,12 +89,12 @@ jobs:
               Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
           </IfModule>
           EOL
-          
+
           # Ensure storage directory exists and has correct permissions
           mkdir -p dist/backend/storage/{app,framework,logs}
           mkdir -p dist/backend/storage/framework/{cache,sessions,views}
           chmod -R 775 dist/backend/storage
-      
+
       - name: 📂 Deploy to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         continue-on-error: true

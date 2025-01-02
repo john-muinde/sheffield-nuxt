@@ -39,5 +39,8 @@
   },
   "[xml]": {
     "editor.defaultFormatter": "redhat.vscode-xml"
+  },
+  "[ruby]": {
+    "editor.defaultFormatter": "mbessey.vscode-rufo"
   }
 }

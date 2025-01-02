@@ -1,11 +1,53 @@
-RewriteEngine On
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Disable directory listings
+    Options -Indexes
+    
+    # If directory is requested, try to serve index files first
+    DirectoryIndex index.php index.html index.htm
+    
+    # Redirect www to non-www
+    RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+    RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+    
+    # If requested resource exists as a file or directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # If directory is requested, try to serve the first file
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteCond %{REQUEST_FILENAME}/[^/]* -f
+    RewriteRule ^(.+)/$ $1/$(ls -1 $1 | head -n1) [L]
 
-# Handle Laravel routes first
-RewriteCond %{REQUEST_URI} ^/(api|storage|public|pixel-tracker)
-RewriteRule ^(.*)$ backend/public/index.php [QSA,L]
+    # rewrite kitchen to commercial-kitchen
+    RewriteRule kitchen /commercial-kitchen [R=301,L]
 
-# Rewrite /kitchen to /commercial-kitchen
-RewriteRule ^kitchen$ /commercial-kitchen [R=301,L]
-RewriteRule ^kitchen/(.*)$ /commercial-kitchen/$1 [R=301,L]
+    # Rewrite /kitchen to /commercial-kitchen
+    # RewriteRule ^kitchen$ /commercial-kitchen [R=301,L]
+    # RewriteRule ^kitchen/(.*)$ /commercial-kitchen/$1 [R=301,L]
+    
+    # Handle all backend requests
+    RewriteRule ^(api|backend|pixel-tracker)(/.*)?$ backend/public/$1$2 [L]
+</IfModule>
 
 ErrorDocument 404 /404.html
+
+# PHP settings
+<IfModule mod_php8.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
