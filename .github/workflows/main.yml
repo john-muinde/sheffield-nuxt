@@ -4,25 +4,29 @@ on:
     branches:
       - master
 jobs:
-  build-and-deploy:
-    name: 🎉 Build and Deploy
+  build-frontend:
+    name: 🎉 Build Frontend
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 9.14.4
+          
       - name: 🛠️ Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
+          
       - name: 📥 Install dependencies
         run: pnpm install --frozen-lockfile
+        
       - name: 🏗️ Generate static files
         run: pnpm run generate
         env:
@@ -31,14 +35,33 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          
+      - name: 📦 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./.output/public
+          
+  prepare-deployment:
+    name: 🔄 Prepare Deployment
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
+          
       - name: 🔄 Prepare deployment files
         run: |
-          # Create dist directory if it doesn't exist
-          mkdir -p dist
-          mkdir -p dist/public
           # Copy backend directory
           cp -r backend dist/
-          # Create .htaccess for proper routing
+          
+          # Create .htaccess
           cat > dist/.htaccess << 'EOL'
           <IfModule mod_rewrite.c>
             RewriteEngine On
@@ -73,14 +96,30 @@ jobs:
               Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
           </IfModule>
           EOL
-
-          # Ensure storage directory exists and has correct permissions
+          
+          # Setup Laravel storage directories
           mkdir -p dist/backend/storage/{app,framework,logs}
           mkdir -p dist/backend/storage/framework/{cache,sessions,views}
           chmod -R 775 dist/backend/storage
+          
+      - name: 📦 Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-files
+          path: ./dist
 
-      - name: 📂 Deploy to cPanel
-        # uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+  deploy:
+    name: 📂 Deploy to cPanel
+    needs: prepare-deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Download deployment files
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-files
+          path: ./dist
+          
+      - name: 📂 Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.0-beta
         with:
           server: ${{ secrets.FTP_SERVER }}
