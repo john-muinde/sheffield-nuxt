@@ -96,7 +96,8 @@ jobs:
           chmod -R 775 dist/backend/storage
 
       - name: 📂 Deploy to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        # uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.0-beta
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
