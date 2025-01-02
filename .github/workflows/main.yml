@@ -61,10 +61,15 @@ jobs:
               RewriteCond %{REQUEST_FILENAME} -d
               RewriteCond %{REQUEST_FILENAME}/[^/]* -f
               RewriteRule ^(.+)/$ $1/$(ls -1 $1 | head -n1) [L]
+
+              # rewrite kitchen to commercial-kitchen
+              RewriteRule kitchen /commercial-kitchen [R=301,L]
               
               # Handle all backend requests
-              RewriteRule ^(api|backend|pixel-tracker) backend/public/$1 [L]
+              RewriteRule ^(api|backend|pixel-tracker)(/.*)?$ backend/public/$1$2 [L]
           </IfModule>
+
+          ErrorDocument 404 /404.html
           
           # PHP settings
           <IfModule mod_php8.c>

@@ -55,6 +55,7 @@ export default function useAxios() {
     baseURL: url,
     headers: {
       "Content-Type": "application/json",
+      "X-Build-Token": process.env.BUILD_TOKEN || "",
       Accept: "application/json",
     },
     withCredentials: true,

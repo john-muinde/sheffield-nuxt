@@ -83,7 +83,10 @@ export class RouteGenerator {
       const data = JSON.parse(await readFile(this.cacheFile, "utf-8"));
       const age = Date.now() - data.timestamp;
 
-      if (age > this.cacheDuration) return false;
+      if (age > this.cacheDuration) {
+        console.log("Cache expired");
+        return false;
+      }
 
       this.cache = {
         products: { ...data.products, ids: new Set(data.products.ids) },
@@ -98,6 +101,12 @@ export class RouteGenerator {
   }
 
   private async makeRequest(url: string, params = {}) {
+    console.log(
+      "Making request to",
+      this.baseURL + url,
+      "with headers",
+      this.headers
+    );
     return axios.get(url, {
       baseURL: this.baseURL,
       headers: this.headers,
