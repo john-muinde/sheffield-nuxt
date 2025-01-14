@@ -27,6 +27,7 @@ export interface ContentInterFace {
 
 export interface SegmentInterface {
   id: number;
+  exact?: boolean;
   active: boolean;
   name: string;
   slug: string;
@@ -38,7 +39,6 @@ export interface SegmentInterface {
 }
 
 export interface SolutionInterface {
-
   id: number;
   name: string;
   description: string;
@@ -49,5 +49,4 @@ export interface SolutionInterface {
   solution_category: number;
   main_image_path: string;
   order_index: number;
-
 }

@@ -2,26 +2,27 @@ import showToast from "./notification";
 import { ref, computed } from "vue";
 import { APP_SEGMENTS } from "./api";
 import axios from "axios";
+import type { SegmentInterface } from "~/types/meta-tags";
 
 export const stripHtml = (html: string) => {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, "").substring(0, 160);
 };
 
-export function getSegment(slug: string | string[]) {
+export function getSegment(slug: string | string[]): SegmentInterface {
   if (typeof slug == "string" && slug.includes("/")) {
     slug = slug.split("/")[0];
   }
   slug = Array.isArray(slug) ? slug[0] : slug;
-  return APP_SEGMENTS.find((item) =>
+  const segment = APP_SEGMENTS.find((item) =>
     [item.slug, ...(item.slugs || [])].includes(slug)
   );
+
+  return { exact: segment?.slug === slug, ...segment } as SegmentInterface;
 }
 
-export const getSolutionLink = (id: number, name: string, segment: any) => {
-  const transformedName = transformName(name);
-
-  return `/${segment.slug}/solutions/${id}/${transformedName}`;
+export const getGenericLink = (id: number, name: string, segment: any) => {
+  return `/${segment.slug || segment}/${id}/${transformName(name)}`;
 };
 
 export const transformName = (name?: string): string => {

@@ -1,11 +1,12 @@
 import axios, { type AxiosInstance } from "axios";
 import { ref } from "vue";
+import Cookies from "js-cookie";
 
 class CsrfTokenManager {
   private static instance: CsrfTokenManager;
   private tokenPromise: Promise<void> | null = null;
   private lastFetchTime: number = 0;
-  private readonly TOKEN_VALIDITY_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+  private readonly TOKEN_VALIDITY_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
   private constructor() {}
 
@@ -16,6 +17,10 @@ class CsrfTokenManager {
     return CsrfTokenManager.instance;
   }
 
+  private getXsrfToken(): string | undefined {
+    return Cookies.get("XSRF-TOKEN");
+  }
+
   async refreshToken(api: AxiosInstance): Promise<void> {
     const currentTime = Date.now();
 
@@ -24,16 +29,28 @@ class CsrfTokenManager {
       return this.tokenPromise;
     }
 
-    // If the token is still valid, don't refresh
-    if (currentTime - this.lastFetchTime < this.TOKEN_VALIDITY_DURATION) {
+    // Check if we have a valid token
+    const currentToken = this.getXsrfToken();
+    if (
+      currentToken &&
+      currentTime - this.lastFetchTime < this.TOKEN_VALIDITY_DURATION
+    ) {
       return Promise.resolve();
     }
 
     // Create new token refresh promise
     this.tokenPromise = api
-      .get("/sanctum/csrf-cookie")
+      .get("/sanctum/csrf-cookie", {
+        withCredentials: true,
+        baseURL:
+          process.env.NUXT_PUBLIC_API_URL || "https://sheffieldafrica.com",
+      })
       .then(() => {
         this.lastFetchTime = Date.now();
+        const newToken = this.getXsrfToken();
+        if (!newToken) {
+          throw new Error("CSRF token not set after refresh");
+        }
       })
       .finally(() => {
         this.tokenPromise = null;
@@ -44,12 +61,11 @@ class CsrfTokenManager {
 }
 
 export default function useAxios() {
-  const rtConfig = useRuntimeConfig();
-  const url = rtConfig.public.API_URL || "https://dev.sheffieldafrica.com";
-  const BASE_URL =
-    rtConfig.public.BASE_URL || "https://dev.sheffieldafrica.com";
+  const config = useRuntimeConfig();
+  const url = config.public.API_URL;
   const loading = ref<boolean>(false);
   const csrfManager = CsrfTokenManager.getInstance();
+  const BASE_URL = config.public.PUBLIC_URL;
 
   const api = axios.create({
     baseURL: url,
@@ -59,20 +75,30 @@ export default function useAxios() {
       Accept: "application/json",
     },
     withCredentials: true,
-    withXSRFToken: true,
+    xsrfCookieName: "XSRF-TOKEN",
+    xsrfHeaderName: "X-XSRF-TOKEN",
   });
 
+  // Request interceptor
   api.interceptors.request.use(
     async (config) => {
       loading.value = true;
 
-      // Only fetch CSRF token for state-changing requests
       if (
         ["post", "put", "patch", "delete"].includes(
           config.method?.toLowerCase() || ""
         )
       ) {
-        await csrfManager.refreshToken(api);
+        try {
+          await csrfManager.refreshToken(api);
+          const token = Cookies.get("XSRF-TOKEN");
+          if (token) {
+            config.headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
+          }
+        } catch (error) {
+          console.error("Failed to refresh CSRF token:", error);
+          throw error;
+        }
       }
 
       return config;
@@ -83,25 +109,35 @@ export default function useAxios() {
     }
   );
 
+  // Response interceptor
   api.interceptors.response.use(
     (response) => {
       loading.value = false;
       return response;
     },
-    (error) => {
+    async (error) => {
       loading.value = false;
+
+      // If we get a 419 (CSRF token mismatch), try to refresh and retry the request
+      if (error.response?.status === 419) {
+        try {
+          await csrfManager.refreshToken(api);
+          // Retry the original request
+          return api(error.config);
+        } catch (retryError) {
+          return Promise.reject(retryError);
+        }
+      }
+
       return Promise.reject(error);
     }
   );
 
-  // Expose a method to manually refresh CSRF token if needed
-  const refreshCsrf = () => csrfManager.refreshToken(api);
-
   return {
     api,
-    refreshCsrf,
+    refreshCsrf: () => csrfManager.refreshToken(api),
     loading,
-    BASE_URL,
     API_URL: url,
+    BASE_URL,
   };
 }

@@ -23,7 +23,6 @@
           type="newsletters"
           content-type="Newsletters"
           sorting="height"
-          @retry="handleRetry"
         />
       </div>
     </div>
@@ -31,9 +30,8 @@
 </template>
 
 <script setup>
-const handleRetry = () => {
-  console.log("Retrying newsletters load...");
-};
+const { handleRouteLeave } = useMediaDocuments();
+onBeforeRouteLeave(handleRouteLeave);
 
 useHead({
   title: "Newsletters",

@@ -217,7 +217,8 @@
                           class="flex flex-col items-center justify-center min-h-[200px] bg-gray-50 rounded-lg p-8 text-center space-y-6 animate-fade-in"
                         >
                           <div class="bg-primary/10 rounded-full p-2">
-                            <ShoppingCartIcon
+                            <Icon
+                              name="cart"
                               class="w-16 h-16 text-primary animate-bounce"
                             />
                           </div>
@@ -470,7 +471,6 @@
 
 <script setup>
 import { computed } from "vue";
-import { ShoppingCartIcon } from "lucide-vue-next";
 import { VueTelInput } from "vue-tel-input";
 import { countries } from "countries-list";
 import Multiselect from "vue-multiselect";

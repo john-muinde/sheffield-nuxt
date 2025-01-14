@@ -158,6 +158,11 @@
                 </NuxtLink>
               </li>
               <li>
+                <NuxtLink to="/kitchen-smalls" class="sf-with-ul" @click="closeMenu">
+                  Kitchen Smalls
+                </NuxtLink>
+              </li>
+              <li>
                 <NuxtLink to="/about-us" class="sf-with-ul" @click="closeMenu">
                   About Us
                 </NuxtLink>
@@ -518,8 +523,8 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
-const { api } = useAxios();
 import { ChevronDown } from "lucide-vue-next";
+const { api } = useAxios();
 const currentTab = ref("menu");
 
 const isMenuActive = ref(false);

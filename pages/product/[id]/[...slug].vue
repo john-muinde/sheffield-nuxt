@@ -337,7 +337,7 @@ const productId = computed(() =>
 );
 
 // Get product data (will use cache from middleware)
-const { data: product, error } = await useAsyncData(
+const { data: product, error } = await useAsyncData<any>(
   `product-${productId.value}`,
   () => $product.getCachedProduct(productId.value)
 );

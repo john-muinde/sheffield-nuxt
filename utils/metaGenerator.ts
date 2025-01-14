@@ -21,7 +21,6 @@ export const useMetaGenerator = () => {
     defaultImage: assetsSync("/assets/images/logo.png", { local: true }),
     styles: [
       "/assets/css/bootstrap.min.css",
-
       "/assets/css/style.css",
       "/assets/css/skins/skin-demo-14.css",
       "/assets/css/demos/demo-14.css",
@@ -160,9 +159,9 @@ export const useMetaGenerator = () => {
             "@type": "PostalAddress",
             addressLocality: "Nairobi",
             addressRegion: "Nairobi",
-            postalCode: "00100",
+            postalCode: "29 00606",
             streetAddress:
-              "Mombasa Road, Saku Business Park, Block C, 2nd Floor",
+              "Mombasa Road, Off Old Mombasa Road Near Syokimau Railway Station",
             addressCountry: "KE",
           },
           geo: {

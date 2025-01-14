@@ -69,7 +69,7 @@
             <li>{{ pageSegment?.active }}</li>
           </ul>
           <div class="error-actions">
-            <button class="btn btn-primary me-3" @click="refreshProducts">
+            <button class="btn btn-primary me-3" :click="refreshProducts">
               Try Again
             </button>
             <NuxtLink to="/" class="btn btn-outline-primary">
@@ -271,11 +271,8 @@
 <script setup lang="ts">
 import type { SegmentInterface } from "~/types/meta-tags";
 
-// Page Metadata
 definePageMeta({
-  validate: async (route) => {
-    return getSegment(route.params.segment) !== undefined;
-  },
+  middleware: "segment",
 });
 
 // Composables and Stores

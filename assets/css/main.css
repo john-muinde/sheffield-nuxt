@@ -12,7 +12,7 @@
   h4,
   h5,
   h6 {
-    @apply font-bold;
+    @apply font-bold leading-none;
   }
 
   h1 {
@@ -36,6 +36,26 @@
 
   a {
     @apply !no-underline transition-colors duration-200;
+  }
+
+  .our-history-title {
+    position: relative;
+    display: inline-block;
+    color: #c02434;
+    font-weight: 600;
+  }
+
+  .our-history-title:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin-top: 10px;
+    margin-left: 4px;
+    width: 70%;
+    height: 2px;
+    background: #c02434;
   }
 }
 
@@ -125,8 +145,8 @@
   }
 
   /* Layout Components */
-  .main {
-    @apply mt-0 pt-48 md:pt-1;
+  #__nuxt:not(:has(main.main1)) {
+    @apply pt-44 lg:pt-[120px];
   }
 
   /* Title Components */

@@ -3,57 +3,53 @@
     <main class="main">
       <div class="page-content">
         <!-- Header Section -->
-        <div class="container mx-auto px-4">
-          <div class="max-w-7xl mx-auto mb-12">
-            <h2 class="text-5xl font-bold text-primary mb-4">{{ title }}</h2>
-            <p class="text-xl md:text-2xl text-primary font-medium mb-4">
-              {{ subtitle }}
-            </p>
-            <p class="text-base md:text-lg text-gray-600 mb-8">
-              {{ description }}
-            </p>
-          </div>
+        <div class="container mx-auto mb-12 px-4">
+          <h2 class="!text-5xl font-bold text-primary mb-4">{{ title }}</h2>
+          <p class="!text-2xl md:text-2xl text-primary font-medium mb-4">
+            {{ subtitle }}
+          </p>
+          <p class="!text-2xl md:text-lg text-gray-600 mb-8">
+            {{ description }}
+          </p>
         </div>
 
         <!-- Media Cards Grid -->
         <div class="container mx-auto px-4">
-          <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <NuxtLink
-                v-for="item in mediaItems"
-                :key="item.path"
-                :to="item.path"
-                class="block group"
-              >
-                <div class="relative w-full transition-all duration-300">
-                  <!-- Image Container with Gradient -->
+          <div class="flex flex-row gap-8 flex-wrap justify-center">
+            <NuxtLink
+              v-for="item in mediaItems"
+              :key="item.path"
+              :to="item.path"
+              class="block group"
+            >
+              <div class="relative w-[200px] transition-all duration-300">
+                <!-- Image Container with Gradient -->
+                <div
+                  class="relative overflow-hidden rounded-full p-[4.2%] bg-gradient-to-br from-primary via-primary/20 to-transparent"
+                >
+                  <!-- Image Wrapper -->
                   <div
-                    class="relative overflow-hidden rounded-full p-[4.2%] bg-gradient-to-br from-primary via-primary/20 to-transparent"
+                    class="m-[0.8%] rounded-full border-[15px] border-white bg-white"
                   >
-                    <!-- Image Wrapper -->
-                    <div
-                      class="m-[0.8%] rounded-full border-[15px] border-white bg-white"
-                    >
-                      <img
-                        :src="item.image"
-                        :alt="item.title"
-                        class="w-full h-full object-cover rounded-full grayscale shadow-xl transition-all duration-300 group-hover:grayscale-0"
-                      />
-                    </div>
-                  </div>
-                  <!-- Card Content -->
-                  <div
-                    class="relative -mt-4 mx-auto w-[96%] bg-white rounded-lg border border-gray-200 py-2 px-4 text-center shadow-md transition-all duration-300 group-hover:bg-primary"
-                  >
-                    <h3
-                      class="text-primary text-xl font-semibold group-hover:text-white"
-                    >
-                      {{ item.title }}
-                    </h3>
+                    <img
+                      :src="item.image"
+                      :alt="item.title"
+                      class="w-full h-full object-cover rounded-full grayscale shadow-xl transition-all duration-300 group-hover:grayscale-0"
+                    />
                   </div>
                 </div>
-              </NuxtLink>
-            </div>
+                <!-- Card Content -->
+                <div
+                  class="relative mt-2 mx-auto w-[96%] group-hover:bg-primary rounded-lg border border-gray-200 py-2 px-4 text-center shadow-md transition-all duration-300"
+                >
+                  <h3
+                    class="text-black group-hover:text-white text-xl font-semibold"
+                  >
+                    {{ item.title }}
+                  </h3>
+                </div>
+              </div>
+            </NuxtLink>
           </div>
         </div>
       </div>

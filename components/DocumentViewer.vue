@@ -1,17 +1,9 @@
 // components/DocumentViewer.vue
+
 <template>
   <div class="document-viewer">
-    <!-- Loading State -->
-    <ContentState v-if="loading" type="loading" :content-type="contentType" />
+    {{ loading }}
 
-    <!-- Empty State -->
-    <ContentState
-      v-if="!documents?.length && !loading && error == null"
-      type="empty"
-      :content-type="contentType"
-    />
-
-    <!-- Error State -->
     <ContentState
       v-if="!!error && !loading"
       type="error"
@@ -19,37 +11,97 @@
       :content-type="contentType"
       @retry="handleRetry"
     />
-
-    <!-- Documents Grid -->
-    <ClientOnly>
+    <div
+      class="_df_button"
+      source="http://www.yoursite.com/books/intro.pdf"
+      aria-hidden="true"
+    >
+      Intro Book
+    </div>
+    <!-- should handle only when everything is okay -->
+    <div
+      id="dflip-books"
+      ref="bookContainer"
+      class="dflip-books row media-center"
+    >
+      <!-- Shimmer loading state -->
       <div
-        v-show="documents?.length"
-        id="dflip-books"
-        ref="bookContainer"
-        class="dflip-books row media-center"
+        v-if="loading"
+        v-for="n in 10"
+        :key="n"
+        class="relative group"
+        style="width: 210px; margin: 10px"
       >
-        <a
-          v-for="document in documents"
-          :id="`df_${document.id}`"
-          :key="document.id"
-          :href="`/media/${type}#${document.slug}/`"
-          class="_df_thumb"
-          :data-slug="document.slug"
-          :data-title="document.name"
-          :thumb="assetsSync(document.thumb)"
-          :data-df-option="`df_option_${document.id}`"
+        <!-- Book cover shimmer -->
+        <div
+          class="relative w-[210px] h-[297px] bg-gray-100 rounded overflow-hidden"
         >
-          {{ document.name }} / {{ document.heightWidthRatio }}
-        </a>
+          <!-- Base shimmer animation -->
+          <div
+            class="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-gray-100 via-white to-gray-100"
+          ></div>
+
+          <!-- Book shadow effect -->
+          <div
+            class="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-gray-200 to-transparent opacity-50"
+          ></div>
+
+          <!-- Play button overlay -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div
+              class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden"
+            >
+              <!-- Play icon shimmer -->
+              <div class="relative w-full h-full">
+                <div
+                  class="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-gray-200 via-white to-gray-200"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Title shimmer -->
+        <div class="mt-2 px-2">
+          <div class="h-4 bg-gray-100 rounded w-3/4 overflow-hidden">
+            <div
+              class="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-gray-100 via-white to-gray-100"
+            ></div>
+          </div>
+        </div>
       </div>
-    </ClientOnly>
+
+      <!-- Actual content -->
+      <a
+        v-for="processedDocument in documents"
+        v-show="documents?.length && isDflipLoaded && !loading"
+        :id="`df_${processedDocument.id}`"
+        :key="processedDocument.id"
+        :href="`#${processedDocument.slug}/`"
+        class="_df_thumb"
+        :source="assetsSync(processedDocument.publication_file)"
+        :data-slug="processedDocument.slug"
+        :data-title="processedDocument.name"
+        :thumb="assetsSync(processedDocument.thumb)"
+        :data-df-option="`df_option_${processedDocument.id}`"
+      >
+        {{ processedDocument.name }}
+      </a>
+    </div>
   </div>
 </template>
+<script setup lang="ts">
+import type {
+  ProcessedDocument,
+  DFlipGlobalConfig,
+  DocumentOptionsType,
+  SortType,
+} from "~/types/types";
 
-<script setup>
+// Props
 const props = defineProps({
   type: {
-    type: String,
+    type: String as PropType<DocumentOptionsType>,
     required: true,
   },
   contentType: {
@@ -57,179 +109,242 @@ const props = defineProps({
     required: true,
   },
   sorting: {
-    type: String,
+    type: String as PropType<SortType>,
     default: "height",
   },
 });
 
-const emit = defineEmits(["retry"]);
+// Emits
+const emit = defineEmits<{
+  (e: "retry"): void;
+}>();
 
-// Use our composable with all configurations
-const {
-  documents,
-  loading,
-  error,
-  processDocuments,
-  initializeDflip,
-  handleRouteLeave,
-} = useMediaDocuments({
-  type: props.type,
-  thumbnailScale: 0.4,
-  enableDflip: true,
-  filters: {
+// Runtime checks
+const isClient = import.meta.client;
+
+// Composables
+const route = useRoute();
+const { processDocuments, initializeDflip, handleRouteLeave } =
+  useMediaDocuments({
     type: props.type,
-  },
-});
+    thumbnailScale: 0.4,
+    enableDflip: true,
+    filters: {
+      type: props.type,
+    },
+  });
 
-// Fetch media center data
-const fetchMediaCenter = async () => {
-  const { api } = useAxios();
-  const response = await api.get("/api/get-media-center");
-  return response.data[props.type];
-};
-
-// Handle retry
+// Methods
 const handleRetry = async () => {
   emit("retry");
-  await processDocuments(fetchMediaCenter, props.sorting);
+  await refresh();
 };
 
-// Initialize on mount
+// Computed
+const loading = ref(true);
+
+// Data fetching
+const {
+  data: documents,
+  error,
+  refresh,
+} = await useAsyncData<ProcessedDocument[]>(
+  `media-center`,
+  async () => {
+    const { api } = useAxios();
+    const response = await api.get("/api/get-media-center");
+    const res = await processDocuments(
+      () => response.data[props.type],
+      props.sorting
+    );
+    return res;
+  },
+  {
+    server: true,
+    lazy: true,
+  }
+);
+
+// Script loading state
+const isDflipLoaded = ref(false);
+
+// Function to check if DFlip is loaded
+const checkDflipLoaded = () => {
+  isDflipLoaded.value =
+    typeof window !== "undefined" && window.DFLIP !== undefined;
+  return isDflipLoaded.value;
+};
+
+// Function to load DFlip scripts in sequence
+const loadDflipScripts = async () => {
+  console.log("Starting to load DFlip scripts...");
+  const scripts = [
+    "/assets/dearflip/js/libs/jquery.min.js",
+    "/assets/dearflip/js/libs/jquery-migrate.min.js",
+    "/assets/dearflip/js/libs/imagesloaded.min.js",
+    "/assets/dearflip/js/libs/masonry.min.js",
+    "/assets/dearflip/js/dflip.min.js",
+  ];
+
+  for (const src of scripts) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = false; // Important: maintain loading order
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // Add the configuration script after all other scripts are loaded
+  const configScript = document.createElement("script");
+  configScript.textContent = `
+    window.dFlipLocation = "/assets/dearflip/";
+    window.dFlipWPGlobal = ${JSON.stringify(dFlipConfig)};
+  `;
+  document.head.appendChild(configScript);
+};
+
+// Lifecycle hooks
 onMounted(async () => {
-  await processDocuments(fetchMediaCenter, props.sorting);
-  console.log("Initializing DearFlip...");
-  console.table(documents.value);
-  initializeDflip();
+  if (!checkDflipLoaded()) {
+    try {
+      await loadDflipScripts();
+      // Wait a bit for scripts to initialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      isDflipLoaded.value = true;
+    } catch (error) {
+      console.error("Failed to load DFlip scripts:", error);
+    }
+  } else {
+    isDflipLoaded.value = true;
+  }
+
+  (window.DFLIP as any).defaults.onReady = function (flipbook: any) {
+    console.log("flipbook ready");
+    flipbook.ui.fullScreen.trigger("click");
+  };
+
+  // Only initialize DFlip after scripts are loaded
+  console.log("Attempting to initialize DFlip:", {
+    isDflipLoaded: isDflipLoaded.value,
+    hasDocuments: !!documents.value?.length,
+    hasWindowDFLIP: !!window.DFLIP,
+    windowDFLIPValue: window.DFLIP,
+  });
+
+  if (isDflipLoaded.value && documents.value?.length) {
+    console.log(
+      "About to call initializeDflip with documents:",
+      documents.value
+    );
+    const result = initializeDflip(documents.value);
+    console.log("initializeDflip result:", result);
+  }
+  setTimeout(() => {
+    loading.value = false;
+  }, 3000);
 });
 
-// Handle route leaving
-onBeforeRouteLeave(handleRouteLeave);
+// DFlip configuration
+const dFlipConfig: DFlipGlobalConfig = {
+  text: {
+    toggleSound: "Turn on/off Sound",
+    toggleThumbnails: "Toggle Thumbnails",
+    toggleOutline: "Toggle Outline/Bookmark",
+    previousPage: "Previous Page",
+    nextPage: "Next Page",
+    toggleFullscreen: "Toggle Fullscreen",
+    zoomIn: "Zoom In",
+    zoomOut: "Zoom Out",
+    toggleHelp: "Toggle Help",
+    singlePageMode: "Single Page Mode",
+    doublePageMode: "Double Page Mode",
+    downloadPDFFile: "Download PDF File",
+    gotoFirstPage: "Goto First Page",
+    gotoLastPage: "Goto Last Page",
+    share: "Share",
+    search: "Search",
+    print: "Print",
+    mailSubject: "I wanted you to see this FlipBook",
+    mailBody: `Check out this site ${assetsSync(route.fullPath)}`,
+    loading: "Loading",
+  },
+  viewerType: "flipbook",
+  mobileViewerType: "auto",
+  moreControls: "download,pageMode,startPage,endPage,sound",
+  hideControls: "altPrev,altNext",
+  leftControls: "outline,thumbnail",
+  rightControls: "fullScreen,share,download,more",
+  hideShareControls: "",
+  scrollWheel: "true",
+  backgroundColor: "rgb(229,229,229)",
+  backgroundImage: "",
+  height: "auto",
+  paddingTop: "30",
+  paddingBottom: "30",
+  paddingLeft: "30",
+  paddingRight: "30",
+  controlsPosition: "bottom",
+  controlsFloating: true,
+  direction: "1",
+  duration: "800",
+  soundEnable: "true",
+  showDownloadControl: "true",
+  showSearchControl: "false",
+  showPrintControl: "false",
+  enableAnalytics: "true",
+  webgl: "true",
+  hard: "none",
+  autoEnableOutline: "false",
+  autoEnableThumbnail: "false",
+  pageScale: "fit",
+  maxTextureSize: "3200",
+  rangeChunkSize: "1048576",
+  disableRange: false,
+  zoomRatio: "1.5",
+  flexibility: "1",
+  pageMode: "0",
+  singlePageMode: "0",
+  pageSize: "0",
+  autoPlay: "false",
+  autoPlayDuration: "5000",
+  autoPlayStart: "false",
+  linkTarget: "2",
+  sharePrefix: "flipbook-",
+  pdfVersion: "default",
+  thumbLayout: "book-title-hover",
+  targetWindow: "_popup",
+  buttonClass: "",
+  hasSpiral: false,
+  spiralColor: "#eee",
+  cover3DType: "plain",
+  color3DCover: "#aaaaaa",
+  color3DSheets: "#fff",
+  flipbook3DTiltAngleUp: "0",
+  flipbook3DTiltAngleLeft: "0",
+  autoPDFLinktoViewer: false,
+  sideMenuOverlay: true,
+  displayLightboxPlayIcon: true,
+  popupBackGroundColor: "#eee",
+  shelfImage: "",
+  enableAutoLinks: false,
+};
 
-// Setup DearFlip configuration
+// Head configuration
 useHead({
-  link: [{ rel: "stylesheet", href: `/dearflip/dflip/css/dflip.min.css` }],
-  script: [
-    // jQuery and its migrate plugin
-    {
-      src: `/dearflip/dflip/js/libs/jquery.min.js`,
-      id: "jquery-core-js",
-    },
-    {
-      src: `/dearflip/dflip/js/libs/jquery-migrate.min.js`,
-      id: "jquery-migrate-js",
-    },
-
-    // DearFlip and other JS libraries
-    {
-      src: `/dearflip/dflip/js/libs/imagesloaded.min.js`,
-      id: "imagesloaded-js",
-    },
-    {
-      src: `/dearflip/dflip/js/libs/masonry.min.js`,
-      id: "masonry-js",
-    },
-    { src: `/dearflip/dflip/js/dflip.min.js`, id: "dflip-script-js" },
-    {
-      src: "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js",
-    },
-
-    // Custom scripts
-    {
-      children: `
-                window.dFlipLocation = "https://js.dearflip.com/wp-content/plugins/dflip/assets/";
-                window.dFlipWPGlobal = ${JSON.stringify({
-                  text: {
-                    toggleSound: "Turn on\/off Sound",
-                    toggleThumbnails: "Toggle Thumbnails",
-                    toggleOutline: "Toggle Outline\/Bookmark",
-                    previousPage: "Previous Page",
-                    nextPage: "Next Page",
-                    toggleFullscreen: "Toggle Fullscreen",
-                    zoomIn: "Zoom In",
-                    zoomOut: "Zoom Out",
-                    toggleHelp: "Toggle Help",
-                    singlePageMode: "Single Page Mode",
-                    doublePageMode: "Double Page Mode",
-                    downloadPDFFile: "Download PDF File",
-                    gotoFirstPage: "Goto First Page",
-                    gotoLastPage: "Goto Last Page",
-                    share: "Share",
-                    search: "Search",
-                    print: "Print",
-                    mailSubject: "I wanted you to see this FlipBook",
-                    mailBody: `Check out this site ${assetsSync(
-                      useRoute().fullPath
-                    )}`,
-                    loading: "Loading",
-                  },
-                  viewerType: "flipbook",
-                  mobileViewerType: "auto",
-                  moreControls: "download,pageMode,startPage,endPage,sound",
-                  hideControls: "altPrev,altNext",
-                  leftControls: "outline,thumbnail",
-                  rightControls: "fullScreen,share,download,more",
-                  hideShareControls: "",
-                  scrollWheel: "true",
-                  backgroundColor: "rgb(229,229,229)",
-                  backgroundImage: "",
-                  height: "auto",
-                  paddingTop: "30",
-                  paddingBottom: "30",
-                  paddingLeft: "30",
-                  paddingRight: "30",
-                  controlsPosition: "bottom",
-                  controlsFloating: true,
-                  direction: "1",
-                  duration: "800",
-                  soundEnable: "true",
-                  showDownloadControl: "true",
-                  showSearchControl: "false",
-                  showPrintControl: "false",
-                  enableAnalytics: "true",
-                  webgl: "true",
-                  hard: "none",
-                  autoEnableOutline: "false",
-                  autoEnableThumbnail: "false",
-                  pageScale: "fit",
-                  maxTextureSize: "3200",
-                  rangeChunkSize: "1048576",
-                  disableRange: false,
-                  zoomRatio: "1.5",
-                  flexibility: "1",
-                  pageMode: "0",
-                  singlePageMode: "0",
-                  pageSize: "0",
-                  autoPlay: "false",
-                  autoPlayDuration: "5000",
-                  autoPlayStart: "false",
-                  linkTarget: "2",
-                  sharePrefix: "flipbook-",
-                  pdfVersion: "default",
-                  thumbLayout: "book-title-hover",
-                  targetWindow: "_popup",
-                  buttonClass: "",
-                  hasSpiral: false,
-                  spiralColor: "#eee",
-                  cover3DType: "plain",
-                  color3DCover: "#aaaaaa",
-                  color3DSheets: "#fff",
-                  flipbook3DTiltAngleUp: "0",
-                  flipbook3DTiltAngleLeft: "0",
-                  autoPDFLinktoViewer: false,
-                  sideMenuOverlay: true,
-                  displayLightboxPlayIcon: true,
-                  popupBackGroundColor: "#eee",
-                  shelfImage: "",
-                  enableAutoLinks: false,
-                })}
-            `,
-    },
-  ],
+  link: [{ rel: "stylesheet", href: `/assets/dearflip/css/dflip.min.css` }],
 });
 </script>
 
 <style scoped>
-/* Styles remain unchanged */
+.df-posts {
+  max-width: unset;
+
+  margin-left: -10px;
+  margin-right: -10px;
+}
 .df-sheet .df-page:before {
   opacity: 0.5;
 }
@@ -258,9 +373,6 @@ a.df-autolink:hover {
 
 .df-icon-play-popup:before {
   background-color: rgb(51, 133, 209);
-}
-
-.df-icon-play-popup:before {
   color: #fff;
 }
 

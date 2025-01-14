@@ -1,12 +1,20 @@
 import { RouteGenerator } from "./utils/urls";
+
 const generator = new RouteGenerator(
   process.env.API_BASE_URL || "https://sheffieldafrica.com"
 );
+
+const testing = true;
+
+const testingRoutes = ["/"];
+
+const routes = testing ? testingRoutes : await generator.generateAllRoutes();
 
 export default defineNuxtConfig({
   site: {
     url: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
   },
+  devtools: { enabled: true },
 
   modules: [
     [
@@ -24,6 +32,7 @@ export default defineNuxtConfig({
   imports: {
     dirs: ["stores", "components"],
   },
+  plugins: [{ src: "~/plugins/dflip.client.ts", mode: "client" }],
 
   ignore: ["backend/**"],
 
@@ -54,7 +63,7 @@ export default defineNuxtConfig({
       crawlLinks: true,
       routes: ["/"],
       ignore: ["/api/**", "/backend/**"],
-      concurrency: 1, // Reduce concurrent requests
+      concurrency: 50, // Reduce concurrent requests
       delay: 500, // Add delay between requests
       // @ts-ignore
       retry: {
@@ -81,6 +90,10 @@ export default defineNuxtConfig({
     // Static pages
     "/": { prerender: true },
 
+    "/api/get-media-center": {
+      swr: 3600, // Cache for 1 hour
+    },
+
     // Dynamic routes with ISR
     "/products/**": {
       isr: 3600, // 1 hour cache
@@ -92,6 +105,16 @@ export default defineNuxtConfig({
       isr: 3600,
     },
 
+    // Admin routes - client-side only, no prerendering
+    "/admin": {
+      ssr: false,
+      prerender: true,
+    },
+    "/admin/**": {
+      ssr: false,
+      prerender: false,
+    },
+
     // API routes - proxy in development
     "/api/**":
       process.env.NODE_ENV === "development"
@@ -101,8 +124,8 @@ export default defineNuxtConfig({
         : {},
 
     // Redirects
-    "/kitchen": { redirect: "commercial-kitchen" },
-    "/kitchen/": { redirect: "/commercial-kitchen/" },
+    // "/kitchen": { redirect: { to: "commercial-kitchen", statusCode: 301 } },
+    // "/kitchen/": { redirect: { to: "/commercial-kitchen/", statusCode: 301 } },
   },
 
   // Vue transitions configuration
@@ -152,14 +175,12 @@ export default defineNuxtConfig({
   hooks: {
     "nitro:config": async (nitroConfig) => {
       if (process.env.NODE_ENV === "production") {
-        const routes = await generator.generateAllRoutes();
-
         nitroConfig.prerender = {
           ...nitroConfig.prerender,
           routes: ["/", ...routes],
           crawlLinks: true,
           failOnError: false,
-          ignore: ["/api/**", "/backend/**"],
+          ignore: ["/api/**", "/backend/**", "/admin/**"],
         };
       }
     },
@@ -168,9 +189,7 @@ export default defineNuxtConfig({
   // Sitemap configuration
   sitemap: {
     // @ts-ignore
-    routes: async () => {
-      return generator.generateAllRoutes();
-    },
+    routes: routes,
   },
 
   // PostCSS configuration
@@ -187,16 +206,8 @@ export default defineNuxtConfig({
     // @ts-ignore
     inlineSSRStyles: false,
     viewTransition: true,
-    renderJsonPayloads: true,
+    renderJsonPayloads: false,
   },
-
-  // Development tools
-  devtools: {
-    enabled: process.env.NODE_ENV === "development",
-  },
-
-  // CSS files
-  css: ["~/assets/css/main.css"],
 
   compatibilityDate: "2024-12-21",
 });

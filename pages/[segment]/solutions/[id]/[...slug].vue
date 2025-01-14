@@ -154,11 +154,8 @@
 </template>
 
 <script setup lang="ts">
-// Validate page
 definePageMeta({
-  validate: (route) => {
-    return getSegment(route.params.segment) !== undefined;
-  },
+  middleware: "segment",
 });
 
 import type { Ref } from "vue";

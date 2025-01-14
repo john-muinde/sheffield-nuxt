@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <main class="main1">
     <!-- Desktop Header -->
     <header class="bg-transparent hidden md:block">
       <div class="mt-2">
@@ -268,7 +268,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup>

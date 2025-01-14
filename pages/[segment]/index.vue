@@ -31,7 +31,7 @@
               >
                 <NuxtLink
                   class="cat-block"
-                  :to="getSolutionLink(solution.id, solution.name, segment)"
+                  :to="getGenericLink(solution.id, solution.name, segment)"
                 >
                   <figure>
                     <span>
@@ -58,11 +58,10 @@
 </template>
 
 <script setup lang="ts">
-// Page validation
+import type { RouteLocation, RouteLocationRaw } from "vue-router";
+
 definePageMeta({
-  validate: async (route: any) => {
-    return getSegment(route.params.segment) !== undefined;
-  },
+  middleware: "segment",
 });
 
 import type { SolutionInterface } from "~/types/meta-tags";
@@ -132,7 +131,7 @@ const solutionSchema = computed(() => ({
         name: solution.name,
         image: assetsSync(solution.main_image_path),
         url: assetsSync(
-          getSolutionLink(solution.id, solution.name, segment.value)
+          getGenericLink(solution.id, solution.name, segment.value)
         ),
         description:
           solution.description ||

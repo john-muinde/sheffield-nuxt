@@ -4,6 +4,11 @@
     
     # Disable directory listings
     Options -Indexes
+
+    # Admin SPA routing - serve admin index for all admin routes
+    RewriteCond %{REQUEST_URI} ^/admin/ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ /admin/index.html [L]
     
     # Redirect www to non-www
     RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]

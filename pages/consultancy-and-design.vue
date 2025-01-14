@@ -356,8 +356,6 @@ useHead({
 .about-us-title {
   position: relative;
   display: inline-block;
-  color: #c02434;
-  font-size: 3.9rem;
   font-weight: 600;
 }
 
@@ -399,26 +397,7 @@ useHead({
   background-color: rgb(255 255 255 / 93%) !important;
 }
 
-.our-history-title {
-  position: relative;
-  display: inline-block;
-  color: #c02434;
-  font-size: 3.9rem;
-  font-weight: 600;
-}
 
-.our-history-title:after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  margin-top: 10px;
-  margin-left: 4px;
-  width: 70%;
-  height: 2px;
-  background: #c02434;
-}
 
 .about-us-lead {
   font-size: 1.6rem !important;

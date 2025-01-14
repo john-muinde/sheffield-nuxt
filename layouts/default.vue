@@ -6,15 +6,8 @@
       v-if="pageSegment != null && !route.path.includes('/product')"
       :segment="pageSegment"
     />
-    <div
-      :class="{
-        'md:mt-48':
-          (pageSegment == null || route.path.includes('/product')) &&
-          !isHomePage,
-      }"
-    >
-      <slot />
-    </div>
+
+  <slot />
 
     <MobileMenu />
     <Footer />
@@ -90,7 +83,8 @@ watchEffect(() => {
 });
 </script>
 
-<style scoped>
+<style >
+@import "~/assets/css/main.css";
 [v-cloak] {
   display: none;
 }

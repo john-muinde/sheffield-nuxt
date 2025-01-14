@@ -3,7 +3,7 @@ import { writeFile, readFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { APP_SEGMENTS } from "./api";
-import { getSolutionLink, getProductLink, getCategoryLink } from "./functions";
+import { getGenericLink, getProductLink, getCategoryLink } from "./functions";
 
 interface RouteCache {
   timestamp: number;
@@ -15,6 +15,8 @@ interface CacheData {
   products: RouteCache;
   solutions: RouteCache;
   categories: RouteCache;
+  blogs: RouteCache;
+  gallery: RouteCache;
 }
 
 export class RouteGenerator {
@@ -51,6 +53,8 @@ export class RouteGenerator {
       products: { timestamp: 0, routes: [], ids: new Set() },
       solutions: { timestamp: 0, routes: [], ids: new Set() },
       categories: { timestamp: 0, routes: [], ids: new Set() },
+      blogs: { timestamp: 0, routes: [], ids: new Set() },
+      gallery: { timestamp: 0, routes: [], ids: new Set() },
     };
   }
 
@@ -64,6 +68,8 @@ export class RouteGenerator {
             products: { timestamp: 0, routes: [], ids: [] },
             solutions: { timestamp: 0, routes: [], ids: [] },
             categories: { timestamp: 0, routes: [], ids: [] },
+            blogs: { timestamp: 0, routes: [], ids: [] },
+            gallery: { timestamp: 0, routes: [], ids: [] },
           })
         );
       }
@@ -92,6 +98,8 @@ export class RouteGenerator {
         products: { ...data.products, ids: new Set(data.products.ids) },
         solutions: { ...data.solutions, ids: new Set(data.solutions.ids) },
         categories: { ...data.categories, ids: new Set(data.categories.ids) },
+        blogs: { ...data.blogs, ids: new Set(data.blogs.ids) },
+        gallery: { ...data.gallery, ids: new Set(data.gallery.ids) },
       };
       return true;
     } catch (error) {
@@ -129,6 +137,14 @@ export class RouteGenerator {
       categories: {
         ...this.cache.categories,
         ids: Array.from(this.cache.categories.ids),
+      },
+      blogs: {
+        ...this.cache.blogs,
+        ids: Array.from(this.cache.blogs.ids),
+      },
+      gallery: {
+        ...this.cache.gallery,
+        ids: Array.from(this.cache.gallery.ids),
       },
     };
 
@@ -206,9 +222,7 @@ export class RouteGenerator {
 
         for (const solution of solutionsResponse.data.data) {
           if (!this.cache.solutions.ids.has(solution.id)) {
-            allRoutes.push(
-              getSolutionLink(solution.id, solution.name, segment)
-            );
+            allRoutes.push(getGenericLink(solution.id, solution.name, segment));
             this.cache.solutions.ids.add(solution.id);
 
             // Get products for this solution
@@ -270,6 +284,48 @@ export class RouteGenerator {
 
     await this.saveCache();
     return allRoutes;
+  }
+
+  async generateBlogs(): Promise<string[]> {
+    if (!this.cache.blogs.timestamp) {
+      try {
+        const response = await this.makeRequest("/api/get-blogs");
+
+        for (const blog of response.data.data) {
+          if (!this.cache.blogs.ids.has(blog.id)) {
+            this.cache.blogs.ids.add(blog.id);
+            this.cache.blogs.routes.push(
+              `/blog/${blog.id}/${transformName(blog.name)}`
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching blogs:", error);
+      }
+    }
+
+    return this.cache.blogs.routes;
+  }
+
+  async generateGallery(): Promise<string[]> {
+    if (!this.cache.gallery.timestamp) {
+      try {
+        const response = await this.makeRequest("/api/get-gallery");
+
+        for (const gallery of response.data.data) {
+          if (!this.cache.gallery.ids.has(gallery.id)) {
+            this.cache.gallery.ids.add(gallery.id);
+            this.cache.gallery.routes.push(
+              `/gallery/${gallery.id}/${transformName(gallery.name)}`
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching gallery:", error);
+      }
+    }
+
+    return this.cache.gallery.routes;
   }
 
   async generateSitemap(baseUrl: string): Promise<void> {

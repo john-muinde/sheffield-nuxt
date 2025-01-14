@@ -4,6 +4,7 @@ export default function useAuth() {
   let user = ref({
     name: "",
     email: "",
+    role: "",
   });
   const processing = ref(false);
   const validationErrors = ref({});

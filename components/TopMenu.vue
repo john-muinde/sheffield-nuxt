@@ -1,6 +1,6 @@
 <template>
-  <div class="mt-24 sm:mt-40 md:mt-48">
-    <div class="container mx-auto px-4 mt-5">
+  <div class="pb-12 md:pt-0">
+    <div class="container mx-auto px-4">
       <!-- Desktop Menu -->
       <div class="hidden md:block relative w-full">
         <div class="grid grid-cols-8 gap-1">
@@ -103,7 +103,7 @@
     <div class="md:hidden">
       <button
         type="button"
-        class="w-full px-4 py-2 text-white rounded text-left flex justify-between items-center"
+        class="w-3/4 mx-auto px-4 py-2 text-white rounded text-left flex justify-between items-center"
         :style="{ backgroundColor: segment.color }"
         @click="toggleMobileMenu"
       >
