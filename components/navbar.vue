@@ -406,7 +406,7 @@ const handleSearch = async () => {
   if (searchQuery.value?.length >= 3) {
     try {
       const response = await api.get(
-        `/api/product_search/${searchQuery.value}`
+        `/api/product_search?query=${searchQuery.value}`
       );
       const data = await response.data;
       searchResults.value = data.data;

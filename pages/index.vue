@@ -274,7 +274,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
-const router = useRouter();
 const query = ref("");
 const results = ref([]);
 const showResults = ref(false);
@@ -287,7 +286,9 @@ const search = async () => {
     showResults.value = true;
     searchLoading.value = true;
     try {
-      const response = await api.get(`/api/product_search/${query.value}`);
+      const response = await api.get(
+        `/api/product_search?query=${query.value}`
+      );
       results.value = response.data.data;
       showResults.value = true;
     } catch (error) {
@@ -322,7 +323,7 @@ onMounted(async () => {
 
 const viewProduct = (route = null) => {
   if (route) {
-    router.push(route);
+    navigateTo(route);
     return;
   }
   window.open("https://forms.gle/Z36CZ1AnM6PVzNqv7", "_blank");

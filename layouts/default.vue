@@ -1,5 +1,7 @@
 <template>
-  <div class="the_main_div">
+  <div class="the_main_div relative">
+    <RedirectOverlay />
+    <!-- <ThePreloader /> -->
     <Navbar v-if="!isHomePage" />
 
     <TopMenu
@@ -7,7 +9,7 @@
       :segment="pageSegment"
     />
 
-  <slot />
+    <slot />
 
     <MobileMenu />
     <Footer />
@@ -83,7 +85,7 @@ watchEffect(() => {
 });
 </script>
 
-<style >
+<style>
 @import "~/assets/css/main.css";
 [v-cloak] {
   display: none;

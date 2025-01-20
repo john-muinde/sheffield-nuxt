@@ -114,6 +114,42 @@
               </button>
               <slot name="empty-actions"></slot>
             </div>
+            <div class="flex flex-wrap justify-center gap-3">
+              <button class="btn-error" @click="$emit('retry')">
+                <svg
+                  class="w-8 h-8 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Try again
+              </button>
+              <slot name="error-actions">
+                <button class="btn-secondary" @click="$emit('clear-filters')">
+                  <svg
+                    class="w-8 h-8 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l18 0"
+                    />
+                  </svg>
+                  Clear filters
+                </button>
+              </slot>
+            </div>
           </div>
 
           <!-- Error State -->
@@ -269,7 +305,7 @@ defineEmits(["clear-search", "retry", "clear-filters"]);
 }
 
 .btn-secondary {
-  @apply inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200;
+  @apply inline-flex items-center px-4 py-2 rounded-md text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200;
 }
 
 .btn-error {

@@ -158,7 +158,11 @@
                 </NuxtLink>
               </li>
               <li>
-                <NuxtLink to="/kitchen-smalls" class="sf-with-ul" @click="closeMenu">
+                <NuxtLink
+                  to="/kitchen-smalls"
+                  class="sf-with-ul"
+                  @click="closeMenu"
+                >
                   Kitchen Smalls
                 </NuxtLink>
               </li>
@@ -524,49 +528,79 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { ChevronDown } from "lucide-vue-next";
+
 const { api } = useAxios();
 const currentTab = ref("menu");
-
 const isMenuActive = ref(false);
 
+// Fetch data with SSR caching
+const fetchData = async (url) => {
+  const { data } = await api.get(url);
+  return data.data;
+};
+
+// Solutions data
+const { data: mainKitchenSolutions } = useAsyncData("kitchenSolutions", () =>
+  fetchData("/api/get-solutions/21")
+);
+const { data: mainLaundrySolutions } = useAsyncData("laundrySolutions", () =>
+  fetchData("/api/get-solutions/247")
+);
+const { data: mainColdRoomSolutions } = useAsyncData("coldRoomSolutions", () =>
+  fetchData("/api/get-solutions/301")
+);
+const { data: mainPromotionalSolutions } = useAsyncData(
+  "promotionalSolutions",
+  () => fetchData("/api/get-solutions/370")
+);
+
+// Categories data
+const { data: mainKitchenCategories } = useAsyncData("kitchenCategories", () =>
+  fetchData("/api/get-main-categories/21")
+);
+const { data: mainLaundryCategories } = useAsyncData("laundryCategories", () =>
+  fetchData("/api/get-main-categories/247")
+);
+const { data: mainColdRoomCategories } = useAsyncData(
+  "coldRoomCategories",
+  () => fetchData("/api/get-main-categories/301")
+);
+const { data: mainPromotionalCategories } = useAsyncData(
+  "promotionalCategories",
+  () => fetchData("/api/get-main-categories/370")
+);
+
+const promotionExists = computed(
+  () => mainPromotionalCategories.value?.length > 0
+);
+
+// Menu toggle functions
 const toggleMenu = () => {
   isMenuActive.value = !isMenuActive.value;
   document.body.classList.toggle("mmenu-active", isMenuActive.value);
-  const targetElement = document.querySelector(".the_main_div");
-  targetElement.classList.toggle("mmenu-active");
+  document.querySelector(".the_main_div")?.classList.toggle("mmenu-active");
 };
 
 const closeMenu = () => {
   isMenuActive.value = false;
   document.body.classList.remove("mmenu-active");
-  const targetElement = document.querySelector(".the_main_div");
-  targetElement.classList.remove("mmenu-active");
+  document.querySelector(".the_main_div")?.classList.remove("mmenu-active");
 };
 
 const toggleSubMenu = (event) => {
-  // Prevent the default NuxtLink navigation
   event.preventDefault();
-
-  // Toggle the 'show' class on the immediate parent <li> element
   const parentLi = event.target.closest("li");
   parentLi.classList.toggle("show");
-
-  // Optionally, close other open submenus
-  const otherOpenLis = document.querySelectorAll(".mobile-menu > li.show");
-  otherOpenLis.forEach((li) => {
-    if (li !== parentLi) {
-      li.classList.remove("show");
-    }
+  document.querySelectorAll(".mobile-menu > li.show").forEach((li) => {
+    if (li !== parentLi) li.classList.remove("show");
   });
 };
 
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
+// Event listeners
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener("click", handleClickOutside)
+);
 
 const handleClickOutside = (event) => {
   if (!event.target.closest(".mobile-menu") && isMenuActive.value) {
@@ -574,48 +608,13 @@ const handleClickOutside = (event) => {
   }
 };
 
-const mainKitchenSolutions = ref([]);
-const mainLaundrySolutions = ref([]);
-const mainColdRoomSolutions = ref([]);
-const mainPromotionalSolutions = ref([]);
-
-const mainKitchenCategories = ref([]);
-const mainLaundryCategories = ref([]);
-const mainColdRoomCategories = ref([]);
-const mainPromotionalCategories = ref([]);
-
-const promotionExists = computed(
-  () => mainPromotionalCategories.value.length > 0
-);
-
-const fetchData = async (url, stateVariable) => {
-  try {
-    const response = await api.get(url);
-    stateVariable.value = response.data.data;
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const generateLink = (basePath, id, name) => {
-  const transformedName = name
+// URL generation functions
+const generateLink = (basePath, id, name) =>
+  `${basePath}/${id}/${name
     .toLowerCase()
-    // remove any previous hyphens
     .replace(/-/g, " ")
     .replace(/[\s/]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return `${basePath}/${id}/${transformedName}`;
-};
-
-const fetchMainKitchenSolutions = () =>
-  fetchData("/api/get-solutions/21", mainKitchenSolutions);
-const fetchMainLaundrySolutions = () =>
-  fetchData("/api/get-solutions/247", mainLaundrySolutions);
-const fetchMainColdRoomSolutions = () =>
-  fetchData("/api/get-solutions/301", mainColdRoomSolutions);
-const fetchMainPromotionalSolutions = () =>
-  fetchData("/api/get-solutions/370", mainPromotionalSolutions);
+    .replace(/^-+|-+$/g, "")}`;
 
 const getSolutionKitchenLink = (id, name) =>
   generateLink("/commercial-kitchen/solutions", id, name);
@@ -625,16 +624,6 @@ const getSolutionColdRoomLink = (id, name) =>
   generateLink("/cold-storage/solutions", id, name);
 const getSolutionPromotionalLink = (id, name) =>
   generateLink("/promotional-solutions", id, name);
-
-const fetchMainKitchenCategories = () =>
-  fetchData("/api/get-main-categories/21", mainKitchenCategories);
-const fetchMainLaundryCategories = () =>
-  fetchData("/api/get-main-categories/247", mainLaundryCategories);
-const fetchMainColdRoomCategories = () =>
-  fetchData("/api/get-main-categories/301", mainColdRoomCategories);
-const fetchMainPromotionalCategories = () =>
-  fetchData("/api/get-main-categories/370", mainPromotionalCategories);
-
 const getKitchenCategoryLink = (id, name) =>
   generateLink("/commercial-kitchen", id, name);
 const getLaundryCategoryLink = (id, name) => generateLink("/laundry", id, name);
@@ -642,18 +631,6 @@ const getColdRoomCategoryLink = (id, name) =>
   generateLink("/cold-storage", id, name);
 const getPromotionalCategoryLink = (id, name) =>
   generateLink("/promotional-solutions", id, name);
-
-onMounted(() => {
-  fetchMainKitchenSolutions();
-  fetchMainLaundrySolutions();
-  fetchMainColdRoomSolutions();
-  fetchMainPromotionalSolutions();
-
-  fetchMainKitchenCategories();
-  fetchMainLaundryCategories();
-  fetchMainColdRoomCategories();
-  fetchMainPromotionalCategories();
-});
 </script>
 
 <style scoped>

@@ -263,6 +263,13 @@
             </div>
           </aside>
         </div>
+
+        <ContentState
+          v-else="!productsData?.products?.length && status !== 'pending'"
+          type="empty"
+          @retry="refreshProducts"
+          :content-type="`${pageSegment.name} Products`"
+        />
       </div>
     </div>
   </main>
@@ -280,6 +287,7 @@ const route = useRoute();
 const router = useRouter();
 const { segment, id } = route.params;
 const { api } = useAxios();
+
 const {
   checkedCategories,
   checkedBrands,
@@ -436,38 +444,39 @@ const applyAndRefresh = async () => {
 };
 
 // SEO and Meta Setup
-// SEO and Meta Setup
-useHead(() => ({
-  ...generateHeadInput(route, [
-    productListSchema.value,
-    breadcrumbSchema.value,
-    filterSchema?.value,
-  ]),
-  title: productsData.value?.theCategory?.name
-    ? `${productsData.value.theCategory.name} - ${pageSegment.value?.name} Products`
-    : "Products",
-  link: [
-    ...(productsData.value?.prev_page_url
-      ? [
-          {
-            rel: "prev",
-            href: createPageLink(productsData.value.prev_page_url),
-          },
-        ]
-      : []),
-    ...(productsData.value?.next_page_url
-      ? [
-          {
-            rel: "next",
-            href: createPageLink(productsData.value.next_page_url),
-          },
-        ]
-      : []),
-  ],
-}));
+if (productsData.value?.products?.length) {
+  useHead(() => ({
+    ...generateHeadInput(route, [
+      productListSchema.value,
+      breadcrumbSchema.value,
+      filterSchema?.value,
+    ]),
+    title: productsData.value?.theCategory?.name
+      ? `${productsData.value.theCategory.name} - ${pageSegment.value?.name} Products`
+      : "Products",
+    link: [
+      ...(productsData.value?.prev_page_url
+        ? [
+            {
+              rel: "prev",
+              href: createPageLink(productsData.value.prev_page_url),
+            },
+          ]
+        : []),
+      ...(productsData.value?.next_page_url
+        ? [
+            {
+              rel: "next",
+              href: createPageLink(productsData.value.next_page_url),
+            },
+          ]
+        : []),
+    ],
+  }));
 
-// Apply SEO Meta
-useSeoMeta(generateSeoMeta(metaTags.value, route));
+  // Apply SEO Meta
+  useSeoMeta(generateSeoMeta(metaTags.value, route));
+}
 
 // Page Query Watcher
 watch(
