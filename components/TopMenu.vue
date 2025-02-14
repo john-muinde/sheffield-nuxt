@@ -59,7 +59,7 @@
         <div
           class="absolute z-50 max-h-[60vh] md:t-48 left-0 right-0 w-full mx-auto bg-white shadow-xl border-t transition-all duration-300 ease-in-out overflow-y-auto"
           :class="[
-            hoveredCategory
+            hoveredCategory && showModal
               ? 'opacity-100 visible'
               : 'opacity-0 invisible pointer-events-none',
           ]"
@@ -145,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
 
 const props = defineProps({
@@ -159,6 +159,7 @@ const route = useRoute();
 const { api } = useAxios();
 const isMobileMenuOpen = ref(false);
 const hoveredCategory = ref(null);
+const showModal = ref(false);
 const mainModalContainer = ref(null);
 
 // Fetch categories

@@ -1,6 +1,5 @@
 <template>
   <div class="the_main_div relative">
-    <RedirectOverlay />
     <!-- <ThePreloader /> -->
     <Navbar v-if="!isHomePage" />
 

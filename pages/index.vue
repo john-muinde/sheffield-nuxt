@@ -315,10 +315,6 @@ onMounted(async () => {
   document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.toggle("mmenu-active1", true);
   });
-  const popupDismissed = false;
-  if (!popupDismissed) {
-    showPopup.value = true;
-  }
 });
 
 const viewProduct = (route = null) => {

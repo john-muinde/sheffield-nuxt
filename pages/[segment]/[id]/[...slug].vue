@@ -1,5 +1,6 @@
 <template>
   <main class="main">
+    <!-- Breadcrumb Navigation -->
     <nav aria-label="breadcrumb" class="breadcrumb-nav border-0 mb-0">
       <div class="container d-flex align-items-center">
         <ol class="breadcrumb">
@@ -12,7 +13,7 @@
             </NuxtLink>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            {{ productsData?.theCategory?.name }}
+            {{ productsData?.the_category?.name }}
           </li>
         </ol>
       </div>
@@ -20,7 +21,7 @@
 
     <div class="page-content">
       <div class="container">
-        <!-- Loading state -->
+        <!-- Loading State -->
         <div
           v-if="status === 'pending' && isFilterLoading"
           class="products mb-3"
@@ -48,7 +49,7 @@
           </div>
         </div>
 
-        <!-- Error state -->
+        <!-- Error State -->
         <div v-else-if="error || !pageSegment?.active" class="error-content">
           <i
             class="icon-exclamation-circle text-danger mb-4"
@@ -66,10 +67,12 @@
             <li>The selected filters might be too restrictive</li>
             <li>The category might be temporarily empty</li>
             <li>New products might be coming soon</li>
-            <li>{{ pageSegment?.active }}</li>
           </ul>
           <div class="error-actions">
-            <button class="btn btn-primary me-3" :click="refreshProducts">
+            <button
+              class="btn btn-primary me-3"
+              @click="() => refreshProducts()"
+            >
               Try Again
             </button>
             <NuxtLink to="/" class="btn btn-outline-primary">
@@ -79,7 +82,7 @@
         </div>
 
         <!-- Products Content -->
-        <div v-else-if="productsData?.products?.length" class="row">
+        <div v-else-if="productsData?.products?.data?.length" class="row">
           <div class="col-lg-10">
             <!-- Toolbar -->
             <div class="toolbox">
@@ -87,8 +90,8 @@
                 <div class="toolbox-info">
                   Showing
                   <span>
-                    {{ Math.min(productsData.products.length, perPage) }}
-                    of {{ productsData.total }}
+                    {{ Math.min(productsData.products.data.length, perPage) }}
+                    of {{ productsData.products.total }}
                   </span>
                   Products
                 </div>
@@ -119,7 +122,7 @@
             <div class="products mb-3 products-section">
               <div class="row">
                 <div
-                  v-for="product in productsData.products"
+                  v-for="product in productsData.products.data"
                   :key="product.id"
                   class="col-6 col-md-3 col-lg-2 col-xl-2"
                 >
@@ -148,7 +151,7 @@
                     <div class="product-body">
                       <div class="product-cat">
                         <NuxtLink :to="getProductLink(product)">
-                          {{ product.product_brand?.name }}
+                          {{ product.product_brand.name }}
                         </NuxtLink>
                       </div>
                       <h3 class="product-title">
@@ -164,17 +167,22 @@
 
             <!-- Pagination -->
             <nav aria-label="Page navigation">
-              Current Page: {{ currentPage }}
+              Current Page: {{ productsData.products.current_page }}
               <ul class="pagination justify-content-center">
                 <li
-                  v-for="page in productsData.links"
+                  v-for="page in productsData.products.links"
                   :key="page.label"
                   class="page-item"
                   :class="{ active: page.active }"
                 >
-                  <NuxtLink class="page-link" :to="createPageLink(page.url)">
+                  <NuxtLink
+                    v-if="page.url"
+                    class="page-link"
+                    :to="createPageLink(page.url)"
+                  >
                     <span v-html="page.label"></span>
                   </NuxtLink>
+                  <span v-else class="page-link" v-html="page.label"></span>
                 </li>
               </ul>
             </nav>
@@ -223,7 +231,7 @@
                           {{ category.name }}
                         </label>
                         <span class="item-count">
-                          {{ category.category_products_count }}
+                          {{ category.category_products_count || 0 }}
                         </span>
                       </div>
                     </div>
@@ -238,7 +246,7 @@
                   <div class="filter-items">
                     <div
                       v-for="brand in productsData.brands"
-                      :key="brand.id"
+                      :key="brand.product_brand.id"
                       class="filter-item"
                     >
                       <div class="custom-control custom-checkbox">
@@ -265,7 +273,7 @@
         </div>
 
         <ContentState
-          v-else="!productsData?.products?.length && status !== 'pending'"
+          v-else="!productsData?.products?.data?.length && status !== 'pending'"
           type="empty"
           @retry="refreshProducts"
           :content-type="`${pageSegment.name} Products`"
@@ -276,10 +284,21 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  Product,
+  ProductsResponse,
+  PaginationLink,
+  Category,
+  ProductBrand,
+} from "~/types/ecommerce";
 import type { SegmentInterface } from "~/types/meta-tags";
 
+// Page Meta Configuration
 definePageMeta({
   middleware: "segment",
+  validate: (route) => {
+    return getSegment(route.params.segment) !== null;
+  },
 });
 
 // Composables and Stores
@@ -288,6 +307,7 @@ const router = useRouter();
 const { segment, id } = route.params;
 const { api } = useAxios();
 
+// Product Filters Composable (assumed to be defined with appropriate typing)
 const {
   checkedCategories,
   checkedBrands,
@@ -332,7 +352,7 @@ const {
   `products-${categoryId.value}-${currentPage.value}`,
   async () => {
     try {
-      const response = await api.get("/api/get-products", {
+      const response = await api.get<ProductsResponse>("/api/get-products", {
         params: {
           category_id: categoryId.value,
           page: currentPage.value,
@@ -343,18 +363,7 @@ const {
         },
       });
 
-      return {
-        products: response.data.products.data,
-        total: response.data.products.total,
-        perPage: response.data.products.per_page,
-        categories: response.data.categories,
-        brands: response.data.brands,
-        theCategory: response.data.the_category,
-        totalPages: response.data.products.last_page,
-        next_page_url: response.data.products.next_page_url,
-        prev_page_url: response.data.products.prev_page_url,
-        links: response.data.products.links,
-      };
+      return response.data;
     } catch (error) {
       console.error("Error fetching products:", error);
       throw error;
@@ -373,30 +382,34 @@ const {
 );
 
 // Page Link Generator
-const createPageLink = (page?: string) => {
-  const label = page?.split("page=")[1];
+const createPageLink = (pageUrl?: string | null) => {
+  if (!pageUrl) return `/${segment}/${id}/${category}`;
+
+  const urlParams = new URL(pageUrl);
+  const page = urlParams.searchParams.get("page");
+
   return page
-    ? `/${segment}/${id}/${category}?page=${label}`
+    ? `/${segment}/${id}/${category}?page=${page}`
     : `/${segment}/${id}/${category}`;
 };
 
 // Filter Handling Methods
 const isCategoryChecked = (categoryFilterId: number) => {
-  const mainCategoryId = productsData.value?.theCategory?.id;
+  const mainCategoryId = productsData.value?.the_category?.id;
   return mainCategoryId
     ? checkedCategories.value[mainCategoryId]?.includes(categoryFilterId)
     : false;
 };
 
 const isBrandChecked = (brandId: number) => {
-  const mainCategoryId = productsData.value?.theCategory?.id;
+  const mainCategoryId = productsData.value?.the_category?.id;
   return mainCategoryId
     ? checkedBrands.value[mainCategoryId]?.includes(brandId)
     : false;
 };
 
 const toggleCategoryFilter = async (categoryFilterId: number) => {
-  const mainCategoryId = productsData.value?.theCategory?.id;
+  const mainCategoryId = productsData.value?.the_category?.id;
   if (!mainCategoryId) return;
 
   if (isCategoryChecked(categoryFilterId)) {
@@ -409,7 +422,7 @@ const toggleCategoryFilter = async (categoryFilterId: number) => {
 };
 
 const toggleBrandFilter = async (brandId: number) => {
-  const mainCategoryId = productsData.value?.theCategory?.id;
+  const mainCategoryId = productsData.value?.the_category?.id;
   if (!mainCategoryId) return;
 
   if (isBrandChecked(brandId)) {
@@ -431,7 +444,7 @@ const resetAllFilters = async () => {
 };
 
 const applyAndRefresh = async () => {
-  const mainCategoryId = productsData.value?.theCategory?.id;
+  const mainCategoryId = productsData.value?.the_category?.id;
   if (!mainCategoryId) return;
 
   try {
@@ -443,31 +456,45 @@ const applyAndRefresh = async () => {
   }
 };
 
+console.log(productsData.value?.the_category?.name);
+
 // SEO and Meta Setup
-if (productsData.value?.products?.length) {
+if (productsData.value?.products?.data?.length) {
   useHead(() => ({
     ...generateHeadInput(route, [
-      productListSchema.value,
+      // productListSchema.value,
       breadcrumbSchema.value,
       filterSchema?.value,
     ]),
-    title: productsData.value?.theCategory?.name
-      ? `${productsData.value.theCategory.name} - ${pageSegment.value?.name} Products`
+    title: productsData.value?.the_category?.name
+      ? `${productsData.value.the_category.name} - ${pageSegment.value?.name} Products`
       : "Products",
     link: [
-      ...(productsData.value?.prev_page_url
+      ...(productsData.value?.products.links?.find(
+        (link) => link.label === "Previous"
+      )
         ? [
             {
               rel: "prev",
-              href: createPageLink(productsData.value.prev_page_url),
+              href: createPageLink(
+                productsData.value.products.links?.find(
+                  (link) => link.label === "Previous"
+                )?.url
+              ),
             },
           ]
         : []),
-      ...(productsData.value?.next_page_url
+      ...(productsData.value?.products.links?.find(
+        (link) => link.label === "Next"
+      )
         ? [
             {
               rel: "next",
-              href: createPageLink(productsData.value.next_page_url),
+              href: createPageLink(
+                productsData.value.products.links?.find(
+                  (link) => link.label === "Next"
+                )?.url
+              ),
             },
           ]
         : []),

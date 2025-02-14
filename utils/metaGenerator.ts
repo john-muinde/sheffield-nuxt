@@ -15,7 +15,7 @@ type JsonLdSchema = Record<string, any> | Array<Record<string, any>>;
 export const useMetaGenerator = () => {
   const config = {
     appName: "Sheffield Steel Systems",
-    url: "https://dev.sheffieldafrica.com",
+    url: process.env.PUBLIC_URL,
     locale: "en",
     locales: ["en", "fr"],
     defaultImage: assetsSync("/assets/images/logo.png", { local: true }),

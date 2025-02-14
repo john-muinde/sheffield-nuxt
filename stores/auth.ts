@@ -1,50 +1,91 @@
+import type { LoginForm, RegisterForm, User, RawUser } from "~/types/auth";
+import { transformUser } from "~/types/auth";
+
 export const useAuthStore = defineStore("authStore", {
   state: () => ({
     authenticated: false,
-    user: {} as any,
+    user: null as User | null,
+    token: null as string | null,
   }),
+
   getters: {
     isAuthenticated: (state) => state.authenticated,
     getUser: (state) => state.user,
     auth: (state) => state,
+    isAdmin: (state) => state.user?.isAdmin || false,
   },
+
   actions: {
-    async login() {
+    async login(postData: LoginForm) {
       try {
-        const { api } = useAxios();
-        const { data } = await api.get("/api/user");
-        this.setUser(data);
+        const data = await apiRequest("post", "/login", postData);
+        const transformedUser = transformUser(data.user as RawUser);
+        this.setUser(transformedUser);
+        this.setToken(data.token);
         this.setAuthenticated(true);
       } catch (error) {
-        this.setUser({});
+        this.setUser(null);
         this.setAuthenticated(false);
+        throw error;
       }
     },
-    async fetchUser() {
+
+    async register(postData: RegisterForm) {
       try {
-        const { api } = useAxios();
-        const { data } = await api.get("/api/user");
-        if (data.success) {
-          this.setUser(data.data);
+        const { data } = await apiRequest("post", "/register", postData);
+        if (data.user) {
+          const transformedUser = transformUser(data.user as RawUser);
+          this.setUser(transformedUser);
           this.setAuthenticated(true);
         }
       } catch (error) {
-        this.setUser({});
+        this.setUser(null);
         this.setAuthenticated(false);
+        throw error;
       }
     },
-    logout() {
-      this.setUser({});
-      this.setAuthenticated(false);
+
+    async fetchUser() {
+      try {
+        const data = await apiRequest("get", "/api/user");
+        const transformedUser = transformUser(data.user as RawUser);
+        this.setUser(transformedUser);
+        this.setToken(data.token);
+        this.setAuthenticated(true);
+      } catch (error) {
+        this.setUser(null);
+        this.setAuthenticated(false);
+        this.setToken(null);
+        throw error;
+      }
     },
-    setUser(user: any) {
+
+    async logout() {
+      try {
+        const { api } = useAxios();
+        await api.get("/logout");
+        this.setUser(null);
+        this.setAuthenticated(false);
+        this.setToken(null);
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    setUser(user: User | null) {
       this.user = user;
     },
-    setAuthenticated(value: any) {
+
+    setAuthenticated(value: boolean) {
       this.authenticated = value;
     },
+
+    setToken(token: string | null) {
+      this.token = token;
+    },
   },
+
   persist: {
-    storage: piniaPluginPersistedstate.sessionStorage(),
+    storage: piniaPluginPersistedstate.localStorage(),
   },
 });

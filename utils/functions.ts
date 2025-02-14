@@ -22,6 +22,9 @@ export function getSegment(slug: string | string[]): SegmentInterface {
 }
 
 export const getGenericLink = (id: number, name: string, segment: any) => {
+  if (segment.startsWith("/")) {
+    segment = segment.substring(1);
+  }
   return `/${segment.slug || segment}/${id}/${transformName(name)}`;
 };
 

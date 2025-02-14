@@ -42,5 +42,8 @@
   },
   "[ruby]": {
     "editor.defaultFormatter": "mbessey.vscode-rufo"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
   }
 }

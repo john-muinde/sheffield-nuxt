@@ -58,10 +58,12 @@
 </template>
 
 <script setup lang="ts">
-import type { RouteLocation, RouteLocationRaw } from "vue-router";
 
 definePageMeta({
   middleware: "segment",
+  validate: (route) => {
+    return getSegment(route.params.segment) !== null;
+  },
 });
 
 import type { SolutionInterface } from "~/types/meta-tags";

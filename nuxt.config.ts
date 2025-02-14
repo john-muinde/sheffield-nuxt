@@ -1,8 +1,6 @@
 import { RouteGenerator } from "./utils/urls";
 
-const generator = new RouteGenerator(
-  process.env.API_BASE_URL || "https://sheffieldafrica.com"
-);
+const generator = new RouteGenerator(process.env.API_URL as string);
 
 const testing = true;
 
@@ -12,7 +10,7 @@ const routes = testing ? testingRoutes : await generator.generateAllRoutes();
 
 export default defineNuxtConfig({
   site: {
-    url: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
+    url: process.env.PUBLIC_URL,
   },
   devtools: { enabled: true },
 
@@ -163,11 +161,11 @@ export default defineNuxtConfig({
 
   // Runtime config
   runtimeConfig: {
-    API_URL: process.env.API_URL || "https://sheffieldafrica.com",
+    API_URL: process.env.API_URL,
     buildToken: process.env.BUILD_TOKEN,
     public: {
-      API_URL: process.env.API_URL || "https://sheffieldafrica.com",
-      PUBLIC_URL: process.env.PUBLIC_URL || "https://dev.sheffieldafrica.com",
+      API_URL: process.env.API_URL,
+      PUBLIC_URL: process.env.PUBLIC_URL,
     },
   },
 

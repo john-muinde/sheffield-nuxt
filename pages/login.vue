@@ -34,7 +34,7 @@
                   role="tabpanel"
                   aria-labelledby="signin-tab-2"
                 >
-                  <form @submit.prevent="submitLogin">
+                  <form @submit.prevent="() => submitLogin(true)">
                     <div class="form-group">
                       <label for="signin-email-2">Email address *</label>
                       <input
@@ -65,6 +65,10 @@
                     <div class="form-footer">
                       <button type="submit" class="btn btn-outline-primary-2">
                         <span>LOG IN</span>
+                        <span
+                          v-if="processing"
+                          class="spinner-border spinner-border-sm"
+                        ></span>
                         <i class="icon-long-arrow-right"></i>
                       </button>
 
@@ -103,6 +107,6 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const { loginForm, validationErrors, processing, submitLogin } = useAuth();
 </script>

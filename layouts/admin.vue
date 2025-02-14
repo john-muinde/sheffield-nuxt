@@ -1,7 +1,9 @@
 <template>
   <div id="app">
-    <div id="breadcrumb"></div>
-    <slot />
+    <main class="main1">
+      <div id="breadcrumb"></div>
+      <slot />
+    </main>
   </div>
 </template>
 

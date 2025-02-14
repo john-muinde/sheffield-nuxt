@@ -2,7 +2,6 @@
 <template>
   <!-- Mobile Menu -->
   <div class="mobile-menu-overlay" @click="closeMenu"></div>
-  <!-- End .mobil-menu-overlay -->
 
   <div class="mobile-menu-container" :class="{ active: isMenuActive }">
     <div class="mobile-menu-wrapper">
@@ -12,32 +11,32 @@
 
       <ul class="nav nav-pills-mobile" role="tablist">
         <li class="nav-item">
-          <a
+          <button
             id="mobile-menu-link"
             class="nav-link"
             :class="{ active: currentTab === 'menu' }"
             data-toggle="tab"
-            href="#mobile-menu-tab"
             @click="currentTab = 'menu'"
             role="tab"
             aria-controls="mobile-menu-tab"
             aria-selected="true"
-            >Menu</a
           >
+            Menu
+          </button>
         </li>
         <li class="nav-item">
-          <a
+          <button
             id="mobile-cats-link"
             class="nav-link"
             data-toggle="tab"
-            href="#mobile-cats-tab"
             :class="{ active: currentTab === 'cats' }"
             @click="currentTab = 'cats'"
             role="tab"
             aria-controls="mobile-cats-tab"
             aria-selected="false"
-            >Solutions</a
           >
+            Solutions
+          </button>
         </li>
       </ul>
 
@@ -64,11 +63,17 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="category in mainKitchenCategories"
+                    v-for="category in data.kitchen.categories"
                     :key="category.id"
                   >
                     <NuxtLink
-                      :to="getKitchenCategoryLink(category.id, category.name)"
+                      :to="
+                        generateLink(
+                          '/commercial-kitchen',
+                          category.id,
+                          category.name
+                        )
+                      "
                       @click="closeMenu"
                     >
                       {{ category.name }}
@@ -87,11 +92,11 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="category in mainLaundryCategories"
+                    v-for="category in data.laundry.categories"
                     :key="category.id"
                   >
                     <NuxtLink
-                      :to="getLaundryCategoryLink(category.id, category.name)"
+                      :to="generateLink('/laundry', category.id, category.name)"
                       @click="closeMenu"
                     >
                       {{ category.name }}
@@ -110,11 +115,17 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="category in mainColdRoomCategories"
+                    v-for="category in data.coldRoom.categories"
                     :key="category.id"
                   >
                     <NuxtLink
-                      :to="getColdRoomCategoryLink(category.id, category.name)"
+                      :to="
+                        generateLink(
+                          '/cold-storage',
+                          category.id,
+                          category.name
+                        )
+                      "
                       @click="closeMenu"
                     >
                       {{ category.name }}
@@ -123,7 +134,7 @@
                 </ul>
               </li>
 
-              <li v-if="promotionExists">
+              <li v-if="data.promotional?.categories?.length">
                 <NuxtLink to="/promotional-solutions" class="sf-with-ul">
                   Promotions
                   <ChevronDown
@@ -133,12 +144,16 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="category in mainPromotionalCategories"
+                    v-for="category in data.promotional.categories"
                     :key="category.id"
                   >
                     <NuxtLink
                       :to="
-                        getPromotionalCategoryLink(category.id, category.name)
+                        generateLink(
+                          '/promotional-solutions',
+                          category.id,
+                          category.name
+                        )
                       "
                       @click="closeMenu"
                     >
@@ -218,7 +233,6 @@
               </li>
             </ul>
           </nav>
-          <!-- End .mobile-nav -->
         </div>
         <!-- .End .tab-pane -->
         <div
@@ -240,11 +254,17 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="solution in mainKitchenSolutions"
+                    v-for="solution in data.kitchen.solutions"
                     :key="solution.id"
                   >
                     <NuxtLink
-                      :to="getSolutionKitchenLink(solution.id, solution.name)"
+                      :to="
+                        generateLink(
+                          '/commercial-kitchen/solutions',
+                          solution.id,
+                          solution.name
+                        )
+                      "
                       @click="closeMenu"
                     >
                       {{ solution.name }}
@@ -263,11 +283,17 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="solution in mainLaundrySolutions"
+                    v-for="solution in data.laundry.solutions"
                     :key="solution.id"
                   >
                     <NuxtLink
-                      :to="getSolutionLaundryLink(solution.id, solution.name)"
+                      :to="
+                        generateLink(
+                          '/laundry/solutions',
+                          solution.id,
+                          solution.name
+                        )
+                      "
                       @click="closeMenu"
                     >
                       {{ solution.name }}
@@ -286,11 +312,17 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="solution in mainColdRoomSolutions"
+                    v-for="solution in data.coldRoom.solutions"
                     :key="solution.id"
                   >
                     <NuxtLink
-                      :to="getSolutionColdRoomLink(solution.id, solution.name)"
+                      :to="
+                        generateLink(
+                          '/cold-storage/solutions',
+                          solution.id,
+                          solution.name
+                        )
+                      "
                       @click="closeMenu"
                     >
                       {{ solution.name }}
@@ -299,7 +331,7 @@
                 </ul>
               </li>
 
-              <li v-if="promotionExists">
+              <li v-if="data.promotional?.solutions?.length">
                 <NuxtLink to="/promotional-solutions" class="sf-with-ul">
                   PROMOTIONAL SOLUTIONS
                   <ChevronDown
@@ -309,12 +341,16 @@
                 </NuxtLink>
                 <ul class="submenu">
                   <li
-                    v-for="solution in mainPromotionalSolutions"
+                    v-for="solution in data.promotional.solutions"
                     :key="solution.id"
                   >
                     <NuxtLink
                       :to="
-                        getSolutionPromotionalLink(solution.id, solution.name)
+                        generateLink(
+                          `/promotional-solutions`,
+                          solution.id,
+                          solution.name
+                        )
                       "
                       @click="closeMenu"
                     >
@@ -325,15 +361,11 @@
               </li>
             </ul>
           </nav>
-          <!-- End .mobile-cats-nav -->
         </div>
         <!-- .End .tab-pane -->
       </div>
-      <!-- End .tab-content -->
     </div>
-    <!-- End .mobile-menu-wrapper -->
   </div>
-  <!-- End .mobile-menu-container -->
 
   <!-- Sign in / Register Modal -->
   <div
@@ -404,7 +436,6 @@
                         required
                       />
                     </div>
-                    <!-- End .form-group -->
 
                     <div class="form-group">
                       <label for="signin-password">Password *</label>
@@ -417,7 +448,6 @@
                         required
                       />
                     </div>
-                    <!-- End .form-group -->
 
                     <div class="form-footer">
                       <button type="submit" class="btn btn-outline-primary-2">
@@ -437,14 +467,10 @@
                           >Remember Me</label
                         >
                       </div>
-                      <!-- End .custom-checkbox -->
 
                       <a href="#" class="forgot-link">Forgot Your Password?</a>
                     </div>
-                    <!-- End .form-footer -->
                   </form>
-
-                  <!-- End .form-choice -->
                 </div>
                 <!-- .End .tab-pane -->
                 <div
@@ -465,7 +491,6 @@
                         required
                       />
                     </div>
-                    <!-- End .form-group -->
 
                     <div class="form-group">
                       <label for="register-password">Password *</label>
@@ -478,7 +503,6 @@
                         required
                       />
                     </div>
-                    <!-- End .form-group -->
 
                     <div class="form-footer">
                       <button type="submit" class="btn btn-outline-primary-2">
@@ -501,78 +525,115 @@
                           *</label
                         >
                       </div>
-                      <!-- End .custom-checkbox -->
                     </div>
-                    <!-- End .form-footer -->
                   </form>
-
-                  <!-- End .form-choice -->
                 </div>
-                <!-- .End .tab-pane -->
               </div>
-              <!-- End .tab-content -->
             </div>
-            <!-- End .form-tab -->
           </div>
-          <!-- End .form-box -->
         </div>
-        <!-- End .modal-body -->
       </div>
-      <!-- End .modal-content -->
     </div>
-    <!-- End .modal-dialog -->
   </div>
-  <!-- End .modal -->
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { ChevronDown } from "lucide-vue-next";
 
 const { api } = useAxios();
 const currentTab = ref("menu");
 const isMenuActive = ref(false);
+const data = ref({
+  kitchen: {
+    categories: [],
+    solutions: [],
+  },
+  laundry: {
+    categories: [],
+    solutions: [],
+  },
+  coldRoom: {
+    categories: [],
+    solutions: [],
+  },
+  promotional: {
+    categories: [],
+    solutions: [],
+  },
+});
 
-// Fetch data with SSR caching
-const fetchData = async (url) => {
-  const { data } = await api.get(url);
-  return data.data;
+const categoryIds = {
+  kitchen: 21,
+  laundry: 247,
+  coldRoom: 301,
+  promotional: 370,
 };
 
-// Solutions data
-const { data: mainKitchenSolutions } = useAsyncData("kitchenSolutions", () =>
-  fetchData("/api/get-solutions/21")
-);
-const { data: mainLaundrySolutions } = useAsyncData("laundrySolutions", () =>
-  fetchData("/api/get-solutions/247")
-);
-const { data: mainColdRoomSolutions } = useAsyncData("coldRoomSolutions", () =>
-  fetchData("/api/get-solutions/301")
-);
-const { data: mainPromotionalSolutions } = useAsyncData(
-  "promotionalSolutions",
-  () => fetchData("/api/get-solutions/370")
-);
+// Replace your existing fetchAllCategories function with this:
+const fetchAllCategories = async () => {
+  try {
+    // Single API call to get all categories
+    const response = await api.get(
+      "/api/get-main-categories/21,247,301,370?all=true"
+    );
 
-// Categories data
-const { data: mainKitchenCategories } = useAsyncData("kitchenCategories", () =>
-  fetchData("/api/get-main-categories/21")
-);
-const { data: mainLaundryCategories } = useAsyncData("laundryCategories", () =>
-  fetchData("/api/get-main-categories/247")
-);
-const { data: mainColdRoomCategories } = useAsyncData(
-  "coldRoomCategories",
-  () => fetchData("/api/get-main-categories/301")
-);
-const { data: mainPromotionalCategories } = useAsyncData(
-  "promotionalCategories",
-  () => fetchData("/api/get-main-categories/370")
-);
+    // Initialize data structure
+    const categorizedData = {
+      kitchen: { categories: [], solutions: [] },
+      laundry: { categories: [], solutions: [] },
+      coldRoom: { categories: [], solutions: [] },
+      promotional: { categories: [], solutions: [] },
+    };
 
-const promotionExists = computed(
-  () => mainPromotionalCategories.value?.length > 0
-);
+    // Process categories
+    if (response.data.categories) {
+      response.data.categories.forEach((category) => {
+        // Determine which section this category belongs to based on parent_id
+        switch (category.parent_id) {
+          case "21": // Kitchen
+            categorizedData.kitchen.categories.push(category);
+            break;
+          case "247": // Laundry
+            categorizedData.laundry.categories.push(category);
+            break;
+          case "301": // Cold Storage
+            categorizedData.coldRoom.categories.push(category);
+            break;
+          case "370": // Promotional
+            categorizedData.promotional.categories.push(category);
+            break;
+        }
+      });
+    }
+
+    // Process solutions
+    if (response.data.solutions) {
+      response.data.solutions.forEach((solution) => {
+        // Determine which section this solution belongs to based on solution_category
+        switch (solution.solution_category) {
+          case 21: // Kitchen
+            categorizedData.kitchen.solutions.push(solution);
+            break;
+          case 247: // Laundry
+            categorizedData.laundry.solutions.push(solution);
+            break;
+          case 301: // Cold Storage
+            categorizedData.coldRoom.solutions.push(solution);
+            break;
+          case 370: // Promotional
+            categorizedData.promotional.solutions.push(solution);
+            break;
+        }
+      });
+    }
+
+    // Update the ref with the organized data
+    data.value = categorizedData;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+  }
+};
 
 // Menu toggle functions
 const toggleMenu = () => {
@@ -596,41 +657,24 @@ const toggleSubMenu = (event) => {
   });
 };
 
-// Event listeners
-onMounted(() => document.addEventListener("click", handleClickOutside));
-onBeforeUnmount(() =>
-  document.removeEventListener("click", handleClickOutside)
-);
+// URL generation functions
+const generateLink = (basePath, id, name) => getGenericLink(id, name, basePath);
+
+// Lifecycle hooks
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+  fetchAllCategories(); // Fetch all categories when component mounts
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 
 const handleClickOutside = (event) => {
   if (!event.target.closest(".mobile-menu") && isMenuActive.value) {
     closeMenu();
   }
 };
-
-// URL generation functions
-const generateLink = (basePath, id, name) =>
-  `${basePath}/${id}/${name
-    .toLowerCase()
-    .replace(/-/g, " ")
-    .replace(/[\s/]+/g, "-")
-    .replace(/^-+|-+$/g, "")}`;
-
-const getSolutionKitchenLink = (id, name) =>
-  generateLink("/commercial-kitchen/solutions", id, name);
-const getSolutionLaundryLink = (id, name) =>
-  generateLink("/laundry/solutions", id, name);
-const getSolutionColdRoomLink = (id, name) =>
-  generateLink("/cold-storage/solutions", id, name);
-const getSolutionPromotionalLink = (id, name) =>
-  generateLink("/promotional-solutions", id, name);
-const getKitchenCategoryLink = (id, name) =>
-  generateLink("/commercial-kitchen", id, name);
-const getLaundryCategoryLink = (id, name) => generateLink("/laundry", id, name);
-const getColdRoomCategoryLink = (id, name) =>
-  generateLink("/cold-storage", id, name);
-const getPromotionalCategoryLink = (id, name) =>
-  generateLink("/promotional-solutions", id, name);
 </script>
 
 <style scoped>

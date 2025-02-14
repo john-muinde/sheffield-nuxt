@@ -11,7 +11,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const segment = getSegment(to.params.segment as string);
 
   // Handle non-existent segments
-  if (!segment) {
+  if (!segment.slug) {
     throw createError({
       statusCode: 404,
       statusMessage: "Page Not Found",

@@ -156,6 +156,9 @@
 <script setup lang="ts">
 definePageMeta({
   middleware: "segment",
+  validate: (route) => {
+    return getSegment(route.params.segment) !== null;
+  },
 });
 
 import type { Ref } from "vue";

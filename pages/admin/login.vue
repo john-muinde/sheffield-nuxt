@@ -11,7 +11,10 @@
                 </router-link>
               </h1>
 
-              <form class="text-start" @submit.prevent="submitLoginAdmin">
+              <form
+                class="text-start"
+                @submit.prevent="() => submitLogin(true)"
+              >
                 <div class="form">
                   <div id="email-field" class="field-wrapper input">
                     <svg
@@ -80,7 +83,7 @@
                         <input
                           type="checkbox"
                           class="custom-control-input"
-                          checked=""
+                          checked="false"
                         />
                         <span class="slider round"></span>
                       </label>
@@ -138,7 +141,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import "~/assets/admin/sass/authentication/auth.scss";
 
 definePageMeta({
@@ -155,7 +158,7 @@ useHead({
   ],
 });
 
-const { loginForm, validationErrors, processing, submitLoginAdmin } = useAuth();
+const { loginForm, validationErrors, processing, submitLogin } = useAuth();
 
 const year = new Date().getFullYear();
 </script>

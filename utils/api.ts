@@ -1,21 +1,28 @@
 import type { SegmentInterface } from "~/types/meta-tags";
-import showToast from "./notification";
 
-// src/utils/api.js
+// src/utils/api.ts
 export const apiRequest = async (
   method: string,
   url: string,
-  data = null,
+  data: any | null = null,
   config = {}
 ) => {
-  const { logoutAdmin } = useAuth();
+  const { logout } = useAuth();
   const { api } = useAxios();
+
   try {
-    if (method === "put") {
+    if (method.toLowerCase() === "put") {
       method = "post";
       url += "?_method=PUT";
     }
-    const response = await api.request({ method, url, data, ...config });
+
+    const response = await api.request({
+      method,
+      url,
+      data,
+      ...config,
+      withCredentials: true,
+    });
 
     return response.data?.data || response.data;
   } catch (error: any) {
@@ -23,14 +30,14 @@ export const apiRequest = async (
     const message =
       error.response?.data?.message || error.message || "Something went wrong";
     validationErrors.message = message;
-    showToast(message, "error");
+    notification.error(message);
 
-    // if 401 and admin use logoutadmin othwerwise logout
-    if (error.response.status === 401) {
+    if (error.response?.status === 401) {
       if (window.location.pathname.includes("admin")) {
-        logoutAdmin();
+        logout(true);
       }
     }
+
     throw validationErrors;
   }
 };

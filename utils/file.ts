@@ -17,8 +17,8 @@ interface AssetOptions {
 
 // Environment configuration
 const config = {
-  API_URL: "https://sheffieldafrica.com",
-  BASE_URL: "https://dev.sheffieldafrica.com",
+  API_URL: process.env.API_URL,
+  BASE_URL: process.env.BASE_URL,
   STORAGE_PATH: "/storage/",
   DEFAULT_IMAGE: "/assets/images/logo.png",
   PLACEHOLDER_IMAGE: "/assets/images/placeholder.jpg",
